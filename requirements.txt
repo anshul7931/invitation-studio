@@ -1,0 +1,48 @@
+Some of the functionalities might be on UI, but not handled as per the need. You can handle the scenarios, step by step:
+
+1. On login page, password should have a button for show password.
+2. Logout does not look clean as old page still shows the data. 
+3. User should be having a manage profile section.
+4. Card deletion should show a proper UI instead of browser alert.
+5. Home/Dashboard button should be there on title bar which redirects to the home screen from any page. 
+6. The card that user can edit can be shared with some other person which would be read only unless its owned by that user only. Basically a public link for the card.
+7. The public link of card should be valid for 10 mins. The remaining time also needs to be displayed somewhere for the user who created that card.
+8. If a public link for a card is generated even once, then user will not be able to generate the public link for same card. It should redirect to dummy payment page which will be implemented in future with Razorpay.
+9. If a user tries to regenerate a new card under same category(only under same category) and make it public, since thats a new card, based on details, we should take care that it should throw an error: "The same details were previously made public and you need to pay now".
+10. Put all the constants in a single file like DB Details which should be picked up in case there are no environment variables set.
+11. The code should be structured properly. Right now its bit difficult to understand. like occasion-data.js contains the demo data and js->occasions->*.js also contains demo data. 
+12. Documentation(README.md) should explain the folder and file structure.
+13. Swagger should open from Admin Dashboard if the user is of Admin type and admin should have a seperate dashboard as compared to regular person.
+14. I want APIs for listing all users, listing card for all/specific users.
+15. 'Your saved Invitation' section displays that there are no cards, but cards come in some time(because of backend load time). We need to fix this issue.
+16. Dashboard, add content pages etc should be theme customizable as light or dark.
+17. Proper file comments can be added and documentation should also tell, which variables can be set via environment variables and what would be there default value?
+
+ansh@gmail.com/anshulgoel
+
+SVGs can be customizable
+
+
+https://cart.hostinger.com/pay/2cc8061a-aace-4d6e-9961-fb51abba3ca8
+
+GRABHOST10
+
+Business plan
+guestinvite.in
+
+
+
+-------------Next Release
+
+Under weddings, we could have:
+/hindu-wedding
+/muslim-wedding
+/sikh-wedding
+/telugu-wedding
+/marathi-wedding
+
+We can add more cards like:
+/baby-shower
+
+
+We should have multiple templates for each part to select from(After preview).

@@ -1576,8 +1576,53 @@
         box-shadow: none;
       }
     }
+
+    .modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.45);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+
+    .hidden {
+        display: none;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        width: 360px;
+        text-align: center;
+    }
+
+    .modal-actions{
+        display:flex;
+        justify-content:flex-end;
+        gap:10px;
+        margin-top:20px;
+    }
+
+    .danger{
+        background:#d32f2f;
+        color:white;
+    }
   </style>
 </head>
+<div id="deleteModal" class="modal hidden">
+  <div class="modal-content">
+    <h3>Delete Invitation?</h3>
+    <p>This action cannot be undone.</p>
+
+    <div class="modal-actions">
+      <button id="cancelDeleteBtn">Cancel</button>
+      <button id="confirmDeleteBtn" class="danger">Delete</button>
+    </div>
+  </div>
+</div>
 <body data-theme="maroon">
   <section class="auth-shell" id="authShell" hidden>
     <div class="auth-layout">

@@ -20,6 +20,25 @@ const elements = {
   saveStatus: document.getElementById("saveStatus")
 };
 
+let deleteAction = null;
+
+const deleteModal = document.getElementById("deleteModal");
+const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
+
+cancelDeleteBtn.onclick = () => {
+    deleteModal.classList.add("hidden");
+};
+
+confirmDeleteBtn.onclick = async () => {
+    deleteModal.classList.add("hidden");
+
+    if (deleteAction) {
+        await deleteAction();
+        deleteAction = null;
+    }
+};
+
 let activeOccasion = "wedding";
 let currentInvitationId = null;
 let signedInUser = null;
@@ -265,6 +284,7 @@ elements.saveButton.addEventListener("click", async () => {
   }
 });
 
+
 async function loadSavedCards() {
   if (!signedInUser) return;
   try {
@@ -297,11 +317,17 @@ async function loadSavedCards() {
       remove.className = "delete-card";
       remove.type = "button";
       remove.textContent = "Delete";
-      remove.addEventListener("click", async () => {
-        if (!window.confirm(`Delete “${invitation.title}”?`)) return;
-        await api(`/api/invitations/${invitation.occasion}/${invitation.id}`, { method: "DELETE" });
-        loadSavedCards();
-      });
+      remove.addEventListener("click", () => {
+
+    deleteModal.classList.remove("hidden");
+
+    deleteAction = async () => {
+            await api(`/api/invitations/${invitation.occasion}/${invitation.id}`, {
+                method: "DELETE"
+            });
+            loadSavedCards();
+        };
+    });
       actions.append(open, remove);
       card.append(type, title, time, actions);
       elements.savedCards.append(card);
@@ -323,6 +349,18 @@ function setAuthMode(mode) {
 
 document.querySelectorAll("[data-auth-mode]").forEach((button) => {
   button.addEventListener("click", () => setAuthMode(button.dataset.authMode));
+});
+
+document.querySelectorAll("[data-password-toggle]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const input = document.getElementById(button.dataset.passwordToggle);
+
+    if (!input) return;
+
+    const show = input.type === "password";
+    input.type = show ? "text" : "password";
+    button.textContent = show ? "Hide" : "Show";
+  });
 });
 
 async function submitAuth(form, endpoint) {
@@ -360,6 +398,11 @@ document.getElementById("logoutButton").addEventListener("click", async () => {
     .forEach((element) => element.hidden = true);
   elements.authShell.hidden = false;
   history.replaceState({}, "", "/login");
+});
+
+document.getElementById("homeButton").addEventListener("click", async () => {
+  history.pushState({}, "", "/");
+  await loadRoute();
 });
 
 async function enterApplication() {

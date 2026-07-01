@@ -2,10 +2,16 @@ import { getOccasion } from "./occasions/registry.js";
 import { renderWedding } from "./occasions/wedding.js";
 import { renderOccasionForm } from "./ui/form-renderer.js";
 
+/**
+ * Main browser controller for routing, authentication state, card persistence,
+ * public sharing, and workspace theme behavior.
+ */
 const elements = {
   authShell: document.getElementById("authShell"),
   appHeader: document.getElementById("appHeader"),
   dashboard: document.getElementById("dashboard"),
+  adminDashboard: document.getElementById("adminDashboard"),
+  paymentPage: document.getElementById("paymentPage"),
   weddingBuilder: document.getElementById("builder"),
   occasionBuilder: document.getElementById("occasionBuilder"),
   weddingInvitation: document.getElementById("invitation"),
@@ -16,38 +22,44 @@ const elements = {
   cardActions: document.getElementById("cardActions"),
   savedCards: document.getElementById("savedCards"),
   savedEmpty: document.getElementById("savedEmpty"),
+  savedLoading: document.getElementById("savedLoading"),
   saveButton: document.getElementById("saveCardButton"),
-  saveStatus: document.getElementById("saveStatus")
-};
-
-let deleteAction = null;
-
-const deleteModal = document.getElementById("deleteModal");
-const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
-const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
-
-cancelDeleteBtn.onclick = () => {
-    deleteModal.classList.add("hidden");
-};
-
-confirmDeleteBtn.onclick = async () => {
-    deleteModal.classList.add("hidden");
-
-    if (deleteAction) {
-        await deleteAction();
-        deleteAction = null;
-    }
+  shareButton: document.getElementById("shareCardButton"),
+  copyShareLinkButton: document.getElementById("copyShareLinkButton"),
+  saveStatus: document.getElementById("saveStatus"),
+  publicBanner: document.getElementById("publicBanner"),
+  shareInfo: document.getElementById("shareInfo"),
+  adminButton: document.getElementById("adminButton")
 };
 
 let activeOccasion = "wedding";
 let currentInvitationId = null;
+let currentShareUrl = null;
+let currentPublicExpiresAt = null;
 let signedInUser = null;
+let pendingDelete = null;
+let shareTimer = null;
+let activeOccasionConfig = null;
+
+const supportedOccasions = ["wedding", "birthday", "engagement", "office"];
+const occasionSchemaCache = new Map();
 
 const cardIcons = {
   birthday: `<svg viewBox="0 0 72 72"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><path d="M14 54H58V64H14Z"/><path d="M20 37H52V54H20Z"/><path d="M27 23H45V37H27Z"/><path d="M36 6Q27 16 36 23Q45 16 36 6Z" fill="var(--occasion-accent)"/><path d="M20 45Q27 39 34 45T48 45T52 45"/></g></svg>`,
   engagement: `<svg viewBox="0 0 72 72"><g fill="none" stroke="currentColor" stroke-width="3"><circle cx="28" cy="43" r="18"/><circle cx="44" cy="43" r="18"/><path d="M37 18L45 8L53 18L45 28Z" fill="var(--occasion-accent)"/></g></svg>`,
   office: `<svg viewBox="0 0 72 72"><g fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 63H61M18 63V21H54V63M27 29H33M40 29H46M27 39H33M40 39H46M27 49H33M40 49H46"/><path d="M29 21V11H43V21" stroke="var(--occasion-accent)"/></g></svg>`
 };
+
+const hideableSections = [
+  elements.authShell,
+  elements.dashboard,
+  elements.adminDashboard,
+  elements.paymentPage,
+  elements.weddingBuilder,
+  elements.occasionBuilder,
+  elements.weddingInvitation,
+  elements.occasionInvitation
+].filter(Boolean);
 
 function localDate(value) {
   const [year, month, day] = value.split("-").map(Number);
@@ -60,9 +72,8 @@ const helpers = {
   },
   formatDate(value) {
     if (!value) return "";
-    return new Intl.DateTimeFormat("en-IN", {
-      day: "numeric", month: "long", year: "numeric"
-    }).format(localDate(value));
+    return new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "long", year: "numeric" })
+      .format(localDate(value));
   },
   weekday(value) {
     if (!value) return "";
@@ -81,21 +92,6 @@ const helpers = {
   }
 };
 
-function showOnly(section) {
-  [
-    elements.dashboard,
-    elements.weddingBuilder,
-    elements.occasionBuilder,
-    elements.weddingInvitation,
-    elements.occasionInvitation
-  ].forEach((element) => element.hidden = element !== section);
-  elements.cardActions.hidden = ![
-    elements.weddingInvitation,
-    elements.occasionInvitation
-  ].includes(section);
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
 async function api(url, options = {}) {
   const response = await fetch(url, {
     ...options,
@@ -105,32 +101,80 @@ async function api(url, options = {}) {
     }
   });
   const data = response.status === 204 ? null : await response.json();
-  if (!response.ok) throw new Error(data?.error || "Request failed.");
+  if (!response.ok) {
+    const error = new Error(data?.error || "Request failed.");
+    error.data = data;
+    error.status = response.status;
+    throw error;
+  }
   return data;
+}
+
+async function loadOccasionSchema(occasionId) {
+  if (!occasionSchemaCache.has(occasionId)) {
+    occasionSchemaCache.set(occasionId, api(`/api/occasions/${occasionId}`));
+  }
+  return occasionSchemaCache.get(occasionId);
+}
+
+function withServerDefaults(occasion, schema) {
+  const defaults = schema.defaults || {};
+  const sections = occasion.sections.map((section) => ({
+    ...section,
+    fields: section.fields.map((field) => ({
+      ...field,
+      value: Object.prototype.hasOwnProperty.call(defaults, field.name) ? defaults[field.name] : field.value
+    }))
+  }));
+  return {
+    ...occasion,
+    defaultTheme: defaults.palette || occasion.defaultTheme,
+    sections
+  };
+}
+
+async function getHydratedOccasion(occasionId) {
+  const [occasion, schema] = await Promise.all([
+    Promise.resolve(getOccasion(occasionId)),
+    loadOccasionSchema(occasionId)
+  ]);
+  return withServerDefaults(occasion, schema);
 }
 
 function formValues(form) {
   return Object.fromEntries(new FormData(form).entries());
 }
 
-function addDetail(label, value) {
-  if (!value) return;
-  const item = document.createElement("div");
-  item.className = "occasion-detail";
-  const caption = document.createElement("span");
-  const content = document.createElement("strong");
-  caption.textContent = label;
-  content.textContent = value;
-  item.append(caption, content);
-  document.getElementById("occasionDetails").append(item);
+function showOnly(section) {
+  hideableSections.forEach((element) => element.hidden = element !== section);
+  elements.cardActions.hidden = ![elements.weddingInvitation, elements.occasionInvitation].includes(section);
+  elements.publicBanner.hidden = true;
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-function renderGenericCard(occasion) {
-  const values = formValues(elements.occasionForm);
+function resetCurrentCard() {
+  currentInvitationId = null;
+  currentShareUrl = null;
+  currentPublicExpiresAt = null;
+  elements.saveButton.textContent = "Save Card";
+  elements.shareButton.disabled = false;
+  elements.copyShareLinkButton.hidden = true;
+  elements.saveStatus.textContent = "";
+  elements.shareInfo.textContent = "";
+  clearInterval(shareTimer);
+}
+
+function applyWorkspaceMode(mode) {
+  document.body.dataset.mode = mode;
+  localStorage.setItem("invitation_studio_mode", mode);
+  document.getElementById("themeModeButton").textContent = mode === "dark" ? "Light mode" : "Dark mode";
+}
+
+function renderGenericCard(occasion, values = formValues(elements.occasionForm)) {
   const cardData = occasion.build(values, helpers);
   elements.occasionInvitation.dataset.occasion = occasion.id;
   elements.occasionInvitation.dataset.palette = values.palette || occasion.defaultTheme;
-  document.getElementById("occasionMark").innerHTML = cardIcons[occasion.id];
+  document.getElementById("occasionMark").innerHTML = cardIcons[occasion.id] || "";
   document.getElementById("occasionCardKicker").textContent = occasion.kicker;
   document.getElementById("occasionCardTitle").textContent = cardData.title;
   document.getElementById("occasionCardSubtitle").textContent = cardData.subtitle;
@@ -140,21 +184,30 @@ function renderGenericCard(occasion) {
 
   const details = document.getElementById("occasionDetails");
   details.replaceChildren();
-  cardData.details.forEach(([label, value]) => addDetail(label, value));
+  cardData.details.forEach(([label, value]) => {
+    if (!value) return;
+    const item = document.createElement("div");
+    item.className = "occasion-detail";
+    const caption = document.createElement("span");
+    const content = document.createElement("strong");
+    caption.textContent = label;
+    content.textContent = value;
+    item.append(caption, content);
+    details.append(item);
+  });
   document.title = cardData.documentTitle;
 }
 
 function fillForm(form, values) {
-  Object.entries(values).forEach(([name, value]) => {
+  Object.entries(values || {}).forEach(([name, value]) => {
     if (form.elements[name]) form.elements[name].value = value;
   });
 }
 
-function openOccasion(occasionId, updateUrl = true) {
+async function openOccasion(occasionId, updateUrl = true) {
   activeOccasion = occasionId;
-  currentInvitationId = null;
-  elements.saveButton.textContent = "Save Card";
-  elements.saveStatus.textContent = "";
+  activeOccasionConfig = null;
+  resetCurrentCard();
   if (updateUrl) history.pushState({}, "", `/${occasionId}`);
 
   if (occasionId === "wedding") {
@@ -163,7 +216,8 @@ function openOccasion(occasionId, updateUrl = true) {
     return;
   }
 
-  const occasion = getOccasion(occasionId);
+  const occasion = await getHydratedOccasion(occasionId);
+  activeOccasionConfig = occasion;
   document.getElementById("occasionFormTitle").textContent = occasion.formTitle;
   document.getElementById("occasionFormIntro").textContent = occasion.intro;
   document.getElementById("occasionFormKicker").textContent =
@@ -172,89 +226,33 @@ function openOccasion(occasionId, updateUrl = true) {
   showOnly(elements.occasionBuilder);
 }
 
-document.querySelectorAll("[data-select-occasion]").forEach((button) => {
-  button.addEventListener("click", () => openOccasion(button.dataset.selectOccasion));
-});
+async function renderInvitationFromData(invitation, readOnly = false) {
+  activeOccasion = invitation.occasion;
+  currentInvitationId = readOnly ? null : invitation.id;
+  currentShareUrl = invitation.shareUrl;
+  currentPublicExpiresAt = invitation.publicExpiresAt;
+  elements.saveButton.textContent = currentInvitationId ? "Update Card" : "Save Card";
 
-document.querySelectorAll("[data-back-dashboard]").forEach((button) => {
-  button.addEventListener("click", () => {
-    document.body.dataset.theme = "maroon";
-    document.title = "Invitation Atelier";
-    currentInvitationId = null;
-    history.pushState({}, "", "/");
-    showOnly(elements.dashboard);
-    loadSavedCards();
-  });
-});
-
-elements.weddingForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  if (!elements.weddingForm.reportValidity()) return;
-  activeOccasion = "wedding";
-  renderWedding(elements.weddingForm, helpers);
-  elements.saveStatus.textContent = currentInvitationId ? "Changes are ready to save." : "Card created. Save it to your account.";
-  showOnly(elements.weddingInvitation);
-});
-
-elements.occasionForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  if (!elements.occasionForm.reportValidity()) return;
-  renderGenericCard(getOccasion(activeOccasion));
-  elements.saveStatus.textContent = currentInvitationId ? "Changes are ready to save." : "Card created. Save it to your account.";
-  showOnly(elements.occasionInvitation);
-});
-
-document.getElementById("editButton").addEventListener("click", () => {
-  showOnly(activeOccasion === "wedding" ? elements.weddingBuilder : elements.occasionBuilder);
-});
-
-document.getElementById("newCardButton").addEventListener("click", () => {
-  document.body.dataset.theme = "maroon";
-  document.title = "Invitation Atelier";
-  currentInvitationId = null;
-  history.pushState({}, "", "/");
-  showOnly(elements.dashboard);
-  loadSavedCards();
-});
-
-async function loadRoute() {
-  const occasionId = location.pathname.split("/").filter(Boolean)[0];
-  if (!occasionId) {
-    showOnly(elements.dashboard);
-    loadSavedCards();
-    return;
+  if (invitation.occasion === "wedding") {
+    fillForm(elements.weddingForm, invitation.fields);
+    renderWedding(elements.weddingForm, helpers);
+    showOnly(elements.weddingInvitation);
+  } else {
+    const occasion = await getHydratedOccasion(invitation.occasion);
+    activeOccasionConfig = occasion;
+    renderOccasionForm(occasion, elements.occasionFields);
+    fillForm(elements.occasionForm, invitation.fields);
+    renderGenericCard(occasion, invitation.fields);
+    showOnly(elements.occasionInvitation);
   }
 
-  const supported = ["wedding", "birthday", "engagement", "office"];
-  if (!supported.includes(occasionId)) {
-    history.replaceState({}, "", "/");
-    showOnly(elements.dashboard);
-    return;
-  }
-
-  openOccasion(occasionId, false);
-  const invitationId = new URLSearchParams(location.search).get("id");
-  if (!invitationId) return;
-
-  try {
-    const response = await fetch(`/api/invitations/${occasionId}/${invitationId}`);
-    if (!response.ok) throw new Error("Invitation could not be loaded.");
-    const invitation = await response.json();
-    currentInvitationId = invitation.id;
-    elements.saveButton.textContent = "Update Card";
-
-    if (occasionId === "wedding") {
-      fillForm(elements.weddingForm, invitation.fields);
-      renderWedding(elements.weddingForm, helpers);
-      showOnly(elements.weddingInvitation);
-    } else {
-      fillForm(elements.occasionForm, invitation.fields);
-      renderGenericCard(getOccasion(occasionId));
-      showOnly(elements.occasionInvitation);
-    }
+  if (readOnly) {
+    elements.cardActions.hidden = true;
+    elements.publicBanner.hidden = false;
+    elements.publicBanner.textContent = `Shared invitation from ${invitation.owner || "Invitation Studio"} · Read-only view`;
+  } else {
     elements.saveStatus.textContent = "Saved in your account.";
-  } catch (error) {
-    document.getElementById("occasionFormIntro").textContent = error.message;
+    updateShareDisplay();
   }
 }
 
@@ -262,34 +260,75 @@ function currentFields() {
   return formValues(activeOccasion === "wedding" ? elements.weddingForm : elements.occasionForm);
 }
 
-elements.saveButton.addEventListener("click", async () => {
-  elements.saveButton.disabled = true;
-  elements.saveStatus.textContent = "Saving…";
-  try {
-    const url = currentInvitationId
-      ? `/api/invitations/${activeOccasion}/${currentInvitationId}`
-      : `/api/invitations/${activeOccasion}`;
-    const invitation = await api(url, {
-      method: currentInvitationId ? "PUT" : "POST",
-      body: JSON.stringify(currentFields())
-    });
-    currentInvitationId = invitation.id;
-    elements.saveButton.textContent = "Update Card";
-    elements.saveStatus.textContent = "Saved in your account.";
-    history.replaceState({}, "", invitation.url);
-  } catch (error) {
-    elements.saveStatus.textContent = error.message;
-  } finally {
-    elements.saveButton.disabled = false;
-  }
-});
+async function saveCurrentCard() {
+  const url = currentInvitationId
+    ? `/api/invitations/${activeOccasion}/${currentInvitationId}`
+    : `/api/invitations/${activeOccasion}`;
+  const invitation = await api(url, {
+    method: currentInvitationId ? "PUT" : "POST",
+    body: JSON.stringify(currentFields())
+  });
+  currentInvitationId = invitation.id;
+  currentShareUrl = invitation.shareUrl;
+  currentPublicExpiresAt = invitation.publicExpiresAt;
+  elements.saveButton.textContent = "Update Card";
+  history.replaceState({}, "", invitation.url);
+  return invitation;
+}
 
+function updateShareDisplay() {
+  clearInterval(shareTimer);
+  if (!currentShareUrl || !currentPublicExpiresAt) {
+    elements.shareInfo.textContent = "";
+    elements.shareButton.textContent = "Generate Public Link";
+    elements.copyShareLinkButton.hidden = true;
+    return;
+  }
+  const link = `${location.origin}${currentShareUrl}`;
+  elements.shareButton.textContent = "Public Link Created";
+  elements.shareButton.disabled = true;
+  elements.copyShareLinkButton.hidden = false;
+  elements.copyShareLinkButton.dataset.link = link;
+  const tick = () => {
+    const remainingMs = new Date(currentPublicExpiresAt).getTime() - Date.now();
+    if (remainingMs <= 0) {
+      elements.shareInfo.textContent = `Public link expired: ${link}`;
+      clearInterval(shareTimer);
+      return;
+    }
+    const minutes = Math.floor(remainingMs / 60000);
+    const seconds = Math.floor((remainingMs % 60000) / 1000);
+    elements.shareInfo.textContent =
+      `Public link: ${link} · expires in ${minutes}:${String(seconds).padStart(2, "0")}`;
+  };
+  tick();
+  shareTimer = setInterval(tick, 1000);
+}
+
+async function copyText(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const input = document.createElement("textarea");
+  input.value = text;
+  input.setAttribute("readonly", "");
+  input.style.position = "fixed";
+  input.style.opacity = "0";
+  document.body.append(input);
+  input.select();
+  document.execCommand("copy");
+  input.remove();
+}
 
 async function loadSavedCards() {
   if (!signedInUser) return;
+  elements.savedCards.replaceChildren();
+  elements.savedEmpty.hidden = true;
+  elements.savedLoading.hidden = false;
   try {
     const { invitations } = await api("/api/invitations");
-    elements.savedCards.replaceChildren();
+    elements.savedLoading.hidden = true;
     elements.savedEmpty.hidden = invitations.length > 0;
     invitations.forEach((invitation) => {
       const card = document.createElement("article");
@@ -305,6 +344,7 @@ async function loadSavedCards() {
       }).format(new Date(invitation.updatedAt))}`;
       const actions = document.createElement("div");
       actions.className = "saved-actions";
+
       const open = document.createElement("button");
       open.className = "open-card";
       open.type = "button";
@@ -313,29 +353,117 @@ async function loadSavedCards() {
         history.pushState({}, "", invitation.url);
         loadRoute();
       });
+
       const remove = document.createElement("button");
       remove.className = "delete-card";
       remove.type = "button";
       remove.textContent = "Delete";
-      remove.addEventListener("click", () => {
+      remove.addEventListener("click", () => openDeleteModal(invitation));
 
-    deleteModal.classList.remove("hidden");
-
-    deleteAction = async () => {
-            await api(`/api/invitations/${invitation.occasion}/${invitation.id}`, {
-                method: "DELETE"
-            });
-            loadSavedCards();
-        };
-    });
       actions.append(open, remove);
       card.append(type, title, time, actions);
       elements.savedCards.append(card);
     });
   } catch (error) {
+    elements.savedLoading.hidden = true;
     elements.savedEmpty.hidden = false;
     elements.savedEmpty.textContent = error.message;
   }
+}
+
+function openDeleteModal(invitation) {
+  pendingDelete = invitation;
+  document.getElementById("deleteCardTitle").textContent = invitation.title;
+  document.getElementById("deleteModal").classList.remove("hidden");
+}
+
+async function loadRoute() {
+  const parts = location.pathname.split("/").filter(Boolean);
+  const route = parts[0];
+
+  if (route === "share" && parts[1]) {
+    try {
+      const invitation = await api(`/api/public/${parts[1]}`);
+      await renderInvitationFromData(invitation, true);
+    } catch (error) {
+      elements.appHeader.hidden = true;
+      showOnly(elements.paymentPage);
+      elements.publicBanner.hidden = false;
+      elements.publicBanner.textContent = "This public invitation link is expired or no longer available.";
+      document.querySelector("#paymentPage h1").textContent = "Link Expired";
+      document.querySelector("#paymentPage .builder-intro").textContent =
+        "Please ask the card owner for a fresh invitation link.";
+    }
+    return;
+  }
+
+  if (route === "payment") {
+    showOnly(elements.paymentPage);
+    return;
+  }
+
+  if (route === "admin") {
+    if (signedInUser?.role !== "ADMIN") {
+      history.replaceState({}, "", "/");
+      showOnly(elements.dashboard);
+      return;
+    }
+    await loadAdminDashboard();
+    showOnly(elements.adminDashboard);
+    return;
+  }
+
+  if (!route) {
+    showOnly(elements.dashboard);
+    loadSavedCards();
+    return;
+  }
+
+  if (!supportedOccasions.includes(route)) {
+    history.replaceState({}, "", "/");
+    showOnly(elements.dashboard);
+    return;
+  }
+
+  await openOccasion(route, false);
+  const invitationId = new URLSearchParams(location.search).get("id");
+  if (!invitationId) return;
+  const invitation = await api(`/api/invitations/${route}/${invitationId}`);
+  await renderInvitationFromData(invitation, false);
+}
+
+async function loadAdminDashboard() {
+  const [statsData, usersData, invitationsData] = await Promise.all([
+    api("/api/admin/stats"),
+    api("/api/admin/users"),
+    api("/api/admin/invitations")
+  ]);
+  document.getElementById("adminStats").innerHTML = Object.entries(statsData.stats)
+    .map(([label, value]) => `<div class="admin-stat"><span>${label}</span><strong>${value}</strong></div>`)
+    .join("");
+  document.getElementById("adminUsers").innerHTML = usersData.users
+    .map((user) => `<li>${user.name} · ${user.email}${user.phone ? ` · ${user.phone}` : ""} · ${user.role} · ${user.invitationCount} cards</li>`)
+    .join("");
+  document.getElementById("adminInvitations").innerHTML = invitationsData.invitations
+    .map((card) => `<li>${card.title} · ${card.occasion} · ${card.owner.name} (${card.owner.email})</li>`)
+    .join("");
+}
+
+function cleanLogoutUi() {
+  resetCurrentCard();
+  signedInUser = null;
+  elements.appHeader.hidden = true;
+  elements.cardActions.hidden = true;
+  elements.publicBanner.hidden = true;
+  elements.copyShareLinkButton.hidden = true;
+  elements.savedCards.replaceChildren();
+  elements.savedEmpty.textContent = "You have not saved an invitation yet.";
+  elements.savedEmpty.hidden = false;
+  elements.savedLoading.hidden = true;
+  hideableSections.forEach((element) => element.hidden = true);
+  elements.authShell.hidden = false;
+  document.getElementById("userName").textContent = "";
+  history.replaceState({}, "", "/login");
 }
 
 function setAuthMode(mode) {
@@ -347,6 +475,42 @@ function setAuthMode(mode) {
   document.querySelectorAll("[data-auth-message]").forEach((message) => message.textContent = "");
 }
 
+async function submitAuth(form, endpoint) {
+  const message = form.querySelector("[data-auth-message]");
+  message.textContent = "";
+  try {
+    const { user } = await api(endpoint, { method: "POST", body: JSON.stringify(formValues(form)) });
+    signedInUser = user;
+    await enterApplication();
+  } catch (error) {
+    message.textContent = error.message;
+  }
+}
+
+async function enterApplication() {
+  elements.authShell.hidden = true;
+  elements.appHeader.hidden = false;
+  document.getElementById("userName").textContent = `Hello, ${signedInUser.name}`;
+  elements.adminButton.hidden = signedInUser.role !== "ADMIN";
+  document.getElementById("profileName").value = signedInUser.name;
+  document.getElementById("profileEmail").value = signedInUser.email;
+  document.getElementById("profilePhone").value = signedInUser.phone || "";
+  await loadRoute();
+}
+
+document.querySelectorAll("[data-select-occasion]").forEach((button) => {
+  button.addEventListener("click", () => openOccasion(button.dataset.selectOccasion));
+});
+
+document.querySelectorAll("[data-back-dashboard]").forEach((button) => {
+  button.addEventListener("click", () => {
+    resetCurrentCard();
+    history.pushState({}, "", "/");
+    showOnly(elements.dashboard);
+    loadSavedCards();
+  });
+});
+
 document.querySelectorAll("[data-auth-mode]").forEach((button) => {
   button.addEventListener("click", () => setAuthMode(button.dataset.authMode));
 });
@@ -354,29 +518,146 @@ document.querySelectorAll("[data-auth-mode]").forEach((button) => {
 document.querySelectorAll("[data-password-toggle]").forEach((button) => {
   button.addEventListener("click", () => {
     const input = document.getElementById(button.dataset.passwordToggle);
-
     if (!input) return;
-
     const show = input.type === "password";
     input.type = show ? "text" : "password";
     button.textContent = show ? "Hide" : "Show";
   });
 });
 
-async function submitAuth(form, endpoint) {
-  const message = form.querySelector("[data-auth-message]");
-  message.textContent = "";
+elements.weddingForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (!elements.weddingForm.reportValidity()) return;
+  activeOccasion = "wedding";
+  renderWedding(elements.weddingForm, helpers);
+  elements.saveStatus.textContent = currentInvitationId ? "Changes are ready to save." : "Card created. Save it to your account.";
+  showOnly(elements.weddingInvitation);
+});
+
+elements.occasionForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (!elements.occasionForm.reportValidity()) return;
+  renderGenericCard(activeOccasionConfig || getOccasion(activeOccasion));
+  elements.saveStatus.textContent = currentInvitationId ? "Changes are ready to save." : "Card created. Save it to your account.";
+  showOnly(elements.occasionInvitation);
+});
+
+elements.saveButton.addEventListener("click", async () => {
+  elements.saveButton.disabled = true;
+  elements.saveStatus.textContent = "Saving…";
   try {
-    const { user } = await api(endpoint, {
-      method: "POST",
-      body: JSON.stringify(formValues(form))
+    const invitation = await saveCurrentCard();
+    elements.saveStatus.textContent = "Saved in your account.";
+    currentShareUrl = invitation.shareUrl;
+    currentPublicExpiresAt = invitation.publicExpiresAt;
+    updateShareDisplay();
+  } catch (error) {
+    elements.saveStatus.textContent = error.message;
+  } finally {
+    elements.saveButton.disabled = false;
+  }
+});
+
+elements.shareButton.addEventListener("click", async () => {
+  elements.saveStatus.textContent = "";
+  try {
+    if (!currentInvitationId) {
+      elements.saveStatus.textContent = "Save the card before generating a public link.";
+      return;
+    }
+    const invitation = await api(`/api/invitations/${activeOccasion}/${currentInvitationId}/share`, { method: "POST" });
+    currentShareUrl = invitation.shareUrl;
+    currentPublicExpiresAt = invitation.publicExpiresAt;
+    updateShareDisplay();
+  } catch (error) {
+    if (error.status === 402 && error.data?.paymentUrl) {
+      history.pushState({}, "", error.data.paymentUrl);
+      showOnly(elements.paymentPage);
+      return;
+    }
+    elements.saveStatus.textContent = error.message;
+  }
+});
+
+elements.copyShareLinkButton.addEventListener("click", async () => {
+  const link = elements.copyShareLinkButton.dataset.link;
+  if (!link) return;
+  const previousText = elements.copyShareLinkButton.textContent;
+  try {
+    await copyText(link);
+    elements.copyShareLinkButton.textContent = "Copied!";
+    elements.shareInfo.textContent = `${elements.shareInfo.textContent} · copied`;
+  } catch {
+    elements.saveStatus.textContent = "Unable to copy automatically. Please copy the public link from above.";
+  } finally {
+    window.setTimeout(() => {
+      elements.copyShareLinkButton.textContent = previousText;
+    }, 1400);
+  }
+});
+
+document.getElementById("editButton").addEventListener("click", () => {
+  showOnly(activeOccasion === "wedding" ? elements.weddingBuilder : elements.occasionBuilder);
+});
+
+document.getElementById("newCardButton").addEventListener("click", () => {
+  resetCurrentCard();
+  history.pushState({}, "", "/");
+  showOnly(elements.dashboard);
+  loadSavedCards();
+});
+
+document.getElementById("homeButton").addEventListener("click", () => {
+  resetCurrentCard();
+  history.pushState({}, "", "/");
+  showOnly(elements.dashboard);
+  loadSavedCards();
+});
+
+document.getElementById("adminButton").addEventListener("click", async () => {
+  history.pushState({}, "", "/admin");
+  await loadRoute();
+});
+
+document.getElementById("paymentHomeButton").addEventListener("click", () => {
+  history.pushState({}, "", "/");
+  showOnly(elements.dashboard);
+  loadSavedCards();
+});
+
+document.getElementById("themeModeButton").addEventListener("click", () => {
+  applyWorkspaceMode(document.body.dataset.mode === "dark" ? "light" : "dark");
+});
+
+document.getElementById("profileButton").addEventListener("click", () => {
+  document.getElementById("profileMessage").textContent = "";
+  document.getElementById("profileName").value = signedInUser.name;
+  document.getElementById("profileEmail").value = signedInUser.email;
+  document.getElementById("profilePhone").value = signedInUser.phone || "";
+  document.getElementById("profileDialog").showModal();
+});
+
+document.getElementById("closeProfileButton").addEventListener("click", () => {
+  document.getElementById("profileDialog").close();
+});
+
+document.getElementById("profileForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const message = document.getElementById("profileMessage");
+  try {
+    const { user } = await api("/api/profile", {
+      method: "PUT",
+      body: JSON.stringify(formValues(event.currentTarget))
     });
     signedInUser = user;
-    await enterApplication();
+    document.getElementById("userName").textContent = `Hello, ${user.name}`;
+    document.getElementById("profileEmail").value = user.email;
+    document.getElementById("profilePhone").value = user.phone || "";
+    message.textContent = "Profile updated.";
   } catch (error) {
     message.textContent = error.message;
   }
-}
+});
 
 document.getElementById("loginForm").addEventListener("submit", (event) => {
   event.preventDefault();
@@ -390,46 +671,43 @@ document.getElementById("registerForm").addEventListener("submit", (event) => {
 
 document.getElementById("logoutButton").addEventListener("click", async () => {
   await api("/api/auth/logout", { method: "POST" });
-  signedInUser = null;
-  currentInvitationId = null;
-  elements.appHeader.hidden = true;
-  [elements.dashboard, elements.weddingBuilder, elements.occasionBuilder,
-    elements.weddingInvitation, elements.occasionInvitation, elements.cardActions]
-    .forEach((element) => element.hidden = true);
-  elements.authShell.hidden = false;
-  history.replaceState({}, "", "/login");
+  cleanLogoutUi();
 });
 
-document.getElementById("homeButton").addEventListener("click", async () => {
-  history.pushState({}, "", "/");
-  await loadRoute();
+document.getElementById("cancelDeleteBtn").addEventListener("click", () => {
+  pendingDelete = null;
+  document.getElementById("deleteModal").classList.add("hidden");
 });
 
-async function enterApplication() {
-  elements.authShell.hidden = true;
-  elements.appHeader.hidden = false;
-  document.getElementById("userName").textContent = `Hello, ${signedInUser.name}`;
-  await loadRoute();
-}
+document.getElementById("confirmDeleteBtn").addEventListener("click", async () => {
+  if (!pendingDelete) return;
+  await api(`/api/invitations/${pendingDelete.occasion}/${pendingDelete.id}`, { method: "DELETE" });
+  pendingDelete = null;
+  document.getElementById("deleteModal").classList.add("hidden");
+  await loadSavedCards();
+});
 
-async function bootstrap() {
+window.addEventListener("popstate", () => {
+  if (signedInUser || location.pathname.startsWith("/share/")) loadRoute();
+});
+
+applyWorkspaceMode(localStorage.getItem("invitation_studio_mode") || "light");
+
+(async function bootstrap() {
+  if (location.pathname.startsWith("/share/") || location.pathname === "/payment") {
+    elements.appHeader.hidden = true;
+    await loadRoute();
+    return;
+  }
   try {
     const { user } = await api("/api/auth/me");
     signedInUser = user;
   } catch {
     signedInUser = null;
   }
-
   if (!signedInUser) {
-    elements.authShell.hidden = false;
-    elements.appHeader.hidden = true;
-    history.replaceState({}, "", "/login");
+    cleanLogoutUi();
     return;
   }
   await enterApplication();
-}
-
-window.addEventListener("popstate", () => {
-  if (signedInUser) loadRoute();
-});
-bootstrap();
+})();

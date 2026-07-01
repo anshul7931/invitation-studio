@@ -1,3 +1,8 @@
+/**
+ * Frontend registry for non-wedding card types.
+ * Wedding uses a bespoke stationery layout, while these modules share the
+ * generic occasion form/card renderer.
+ */
 import { birthday } from "./birthday.js";
 import { engagement } from "./engagement.js";
 import { office } from "./office.js";

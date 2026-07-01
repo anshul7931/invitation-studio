@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS users (
   id CHAR(36) PRIMARY KEY,
   name VARCHAR(120) NOT NULL,
   email VARCHAR(255) NOT NULL UNIQUE,
+  phone VARCHAR(40) NULL,
+  role ENUM('USER', 'ADMIN') NOT NULL DEFAULT 'USER',
   password_hash VARCHAR(255) NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -26,6 +28,11 @@ CREATE TABLE IF NOT EXISTS invitations (
   id CHAR(36) PRIMARY KEY,
   user_id CHAR(36) NOT NULL,
   share_token CHAR(36) NOT NULL UNIQUE,
+  public_token CHAR(36) NULL UNIQUE,
+  public_expires_at DATETIME NULL,
+  public_generated_at DATETIME NULL,
+  public_fingerprint CHAR(64) NULL,
+  status ENUM('DRAFT', 'PUBLISHED', 'EXPIRED', 'PAID') NOT NULL DEFAULT 'DRAFT',
   occasion ENUM('wedding', 'birthday', 'engagement', 'office') NOT NULL,
   title VARCHAR(255) NOT NULL,
   fields JSON NOT NULL,

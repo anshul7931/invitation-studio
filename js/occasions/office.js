@@ -17,28 +17,28 @@ export const office = {
       title: "Company & event",
       hint: "Set the identity and purpose of the gathering.",
       fields: [
-        { name: "company", label: "Company / team name", value: "Northstar Technologies", required: true },
-        { name: "eventName", label: "Event name", value: "Annual Celebration 2026", required: true }
+        { name: "company", label: "Company / team name", required: true },
+        { name: "eventName", label: "Event name", required: true }
       ]
     },
     {
       title: "Event logistics",
       hint: "The essential details for your guests.",
       fields: [
-        { name: "date", label: "Event date", type: "date", value: "2026-12-18", required: true },
-        { name: "time", label: "Event time", type: "time", value: "19:00", required: true },
-        { name: "venue", label: "Venue", value: "Skyline Ballroom", required: true },
-        { name: "address", label: "Address", value: "Gurugram, Haryana", required: true }
+        { name: "date", label: "Event date", type: "date", required: true },
+        { name: "time", label: "Event time", type: "time", required: true },
+        { name: "venue", label: "Venue", required: true },
+        { name: "address", label: "Address", required: true }
       ]
     },
     {
       title: "Guest information",
       hint: "Optional guidance and the invitation message.",
       fields: [
-        { name: "dressCode", label: "Dress code", value: "Business Formal", optional: true },
-        { name: "agenda", label: "Highlights / agenda", value: "Awards · Dinner · Music", optional: true },
-        { name: "message", label: "Invitation message", type: "textarea", value: "Join colleagues and friends as we celebrate the year's achievements and the people behind them.", required: true, wide: true },
-        { name: "rsvp", label: "RSVP / event contact", value: "People Team · events@northstar.example", optional: true, wide: true }
+        { name: "dressCode", label: "Dress code", optional: true },
+        { name: "agenda", label: "Highlights / agenda", optional: true },
+        { name: "message", label: "Invitation message", type: "textarea", required: true, wide: true },
+        { name: "rsvp", label: "RSVP / event contact", optional: true, wide: true }
       ]
     }
   ],

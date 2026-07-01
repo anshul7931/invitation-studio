@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#5d1020">
   <title>Invitation Atelier</title>
@@ -62,6 +63,8 @@
     }
 
     body[data-mode="dark"] .dashboard,
+    body[data-mode="dark"] .admin-dashboard,
+    body[data-mode="dark"] .payment-page,
     body[data-mode="dark"] .builder,
     body[data-mode="dark"] .app-header,
     body[data-mode="dark"] .auth-shell {
@@ -72,9 +75,11 @@
 
     body[data-mode="dark"] .form-section,
     body[data-mode="dark"] .form-chapter,
+    body[data-mode="dark"] .admin-card,
     body[data-mode="dark"] .occasion-choice,
     body[data-mode="dark"] .saved-card,
-    body[data-mode="dark"] .auth-panel {
+    body[data-mode="dark"] .auth-panel,
+    body[data-mode="dark"] .profile-dialog {
       color: #eee7dc;
       background: linear-gradient(145deg, #202229, #191b21);
     }
@@ -88,6 +93,8 @@
     }
 
     body[data-mode="dark"] .dashboard h1,
+    body[data-mode="dark"] .admin-dashboard h1,
+    body[data-mode="dark"] .payment-page h1,
     body[data-mode="dark"] .builder h1,
     body[data-mode="dark"] .occasion-choice h2,
     body[data-mode="dark"] .saved-card h3,
@@ -288,6 +295,14 @@
       color: var(--muted);
     }
 
+    .loading-state {
+      margin: 14px 0;
+      color: var(--gold-deep);
+      font: 600 0.75rem var(--label-font);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
     .saved-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -356,14 +371,26 @@
       text-align: center;
     }
 
+    .share-info {
+      width: min(100%, 780px);
+      margin: 0 auto;
+      color: var(--gold-light);
+      font: 600 0.75rem var(--label-font);
+      letter-spacing: 0.03em;
+      overflow-wrap: anywhere;
+      text-align: center;
+    }
+
     .profile-dialog {
       width: min(calc(100% - 28px), 520px);
+      max-height: calc(100dvh - 32px);
       padding: 0;
       color: var(--ink);
       background: #fffaf0;
       border: 1px solid var(--gold);
       border-radius: 22px;
       box-shadow: 0 28px 80px rgba(20, 4, 10, 0.38);
+      overflow: hidden;
     }
 
     .profile-dialog::backdrop {
@@ -371,24 +398,41 @@
     }
 
     .profile-content {
+      display: grid;
+      gap: 18px;
+      max-height: calc(100dvh - 32px);
       padding: 30px;
+      overflow-y: auto;
     }
 
     .profile-content h2 {
-      margin: 0 0 6px;
+      margin: 0;
       color: var(--maroon);
       font-size: 2rem;
     }
 
-    .profile-email {
-      margin: 0 0 24px;
-      color: var(--muted);
+    .profile-content .field {
+      min-width: 0;
+    }
+
+    .profile-content .field input {
+      box-sizing: border-box;
+      min-width: 0;
+      padding-left: 0;
+      padding-right: 0;
     }
 
     .dialog-actions {
       display: flex;
       gap: 10px;
-      margin-top: 24px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      margin-top: 4px;
+    }
+
+    .dialog-actions .generate-button,
+    .dialog-actions .text-button {
+      white-space: nowrap;
     }
 
     .public-banner {
@@ -520,6 +564,88 @@
       border-radius: 28px;
       box-shadow: 0 28px 80px rgba(23, 2, 8, 0.38);
       text-align: center;
+    }
+
+    .admin-dashboard,
+    .payment-page {
+      width: min(100%, 1080px);
+      margin: 0 auto;
+      padding: clamp(28px, 6vw, 64px);
+      color: var(--ink);
+      background: rgba(255, 250, 240, 0.97);
+      border: 1px solid var(--gold);
+      border-radius: 28px;
+      box-shadow: 0 28px 80px rgba(23, 2, 8, 0.38);
+    }
+
+    .admin-dashboard h1,
+    .payment-page h1 {
+      margin: 4px 0 12px;
+      color: var(--maroon);
+      font-family: var(--display-font);
+      font-size: clamp(3rem, 7vw, 5.2rem);
+      font-weight: 400;
+      line-height: 1;
+      text-align: center;
+    }
+
+    .admin-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 28px;
+    }
+
+    .admin-card {
+      padding: 24px;
+      background: linear-gradient(145deg, #fffdf8, #f7eddd);
+      border: 1px solid rgba(199, 154, 67, 0.48);
+      border-radius: 18px;
+    }
+
+    .admin-card.full {
+      grid-column: 1 / -1;
+    }
+
+    .admin-card h2 {
+      margin: 0 0 12px;
+      color: var(--maroon);
+    }
+
+    .admin-card ul {
+      margin: 0;
+      padding-left: 20px;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+
+    .admin-stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .admin-stat {
+      padding: 16px;
+      background: rgba(255, 250, 240, 0.72);
+      border: 1px solid rgba(199, 154, 67, 0.4);
+      border-radius: 14px;
+      text-align: center;
+    }
+
+    .admin-stat span {
+      display: block;
+      color: var(--muted);
+      font: 600 0.65rem var(--label-font);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .admin-stat strong {
+      display: block;
+      margin-top: 6px;
+      color: var(--maroon);
+      font-size: 1.8rem;
     }
 
     .dashboard h1 {
@@ -1465,6 +1591,11 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
+      .admin-grid,
+      .admin-stats {
+        grid-template-columns: 1fr;
+      }
+
       .occasion-choice {
         min-height: 130px;
       }
@@ -1578,52 +1709,68 @@
     }
 
     .modal {
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,.45);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 1000;
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(18, 7, 10, 0.62);
+      z-index: 1000;
     }
 
     .hidden {
-        display: none;
+      display: none !important;
     }
 
     .modal-content {
-        background: white;
-        border-radius: 12px;
-        padding: 24px;
-        width: 360px;
-        text-align: center;
+      width: min(100%, 430px);
+      padding: 30px;
+      color: var(--ink);
+      background: #fffaf0;
+      border: 1px solid var(--gold);
+      border-radius: 22px;
+      box-shadow: 0 26px 70px rgba(18, 7, 10, 0.36);
+      text-align: center;
     }
 
-    .modal-actions{
-        display:flex;
-        justify-content:flex-end;
-        gap:10px;
-        margin-top:20px;
+    .modal-content h3 {
+      margin: 0 0 8px;
+      color: var(--maroon);
+      font-size: 1.8rem;
     }
 
-    .danger{
-        background:#d32f2f;
-        color:white;
+    .modal-content p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .danger {
+      color: white;
+      background: linear-gradient(135deg, #8c1e2d, #bd3448);
+      border-color: #8c1e2d;
     }
   </style>
 </head>
-<div id="deleteModal" class="modal hidden">
-  <div class="modal-content">
-    <h3>Delete Invitation?</h3>
-    <p>This action cannot be undone.</p>
-
-    <div class="modal-actions">
-      <button id="cancelDeleteBtn">Cancel</button>
-      <button id="confirmDeleteBtn" class="danger">Delete</button>
+<body data-theme="maroon">
+  <div id="deleteModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="deleteTitle">
+    <div class="modal-content">
+      <h3 id="deleteTitle">Delete invitation?</h3>
+      <p>This will permanently delete the card <strong id="deleteCardTitle">this invitation</strong>. This action cannot be undone.</p>
+      <div class="modal-actions">
+        <button class="text-button" id="cancelDeleteBtn" type="button">Cancel</button>
+        <button class="text-button danger" id="confirmDeleteBtn" type="button">Delete</button>
+      </div>
     </div>
   </div>
-</div>
-<body data-theme="maroon">
   <section class="auth-shell" id="authShell" hidden>
     <div class="auth-layout">
       <div class="auth-story">
@@ -1663,6 +1810,10 @@
             <input type="email" id="registerEmail" name="email" autocomplete="email" required>
           </div>
           <div class="field">
+            <label for="registerPhone">Phone number</label>
+            <input type="tel" id="registerPhone" name="phone" autocomplete="tel" placeholder="Optional">
+          </div>
+          <div class="field">
             <label for="registerPassword">Password</label>
             <div class="password-field">
               <input type="password" id="registerPassword" name="password" minlength="8" autocomplete="new-password" required>
@@ -1682,6 +1833,7 @@
       <span class="user-name" id="userName"></span>
       <nav class="header-nav" aria-label="Application">
         <button class="text-button" id="homeButton" type="button">Home</button>
+        <button class="text-button" id="adminButton" type="button" hidden>Admin</button>
         <button class="text-button" id="themeModeButton" type="button">Dark mode</button>
         <button class="text-button" id="profileButton" type="button">Profile</button>
         <button class="text-button" id="logoutButton" type="button">Sign out</button>
@@ -1692,10 +1844,17 @@
   <dialog class="profile-dialog" id="profileDialog">
     <form class="profile-content" id="profileForm">
       <h2>Your profile</h2>
-      <p class="profile-email" id="profileEmail"></p>
       <div class="field">
-        <label for="profileName">Display name</label>
+        <label for="profileName">Name</label>
         <input id="profileName" name="name" required>
+      </div>
+      <div class="field">
+        <label for="profileEmail">Email address</label>
+        <input type="email" id="profileEmail" name="email" autocomplete="email" required>
+      </div>
+      <div class="field">
+        <label for="profilePhone">Phone number</label>
+        <input type="tel" id="profilePhone" name="phone" autocomplete="tel" placeholder="Optional">
       </div>
       <p class="auth-message" id="profileMessage"></p>
       <div class="dialog-actions">
@@ -1747,8 +1906,41 @@
         </div>
       </div>
       <div class="saved-grid" id="savedCards"></div>
+      <p class="loading-state" id="savedLoading" hidden>Loading your invitations…</p>
       <p class="empty-state" id="savedEmpty">You have not saved an invitation yet.</p>
     </section>
+  </section>
+
+  <section class="admin-dashboard" id="adminDashboard" hidden>
+    <p class="builder-kicker">Admin Dashboard</p>
+    <h1>Application Overview</h1>
+    <p class="builder-intro">Monitor users, invitations, published cards, and API documentation from one place.</p>
+    <div class="admin-card">
+      <h2>Statistics</h2>
+      <div class="admin-stats" id="adminStats"></div>
+    </div>
+    <div class="admin-grid">
+      <article class="admin-card">
+        <h2>Users</h2>
+        <ul id="adminUsers"></ul>
+      </article>
+      <article class="admin-card">
+        <h2>Cards</h2>
+        <ul id="adminInvitations"></ul>
+      </article>
+      <article class="admin-card full">
+        <h2>API docs</h2>
+        <p class="builder-intro">Swagger is available from the admin dashboard.</p>
+        <button class="generate-button" type="button" onclick="window.open('/api-docs', '_blank')">Open Swagger</button>
+      </article>
+    </div>
+  </section>
+
+  <section class="payment-page" id="paymentPage" hidden>
+    <p class="builder-kicker">Payment</p>
+    <h1>Page Under Development</h1>
+    <p class="builder-intro">Razorpay integration will be added here in a future release. For now, this confirms premium public-link regeneration is routed correctly.</p>
+    <button class="generate-button" type="button" id="paymentHomeButton">Back to Dashboard</button>
   </section>
 
   <section class="builder" id="builder" hidden>
@@ -1883,10 +2075,12 @@
 
   <div class="card-actions" id="cardActions" hidden>
     <button class="edit-button" id="saveCardButton" type="button">Save Card</button>
-    <button class="edit-button" id="shareCardButton" type="button">Copy Public Link</button>
+    <button class="edit-button" id="shareCardButton" type="button">Generate Public Link</button>
+    <button class="edit-button" id="copyShareLinkButton" type="button" hidden>Copy Public Link</button>
     <button class="edit-button" id="editButton" type="button">Edit Details</button>
     <button class="edit-button" id="newCardButton" type="button">Choose Another Occasion</button>
     <p class="save-status" id="saveStatus"></p>
+    <p class="share-info" id="shareInfo"></p>
   </div>
 
   <main class="occasion-invitation" id="occasionInvitation" data-occasion="birthday" hidden>
@@ -1916,7 +2110,7 @@
       </svg>
 
       <section class="ganesha-wrap" aria-label="Lord Ganesha blessing">
-        <svg class="ganesha" viewBox="0 0 240 245" role="img" aria-labelledby="ganesha-title">
+         <svg class="ganesha" viewBox="0 0 240 245" role="img" aria-labelledby="ganesha-title">
           <title id="ganesha-title">Gold and maroon line-art illustration of Lord Ganesha</title>
           <g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
             <!-- Crown -->
@@ -1956,8 +2150,11 @@
             <path d="M20 5Q23 1 27 5"/>
             <circle cx="28" cy="1.5" r="1.5" fill="#c79a43"/>
           </g>
-        </svg>
-        <p class="shubh">|| Shubh Vivah ||</p>
+        </svg> 
+        <p class="shubh">॥ श्री गणेशाय नमः ॥ </br>
+          वक्रतुण्ड महाकाय सूर्यकोटि समप्रभ </br>
+          निर्विघ्नं कुरु मे देव सर्वकार्येषु सर्वदा ॥
+        </p>
       </section>
 
       <p class="eyebrow">Together with their families</p>

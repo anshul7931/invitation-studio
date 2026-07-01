@@ -1,11 +1,16 @@
+/**
+ * MySQL connection/bootstrap module.
+ * Creates the local schema/tables if needed and applies small compatibility
+ * migrations for columns added after the initial project version.
+ */
 const mysql = require("mysql2/promise");
+const { config } = require("./config");
 
-const databaseName = process.env.DB_NAME || "invitation_factory";
 const connectionConfig = {
-  host: process.env.DB_HOST || "127.0.0.1",
-  port: Number(process.env.DB_PORT) || 3306,
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASSWORD || "root"
+  host: config.db.host,
+  port: config.db.port,
+  user: config.db.user,
+  password: config.db.password
 };
 
 let pool;
@@ -13,16 +18,16 @@ let pool;
 async function initializeDatabase() {
   const connection = await mysql.createConnection(connectionConfig);
   await connection.query(
-    `CREATE DATABASE IF NOT EXISTS \`${databaseName}\`
+    `CREATE DATABASE IF NOT EXISTS \`${config.db.name}\`
      CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
   );
   await connection.end();
 
   pool = mysql.createPool({
     ...connectionConfig,
-    database: databaseName,
+    database: config.db.name,
     waitForConnections: true,
-    connectionLimit: 10,
+    connectionLimit: config.db.connectionLimit,
     namedPlaceholders: true
   });
 
@@ -31,6 +36,8 @@ async function initializeDatabase() {
       id CHAR(36) PRIMARY KEY,
       name VARCHAR(120) NOT NULL,
       email VARCHAR(255) NOT NULL UNIQUE,
+      phone VARCHAR(40) NULL,
+      role ENUM('USER', 'ADMIN') NOT NULL DEFAULT 'USER',
       password_hash VARCHAR(255) NOT NULL,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
@@ -54,6 +61,11 @@ async function initializeDatabase() {
       id CHAR(36) PRIMARY KEY,
       user_id CHAR(36) NOT NULL,
       share_token CHAR(36) NOT NULL UNIQUE,
+      public_token CHAR(36) NULL UNIQUE,
+      public_expires_at DATETIME NULL,
+      public_generated_at DATETIME NULL,
+      public_fingerprint CHAR(64) NULL,
+      status ENUM('DRAFT', 'PUBLISHED', 'EXPIRED', 'PAID') NOT NULL DEFAULT 'DRAFT',
       occasion ENUM('wedding', 'birthday', 'engagement', 'office') NOT NULL,
       title VARCHAR(255) NOT NULL,
       fields JSON NOT NULL,
@@ -68,7 +80,7 @@ async function initializeDatabase() {
   const [shareColumns] = await pool.query(
     `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
      WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'invitations' AND COLUMN_NAME = 'share_token'`,
-    [databaseName]
+    [config.db.name]
   );
   if (!shareColumns.length) {
     await pool.query("ALTER TABLE invitations ADD COLUMN share_token CHAR(36) NULL UNIQUE AFTER user_id");
@@ -76,8 +88,25 @@ async function initializeDatabase() {
     await pool.query("ALTER TABLE invitations MODIFY share_token CHAR(36) NOT NULL");
   }
 
+  await ensureColumn("users", "phone", "ALTER TABLE users ADD COLUMN phone VARCHAR(40) NULL AFTER email");
+  await ensureColumn("users", "role", "ALTER TABLE users ADD COLUMN role ENUM('USER', 'ADMIN') NOT NULL DEFAULT 'USER' AFTER phone");
+  await ensureColumn("invitations", "public_token", "ALTER TABLE invitations ADD COLUMN public_token CHAR(36) NULL UNIQUE AFTER share_token");
+  await ensureColumn("invitations", "public_expires_at", "ALTER TABLE invitations ADD COLUMN public_expires_at DATETIME NULL AFTER public_token");
+  await ensureColumn("invitations", "public_generated_at", "ALTER TABLE invitations ADD COLUMN public_generated_at DATETIME NULL AFTER public_expires_at");
+  await ensureColumn("invitations", "public_fingerprint", "ALTER TABLE invitations ADD COLUMN public_fingerprint CHAR(64) NULL AFTER public_generated_at");
+  await ensureColumn("invitations", "status", "ALTER TABLE invitations ADD COLUMN status ENUM('DRAFT', 'PUBLISHED', 'EXPIRED', 'PAID') NOT NULL DEFAULT 'DRAFT' AFTER public_fingerprint");
+
   await pool.query("DELETE FROM sessions WHERE expires_at <= NOW()");
   return pool;
+}
+
+async function ensureColumn(table, column, alterSql) {
+  const [rows] = await pool.query(
+    `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+    [config.db.name, table, column]
+  );
+  if (!rows.length) await pool.query(alterSql);
 }
 
 function database() {
@@ -85,4 +114,4 @@ function database() {
   return pool;
 }
 
-module.exports = { initializeDatabase, database, databaseName };
+module.exports = { initializeDatabase, database, databaseName: config.db.name };

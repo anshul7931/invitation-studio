@@ -17,27 +17,27 @@ export const engagement = {
       title: "The couple",
       hint: "Names are shown prominently on the finished card.",
       fields: [
-        { name: "partnerOne", label: "Partner one's name", value: "Ishita Malhotra", required: true },
-        { name: "partnerTwo", label: "Partner two's name", value: "Arjun Khanna", required: true }
+        { name: "partnerOne", label: "Partner one's name", required: true },
+        { name: "partnerTwo", label: "Partner two's name", required: true }
       ]
     },
     {
       title: "Ceremony details",
       hint: "Share the date, time, and gathering place.",
       fields: [
-        { name: "date", label: "Engagement date", type: "date", value: "2026-10-25", required: true },
-        { name: "time", label: "Ceremony time", type: "time", value: "18:30", required: true },
-        { name: "venue", label: "Venue", value: "The Rose Pavilion", required: true },
-        { name: "address", label: "Address", value: "New Delhi", required: true }
+        { name: "date", label: "Engagement date", type: "date", required: true },
+        { name: "time", label: "Ceremony time", type: "time", required: true },
+        { name: "venue", label: "Venue", required: true },
+        { name: "address", label: "Address", required: true }
       ]
     },
     {
       title: "A personal note",
       hint: "Add the families, blessing, and response contact.",
       fields: [
-        { name: "hosts", label: "Hosted by / families", value: "The Malhotra & Khanna Families", optional: true, wide: true },
-        { name: "message", label: "Invitation message", type: "textarea", value: "With joyful hearts, we invite you to celebrate the beginning of our forever.", required: true, wide: true },
-        { name: "rsvp", label: "RSVP contact", value: "Naina · 98111 22334", optional: true, wide: true }
+        { name: "hosts", label: "Hosted by / families", optional: true, wide: true },
+        { name: "message", label: "Invitation message", type: "textarea", required: true, wide: true },
+        { name: "rsvp", label: "RSVP contact", optional: true, wide: true }
       ]
     }
   ],

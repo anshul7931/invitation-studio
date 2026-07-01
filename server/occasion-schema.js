@@ -1,6 +1,13 @@
+/**
+ * Shared occasion validation schema, API defaults, and publish identity rules.
+ * The browser UI fetches these defaults from the API, while frontend modules keep
+ * only presentation labels, layout hints, theme choices, and card rendering logic.
+ */
 const occasions = {
   wedding: {
     required: ["bride", "groom", "weddingDate", "weddingTime", "venue", "address"],
+    titleFields: ["bride", "groom"],
+    fingerprintFields: ["bride", "groom", "weddingDate", "weddingTime", "venue", "address"],
     defaults: {
       bride: "Aisha Sharma",
       groom: "Rohan Mehta",
@@ -22,6 +29,9 @@ const occasions = {
   },
   birthday: {
     required: ["celebrant", "date", "time", "venue", "address", "message"],
+    titleFields: ["celebrant"],
+    titleSuffix: "'s Birthday",
+    fingerprintFields: ["celebrant", "age", "date", "time", "venue", "address"],
     defaults: {
       celebrant: "Ananya Kapoor",
       age: "30",
@@ -38,6 +48,8 @@ const occasions = {
   },
   engagement: {
     required: ["partnerOne", "partnerTwo", "date", "time", "venue", "address", "message"],
+    titleFields: ["partnerOne", "partnerTwo"],
+    fingerprintFields: ["partnerOne", "partnerTwo", "date", "time", "venue", "address"],
     defaults: {
       partnerOne: "Ishita Malhotra",
       partnerTwo: "Arjun Khanna",
@@ -53,6 +65,8 @@ const occasions = {
   },
   office: {
     required: ["company", "eventName", "date", "time", "venue", "address", "message"],
+    titleFields: ["eventName"],
+    fingerprintFields: ["company", "eventName", "date", "time", "venue", "address"],
     defaults: {
       company: "Northstar Technologies",
       eventName: "Annual Celebration 2026",

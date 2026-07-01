@@ -1,4 +1,4 @@
-const { occasions } = require("./occasion-data");
+const { occasions } = require("./occasion-schema");
 
 const fields = Object.fromEntries(
   [...new Set(Object.values(occasions).flatMap(({ defaults }) => Object.keys(defaults)))]
@@ -24,7 +24,7 @@ const body = (schema) => ({
   content: { "application/json": { schema } }
 });
 
-function createOpenApi(port) {
+function createOpenApi(host, port) {
   return {
     openapi: "3.0.3",
     info: {
@@ -32,11 +32,14 @@ function createOpenApi(port) {
       version: "2.0.0",
       description: "Authenticated API for managing user-owned invitations. Login and registration return an HttpOnly session cookie."
     },
-    servers: [{ url: `http://127.0.0.1:${port}` }],
+    servers: [{ url: `http://${host}:${port}` }],
     tags: [
       { name: "Authentication" },
+      { name: "Profile" },
       { name: "Occasions" },
-      { name: "Invitations" }
+      { name: "Invitations" },
+      { name: "Public" },
+      { name: "Admin" }
     ],
     paths: {
       "/api/auth/register": {
@@ -74,6 +77,28 @@ function createOpenApi(port) {
           tags: ["Authentication"],
           summary: "Logout",
           responses: { 200: { description: "Session cleared" } }
+        }
+      },
+      "/api/profile": {
+        put: {
+          tags: ["Profile"],
+          summary: "Update the signed-in user's display name",
+          security: [{ cookieAuth: [] }],
+          requestBody: body({
+            type: "object",
+            required: ["name", "email"],
+            properties: {
+              name: { type: "string", example: "Aisha Sharma" },
+              email: { type: "string", format: "email", example: "aisha@example.com" },
+              phone: { type: "string", example: "99999 88888" }
+            }
+          }),
+          responses: {
+            200: { description: "Profile updated" },
+            400: { description: "Invalid profile details" },
+            409: { description: "Email already exists" },
+            401: { description: "Authentication required" }
+          }
         }
       },
       "/api/occasions": {
@@ -156,6 +181,65 @@ function createOpenApi(port) {
             404: { description: "Not found" }
           }
         }
+      },
+      "/api/invitations/{occasion}/{id}/share": {
+        post: {
+          tags: ["Invitations"],
+          summary: "Generate a one-time 10-minute public read-only link",
+          security: [{ cookieAuth: [] }],
+          parameters: [occasionParameter, idParameter],
+          responses: {
+            200: { description: "Public link generated" },
+            402: { description: "Public link already generated; payment required" },
+            409: { description: "Same details were previously made public" }
+          }
+        }
+      },
+      "/api/public/{token}": {
+        get: {
+          tags: ["Public"],
+          summary: "Read a public invitation while the link is active",
+          parameters: [{
+            name: "token",
+            in: "path",
+            required: true,
+            schema: { type: "string", format: "uuid" }
+          }],
+          responses: {
+            200: { description: "Read-only invitation" },
+            404: { description: "Not found or expired" }
+          }
+        }
+      },
+      "/api/admin/stats": {
+        get: {
+          tags: ["Admin"],
+          summary: "Admin application statistics",
+          security: [{ cookieAuth: [] }],
+          responses: { 200: { description: "Stats" }, 403: { description: "Admin required" } }
+        }
+      },
+      "/api/admin/users": {
+        get: {
+          tags: ["Admin"],
+          summary: "List all users",
+          security: [{ cookieAuth: [] }],
+          responses: { 200: { description: "Users" }, 403: { description: "Admin required" } }
+        }
+      },
+      "/api/admin/invitations": {
+        get: {
+          tags: ["Admin"],
+          summary: "List all cards, optionally filtered by userId",
+          security: [{ cookieAuth: [] }],
+          parameters: [{
+            name: "userId",
+            in: "query",
+            required: false,
+            schema: { type: "string", format: "uuid" }
+          }],
+          responses: { 200: { description: "Invitations" }, 403: { description: "Admin required" } }
+        }
       }
     },
     components: {
@@ -174,6 +258,7 @@ function createOpenApi(port) {
           properties: {
             name: { type: "string", example: "Aisha Sharma" },
             email: { type: "string", format: "email", example: "aisha@example.com" },
+            phone: { type: "string", example: "99999 88888" },
             password: { type: "string", format: "password", minLength: 8, example: "secret123" }
           }
         },

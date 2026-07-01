@@ -1,5 +1,6 @@
 function fieldControl(field) {
   const id = `occasion-${field.name}`;
+  const value = field.value || "";
   const attributes = [
     `id="${id}"`,
     `name="${field.name}"`,
@@ -7,12 +8,16 @@ function fieldControl(field) {
   ].filter(Boolean).join(" ");
 
   if (field.type === "textarea") {
-    return `<textarea ${attributes}>${field.value}</textarea>`;
+    return `<textarea ${attributes}>${value}</textarea>`;
   }
 
-  return `<input type="${field.type || "text"}" value="${field.value}" ${attributes}>`;
+  return `<input type="${field.type || "text"}" value="${value}" ${attributes}>`;
 }
 
+/**
+ * Builds the occasion-specific form from presentation metadata. Field default
+ * values are injected by app.js from the backend occasion schema before render.
+ */
 export function renderOccasionForm(occasion, container) {
   const themeOptions = occasion.themes
     .map(([value, label]) => `<option value="${value}">${label}</option>`)

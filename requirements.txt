@@ -1,27 +1,70 @@
-Some of the functionalities might be on UI, but not handled as per the need. You can handle the scenarios, step by step:
-The points which are already achieved have Done written with them. Those sentences can be ignored
-
-1. On login page, password should have a button for show password. - Done
-2. Logout does not look clean as old page still shows the data. 
-3. User should be having a manage profile section.
-4. Card deletion should show a proper UI instead of browser alert.
-5. Home/Dashboard button should be there on title bar which redirects to the home screen from any page. 
-6. The card that user can edit can be shared with some other person which would be read only unless its owned by that user only. Basically a public link for the card.
-7. The public link of card should be valid for 10 mins. The remaining time also needs to be displayed somewhere for the user who created that card.
-8. If a public link for a card is generated even once, then user will not be able to generate the public link for same card. It should redirect to dummy payment page(/payment) which will be implemented in future with Razorpay(Shows Page Under Development currently).
-9. If a user tries to regenerate a new card under same category(only under same category) and make it public, since thats a new card, based on details, we should take care that it should throw an error: "The same details were previously made public and you need to pay now".
-10. Put all the constants in a single file like DB Details which should be picked up in case there are no environment variables set.
-11. The code should be structured properly. Right now its bit difficult to understand. like occasion-data.js contains the demo data and js->occasions->*.js also contains demo data. 
-12. Documentation(README.md) should explain the folder and file structure.
-13. Swagger should open from Admin Dashboard if the user is of Admin type and admin should have a seperate dashboard as compared to regular person.
-14. I want APIs for listing all users, listing card for all/specific users.
-15. 'Your saved Invitation' section displays that there are no cards, but cards come in some time(because of backend load time). We need to fix this issue.
-16. Dashboard, add content pages etc should be theme customizable as light or dark.
-17. Proper file comments can be added and documentation should also tell, which variables can be set via environment variables and what would be there default value?
-
-ansh@gmail.com/anshulgoel
+ansh@gmail.com/anshulgoel - USER
+anshul@gmail.com/anshulgoel - ADMIN
 
 SVGs can be customizable
+
+----Integrate Resend for email verification
+API Key re_MyWW3ZcC_MrMVXm7oejEqqpJSGD3kXNDz
+100 mails per day free tier - 10 per sec rate limit. Pay as you go available
+anshul.goel.student@gmail.com
+https://resend.com/settings/usage
+
+Prompt: Integrate Resend for email verification, reset password etc. API Key for that is re_MyWW3ZcC_MrMVXm7oejEqqpJSGD3kXNDz.
+The account that I used for signing up is anshul.goel.student@gmail.com
+Make sure to add the email configuration seperately, as service provider may change in future and accordingly request and responses will also be changed.
+Later, there might be a seperate mail provider for Reset Password flow and Verify mail id.
+Just to let you know rate limit for email is 10 per sec and 100 per day.
+Also document this part properly.
+ 
+----Other Requirements:
+
+1. svg should also be customizable in card creation. There are a couple of SVGs in the ../SVGs folder. You can use those but make a slight change to avoid licence credits. Based on these SVGs you can create a couple of more and based on the events you can make it customised i.e. user should be selecting the SVGs in the card.
+5. Reset password should also be implemented.
+6. Signout should confirm if we actually want to sign out or not?
+7. Instead of pre filling all the card details, create a preview section under each card which contains details based on a demo data, the details can't be edited by a user. 
+The data which is currently filled can act as a placeholder now.
+8. The theme for Light/Dark mode is limited to a number of things in UI. Thats not looking good.
+9. If we are redirecting to Home in between edit, it should display a warning before redirecting that any changes would be lost.
+10. If we click on create public link, it should tell us that the "Link creation will be allowed once for 10 minutes. For longer duration: Pay Now"
+11. Whenever a user clicks on Pay Now, it should be redirected to /plans page.(This page will contain various plans and Pay Now button which redirects to /payments)
+12. The complete UI is under index.html. 
+Make it bit structured and seperate html,css and js if any. 
+Also seperate the data on basis of occasion, 
+so if I want to make changes only in wedding card, 
+I should know which files to modify. 
+Document the steps for modification.
+13. Invitation details should have a fingerprint/hash. If the same invitation (same category + same important details) is published again after the free publish, payment should be enforced.
+14. Invitation status should be maintained (Draft, Published, Expired, Paid) to support future payment and sharing features.
+15. Environment configuration should be centralized (config/constants) instead of reading environment variables from multiple files.
+16. Loading indicators should be shown while API calls are in progress instead of displaying empty states.(When user logs in, existing cards are not visible)
+17. Add rate limiting for authentication and public invitation APIs to prevent abuse.
+18. Public invitation page should be mobile responsive and optimized for WhatsApp sharing.
+19. User should be able to duplicate an existing invitation to create a new draft.
+20. We should have About, Contact Us, Terms and Conditions pages as well(Terms and conditions will come as a hyperlink while signup)
+21. Under weddings, we could have templates based on:
+hindu-wedding
+muslim-wedding
+sikh-wedding
+telugu-wedding
+marathi-wedding
+We should be able to select a template type from dropdown under the cretaion page.
+22. Login as Guest should also be available. The person should see dashboard, create card/edit card but can not see public link creation button. The data will reset with page refresh.
+23. We should be able to add custom events. There might be some person who want to celebrate first month wedding ceremony, Roka ceremony. We can have some optional parameters, optional SVGs etc.
+24. If I am changing theme of a wedding card, as of now its changing the theme of complete application, it does not seem to look good.
+25. Application level theme color should be customised from profile section. 
+26. If I am permanently deleting a card and again creating it, I am able to create a public link again.
+What we could do is to soft delete the card for some timeline and validate the details from there to avoid user creating same card again and again and making it public.
+27. I should be able to delete multiple cards at a time
+
+-----Done
+
+2. There should be an option to copy the public link directly. 
+3. The public link is not properly working when redirected to. Its not displaying any card.
+4. Manage profile/Sign Up section should have email, phone, name that can be modified.
+
+
+-------
+
 
 
 https://cart.hostinger.com/pay/2cc8061a-aace-4d6e-9961-fb51abba3ca8
@@ -35,12 +78,7 @@ guestinvite.in
 
 -------------Next Release
 
-Under weddings, we could have:
-/hindu-wedding
-/muslim-wedding
-/sikh-wedding
-/telugu-wedding
-/marathi-wedding
+
 
 We can add more cards like:
 /baby-shower
@@ -50,6 +88,8 @@ We should have multiple templates for each part to select from(After preview).
 
 
 Premium Plan:
+
+Premium features (Music, RSVP, HD Download, QR, Custom URL) should be hidden behind the future payment module.
 
 ✓ Music
 
@@ -67,45 +107,30 @@ Premium Plan:
 
 ✓ Dress Code
 
+----Things used:
 
-Suggested:
+OAuth: 
+Database: MySQL
 
-Existing requirements dekh ke mujhe ye additions genuinely useful lage. Ye project ke roadmap ke saath bhi match karte hain.
 
-18. Payment module integration placeholder should be added. The dummy payment page should be structured in a way that Razorpay can be integrated later without changing the existing flow.
+--To be verified manually
 
-19. Public invitation should have a unique, non-guessable URL and should automatically expire after the configured duration.
+1. On login page, password should have a button for show password. - Done
+2. Logout does not look clean as old page still shows the data. - Done
+3. User should be having a manage profile section. - Done
+4. Card deletion should show a proper UI, as of now the delete dialog box buttons not looking good. - Done
+5. Home/Dashboard button should be there on title bar which redirects to the home screen from any page. - Done
+6. The card that user can edit can be shared with some other person which would be read only unless its owned by that user only. Basically a public link for the card. - Done
+7. The public link of card should be valid for 10 mins. The remaining time also needs to be displayed somewhere for the user who created that card. - Done
+8. If a public link for a card is generated even once, then user will not be able to generate the public link for same card. It should redirect to dummy payment page (/payment) which will be implemented in future with Razorpay (currently shows "Page Under Development"). - Done
+9. If a user tries to regenerate a new card under same category (only under same category) and make it public, since that's a new card, based on details, we should take care that it should throw an error: - Done
+   "The same details were previously made public and you need to pay now".
+10. Put all the constants in a single file like DB Details which should be picked up in case there are no environment variables set. - Done
+11. The code should be structured properly. Right now it's a bit difficult to understand. For example, occasion-data.js contains demo data and js/occasions/*.js also contains demo data. - Done
+12. Documentation (README.md) should explain the folder and file structure. - Done
+13. Swagger should open from Admin Dashboard if the user is of Admin type and admin should have a separate dashboard compared to a regular user. - Done
+14. I want APIs for listing all users, listing cards for all users, and listing cards for a specific user. - Done
+15. 'Your Saved Invitations' section displays "No cards found", but cards appear after some time because of backend loading. This should be fixed with a proper loading state. - Done
+16. The entire application (Dashboard, Add Content pages, etc.) should support Light and Dark themes. - Done
+17. Proper file comments should be added and the documentation should clearly mention all supported environment variables along with their default values. - Done
 
-20. Invitation details should have a fingerprint/hash. If the same invitation (same category + same important details) is published again after the free publish, payment should be enforced.
-
-21. Invitation status should be maintained (Draft, Published, Expired, Paid) to support future payment and sharing features.
-
-22. Admin Dashboard should display application statistics like total users, total invitations, published invitations and active public links.
-
-23. Environment configuration should be centralized (config/constants) instead of reading environment variables from multiple files.
-
-24. Loading indicators should be shown while API calls are in progress instead of displaying empty states.
-
-25. Standardize API responses across the application:
-
-{
-  "success": true,
-  "data": {}
-}
-
-or
-
-{
-  "success": false,
-  "message": "..."
-}
-
-26. Add rate limiting for authentication and public invitation APIs to prevent abuse.
-
-27. Public invitation page should be mobile responsive and optimized for WhatsApp sharing.
-
-28. Add QR Code support for published invitations (future enhancement).
-
-29. User should be able to duplicate an existing invitation to create a new draft.
-
-30. Premium features (Music, RSVP, HD Download, QR, Custom URL) should be hidden behind the future payment module.

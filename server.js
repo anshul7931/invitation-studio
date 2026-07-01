@@ -1,8 +1,14 @@
+/**
+ * Invitation Studio HTTP entry point.
+ * Handles static SPA routes, authentication APIs, invitation CRUD, public share
+ * links, admin APIs, and Swagger/OpenAPI endpoints.
+ */
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
-const { occasions } = require("./server/occasion-data");
+const { config } = require("./server/config");
+const { occasions } = require("./server/occasion-schema");
 const { createOpenApi } = require("./server/openapi");
 const { initializeDatabase, database } = require("./server/database");
 const {
@@ -15,8 +21,9 @@ const {
   clearSessionCookie
 } = require("./server/auth");
 
-const port = Number(process.env.PORT) || 3000;
-const pageRoutes = new Set(["/", "/login", "/wedding", "/birthday", "/engagement", "/office"]);
+const port = config.app.port;
+const host = config.app.host;
+const pageRoutes = new Set(config.routing.pageRoutes);
 
 function sendJson(response, status, value, headers = {}) {
   response.writeHead(status, {
@@ -34,7 +41,7 @@ function readJson(request) {
     let body = "";
     request.on("data", (chunk) => {
       body += chunk;
-      if (body.length > 1_000_000) request.destroy();
+      if (body.length > config.api.maxJsonBodyBytes) request.destroy();
     });
     request.on("end", () => {
       try {
@@ -48,13 +55,6 @@ function readJson(request) {
 }
 
 function serveFile(response, filePath) {
-  const contentTypes = {
-    ".html": "text/html; charset=utf-8",
-    ".css": "text/css; charset=utf-8",
-    ".js": "text/javascript; charset=utf-8",
-    ".json": "application/json; charset=utf-8",
-    ".svg": "image/svg+xml"
-  };
   fs.readFile(filePath, (error, contents) => {
     if (error) {
       sendJson(response, error.code === "ENOENT" ? 404 : 500, {
@@ -63,7 +63,7 @@ function serveFile(response, filePath) {
       return;
     }
     response.writeHead(200, {
-      "Content-Type": contentTypes[path.extname(filePath)] || "application/octet-stream",
+      "Content-Type": config.staticFiles.contentTypes[path.extname(filePath)] || config.staticFiles.fallbackContentType,
       "Cache-Control": "no-store"
     });
     response.end(contents);
@@ -82,28 +82,62 @@ function swaggerPage() {
 }
 
 function invitationTitle(occasion, fields) {
-  if (occasion === "wedding") return `${fields.bride} & ${fields.groom}`;
-  if (occasion === "birthday") return `${fields.celebrant}'s Birthday`;
-  if (occasion === "engagement") return `${fields.partnerOne} & ${fields.partnerTwo}`;
-  return fields.eventName;
+  const schema = occasions[occasion];
+  const title = schema.titleFields
+    .map((field) => String(fields[field] || "").trim())
+    .filter(Boolean)
+    .join(" & ");
+  return `${title}${schema.titleSuffix || ""}`;
 }
 
 function invitationDto(row) {
+  const publicExpiresAt = row.public_expires_at ? new Date(row.public_expires_at) : null;
   return {
     id: row.id,
     occasion: row.occasion,
     title: row.title,
     fields: typeof row.fields === "string" ? JSON.parse(row.fields) : row.fields,
     url: `/${row.occasion}?id=${row.id}`,
-    shareUrl: `/share/${row.share_token}`,
+    shareUrl: row.public_token ? `/share/${row.public_token}` : null,
+    publicExpiresAt: publicExpiresAt ? publicExpiresAt.toISOString() : null,
+    publicGeneratedAt: row.public_generated_at ? new Date(row.public_generated_at).toISOString() : null,
+    status: row.status,
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString()
   };
 }
 
+function userDto(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    phone: row.phone || "",
+    role: row.role
+  };
+}
+
+function fingerprintFor(occasion, fields) {
+  const importantKeys = occasions[occasion].fingerprintFields;
+  const normalized = Object.fromEntries(
+    importantKeys.map((key) => [key, String(fields[key] || "").trim().toLowerCase()])
+  );
+  return crypto.createHash("sha256").update(JSON.stringify({ occasion, normalized })).digest("hex");
+}
+
 async function requireUser(request, response) {
   const user = await currentUser(request);
   if (!user) sendJson(response, 401, { error: "Authentication required" });
+  return user;
+}
+
+async function requireAdmin(request, response) {
+  const user = await requireUser(request, response);
+  if (!user) return null;
+  if (user.role !== "ADMIN") {
+    sendJson(response, 403, { error: "Admin access required" });
+    return null;
+  }
   return user;
 }
 
@@ -118,6 +152,7 @@ async function handleApi(request, response, pathname) {
     const body = await readJson(request);
     const name = String(body.name || "").trim();
     const email = String(body.email || "").trim().toLowerCase();
+    const phone = String(body.phone || "").trim();
     const password = String(body.password || "");
     if (!name || !email || password.length < 8) {
       sendJson(response, 400, {
@@ -130,10 +165,11 @@ async function handleApi(request, response, pathname) {
       sendJson(response, 409, { error: "An account with this email already exists." });
       return true;
     }
-    const user = { id: crypto.randomUUID(), name, email };
+    const role = config.app.adminEmails.includes(email) ? "ADMIN" : "USER";
+    const user = { id: crypto.randomUUID(), name, email, phone, role };
     await database().execute(
-      "INSERT INTO users (id, name, email, password_hash) VALUES (?, ?, ?, ?)",
-      [user.id, name, email, await hashPassword(password)]
+      "INSERT INTO users (id, name, email, phone, role, password_hash) VALUES (?, ?, ?, ?, ?, ?)",
+      [user.id, name, email, phone || null, role, await hashPassword(password)]
     );
     const session = await createSession(user.id);
     sendJson(response, 201, { user }, { "Set-Cookie": sessionCookie(session.token, session.expiresAt) });
@@ -144,7 +180,7 @@ async function handleApi(request, response, pathname) {
     const body = await readJson(request);
     const email = String(body.email || "").trim().toLowerCase();
     const [rows] = await database().execute(
-      "SELECT id, name, email, password_hash FROM users WHERE email = ?",
+      "SELECT id, name, email, phone, role, password_hash FROM users WHERE email = ?",
       [email]
     );
     const account = rows[0];
@@ -156,7 +192,7 @@ async function handleApi(request, response, pathname) {
     sendJson(
       response,
       200,
-      { user: { id: account.id, name: account.name, email: account.email } },
+      { user: userDto(account) },
       { "Set-Cookie": sessionCookie(session.token, session.expiresAt) }
     );
     return true;
@@ -173,12 +209,86 @@ async function handleApi(request, response, pathname) {
     if (!user) return true;
     const body = await readJson(request);
     const name = String(body.name || "").trim();
-    if (!name) {
-      sendJson(response, 400, { error: "Name is required." });
+    const email = String(body.email || "").trim().toLowerCase();
+    const phone = String(body.phone || "").trim();
+    if (!name || !email) {
+      sendJson(response, 400, { error: "Name and email are required." });
       return true;
     }
-    await database().execute("UPDATE users SET name = ? WHERE id = ?", [name, user.id]);
-    sendJson(response, 200, { user: { ...user, name } });
+    const [existing] = await database().execute(
+      "SELECT id FROM users WHERE email = ? AND id <> ?",
+      [email, user.id]
+    );
+    if (existing.length) {
+      sendJson(response, 409, { error: "Another account already uses this email." });
+      return true;
+    }
+    await database().execute("UPDATE users SET name = ?, email = ?, phone = ? WHERE id = ?", [
+      name,
+      email,
+      phone || null,
+      user.id
+    ]);
+    sendJson(response, 200, { user: { ...user, name, email, phone } });
+    return true;
+  }
+
+  if (request.method === "GET" && pathname === "/api/admin/stats") {
+    const admin = await requireAdmin(request, response);
+    if (!admin) return true;
+    const [[users]] = await database().query("SELECT COUNT(*) AS count FROM users");
+    const [[invitations]] = await database().query("SELECT COUNT(*) AS count FROM invitations");
+    const [[published]] = await database().query("SELECT COUNT(*) AS count FROM invitations WHERE public_generated_at IS NOT NULL");
+    const [[activeLinks]] = await database().query("SELECT COUNT(*) AS count FROM invitations WHERE public_token IS NOT NULL AND public_expires_at > NOW()");
+    sendJson(response, 200, {
+      stats: {
+        totalUsers: users.count,
+        totalInvitations: invitations.count,
+        publishedInvitations: published.count,
+        activePublicLinks: activeLinks.count
+      }
+    });
+    return true;
+  }
+
+  if (request.method === "GET" && pathname === "/api/admin/users") {
+    const admin = await requireAdmin(request, response);
+    if (!admin) return true;
+    const [rows] = await database().query(
+      `SELECT u.id, u.name, u.email, u.phone, u.role, u.created_at, COUNT(i.id) AS invitation_count
+       FROM users u
+       LEFT JOIN invitations i ON i.user_id = u.id
+       GROUP BY u.id
+       ORDER BY u.created_at DESC`
+    );
+    sendJson(response, 200, { users: rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      email: row.email,
+      phone: row.phone || "",
+      role: row.role,
+      invitationCount: row.invitation_count,
+      createdAt: new Date(row.created_at).toISOString()
+    })) });
+    return true;
+  }
+
+  if (request.method === "GET" && pathname === "/api/admin/invitations") {
+    const admin = await requireAdmin(request, response);
+    if (!admin) return true;
+    const userId = new URL(request.url, `http://${host}:${port}`).searchParams.get("userId");
+    const sql =
+      `SELECT i.*, u.name AS owner_name, u.email AS owner_email
+       FROM invitations i JOIN users u ON u.id = i.user_id
+       ${userId ? "WHERE i.user_id = ?" : ""}
+       ORDER BY i.updated_at DESC`;
+    const [rows] = await database().execute(sql, userId ? [userId] : []);
+    sendJson(response, 200, {
+      invitations: rows.map((row) => ({
+        ...invitationDto(row),
+        owner: { name: row.owner_name, email: row.owner_email }
+      }))
+    });
     return true;
   }
 
@@ -214,7 +324,7 @@ async function handleApi(request, response, pathname) {
     const [rows] = await database().execute(
       `SELECT i.*, u.name AS owner_name
        FROM invitations i JOIN users u ON u.id = i.user_id
-       WHERE i.share_token = ?`,
+       WHERE i.public_token = ? AND i.public_expires_at > NOW()`,
       [publicMatch[1]]
     );
     if (!rows[0]) {
@@ -294,6 +404,55 @@ async function handleApi(request, response, pathname) {
     }
   }
 
+  const shareMatch = pathname.match(/^\/api\/invitations\/([^/]+)\/([^/]+)\/share$/);
+  if (request.method === "POST" && shareMatch) {
+    const user = await requireUser(request, response);
+    if (!user) return true;
+    const [rows] = await database().execute(
+      "SELECT * FROM invitations WHERE id = ? AND occasion = ? AND user_id = ?",
+      [shareMatch[2], shareMatch[1], user.id]
+    );
+    const invitation = rows[0];
+    if (!invitation) {
+      sendJson(response, 404, { error: "Invitation not found" });
+      return true;
+    }
+    if (invitation.public_generated_at) {
+      sendJson(response, 402, {
+        error: "A public link was already generated for this card. Please continue through payment.",
+        paymentUrl: config.payment.placeholderPath
+      });
+      return true;
+    }
+    const fields = typeof invitation.fields === "string" ? JSON.parse(invitation.fields) : invitation.fields;
+    const fingerprint = fingerprintFor(shareMatch[1], fields);
+    const [duplicates] = await database().execute(
+      `SELECT id FROM invitations
+       WHERE user_id = ? AND occasion = ? AND public_fingerprint = ? AND public_generated_at IS NOT NULL AND id <> ?
+       LIMIT 1`,
+      [user.id, shareMatch[1], fingerprint, shareMatch[2]]
+    );
+    if (duplicates.length) {
+      sendJson(response, 409, {
+        error: "The same details were previously made public and you need to pay now",
+        paymentUrl: config.payment.placeholderPath
+      });
+      return true;
+    }
+    const publicToken = crypto.randomUUID();
+    await database().execute(
+      `UPDATE invitations
+       SET public_token = ?, public_expires_at = DATE_ADD(NOW(), INTERVAL ? MINUTE),
+           public_generated_at = COALESCE(public_generated_at, NOW()),
+           public_fingerprint = ?, status = 'PUBLISHED'
+       WHERE id = ? AND user_id = ?`,
+      [publicToken, config.app.publicShareMinutes, fingerprint, shareMatch[2], user.id]
+    );
+    const [updated] = await database().execute("SELECT * FROM invitations WHERE id = ?", [shareMatch[2]]);
+    sendJson(response, 200, invitationDto(updated[0]));
+    return true;
+  }
+
   return false;
 }
 
@@ -310,7 +469,7 @@ async function start() {
         return;
       }
       if (request.method === "GET" && pathname === "/openapi.json") {
-        sendJson(response, 200, createOpenApi(port));
+        sendJson(response, 200, createOpenApi(host, port));
         return;
       }
       if (request.method === "GET" && pathname === "/api-docs") {
@@ -323,7 +482,7 @@ async function start() {
         serveFile(response, path.join(__dirname, "index.html"));
         return;
       }
-      if (request.method === "GET" && pathname.startsWith("/share/")) {
+      if (request.method === "GET" && pathname.startsWith(config.routing.shareRoutePrefix)) {
         serveFile(response, path.join(__dirname, "index.html"));
         return;
       }
@@ -341,9 +500,9 @@ async function start() {
     }
   });
 
-  server.listen(port, "127.0.0.1", () => {
-    console.log(`Invitation Studio ready at http://127.0.0.1:${port}`);
-    console.log(`Swagger UI ready at http://127.0.0.1:${port}/api-docs`);
+  server.listen(port, host, () => {
+    console.log(`Invitation Studio ready at http://${host}:${port}`);
+    console.log(`Swagger UI ready at http://${host}:${port}/api-docs`);
   });
 }
 

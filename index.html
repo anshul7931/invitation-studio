@@ -106,6 +106,41 @@
       color: var(--gold-light);
     }
 
+    .brand-glyph {
+      width: 42px;
+      height: 42px;
+      flex: 0 0 auto;
+      color: var(--gold);
+      filter: drop-shadow(0 8px 16px rgba(60, 10, 24, 0.18));
+    }
+
+    .brand-glyph.is-large {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 18px;
+      color: var(--gold-light);
+    }
+
+    .brand-glyph .glyph-paper {
+      fill: rgba(255, 250, 240, 0.96);
+      stroke: currentColor;
+      stroke-width: 2.4;
+    }
+
+    .brand-glyph .glyph-line {
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .brand-glyph .glyph-seal {
+      fill: var(--maroon);
+      stroke: currentColor;
+      stroke-width: 1.8;
+    }
+
     .auth-shell {
       width: min(100%, 940px);
       margin: 0 auto;
@@ -231,6 +266,9 @@
     }
 
     .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
       color: var(--maroon);
       font-family: var(--display-font);
       font-size: 1.7rem;
@@ -1774,6 +1812,14 @@
   <section class="auth-shell" id="authShell" hidden>
     <div class="auth-layout">
       <div class="auth-story">
+        <svg class="brand-glyph is-large" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+          <rect class="glyph-paper" x="9" y="16" width="46" height="34" rx="6"/>
+          <path class="glyph-line" d="M13 22L32 36L51 22"/>
+          <path class="glyph-line" d="M14 46L27 34M50 46L37 34"/>
+          <circle class="glyph-seal" cx="32" cy="36" r="5"/>
+          <path class="glyph-line" d="M48 9V15M45 12H51"/>
+          <path class="glyph-line" d="M17 10L19 14L23 16L19 18L17 22L15 18L11 16L15 14Z"/>
+        </svg>
         <p class="builder-kicker">Invitation Studio</p>
         <h1>Beautiful moments, safely kept.</h1>
         <p>Create refined invitations, save every version, and return to them whenever inspiration strikes.</p>
@@ -1797,7 +1843,33 @@
             </div>
           </div>
           <p class="auth-message" data-auth-message></p>
+          <button class="password-toggle" id="forgotPasswordButton" type="button">Forgot password?</button>
           <button class="generate-button" type="submit">Sign in</button>
+        </form>
+        <form class="auth-form" id="forgotPasswordForm" hidden>
+          <h2>Reset password</h2>
+          <p class="builder-intro">Enter your account email and we’ll send a reset link.</p>
+          <div class="field">
+            <label for="forgotEmail">Email address</label>
+            <input type="email" id="forgotEmail" name="email" autocomplete="email" required>
+          </div>
+          <p class="auth-message" data-auth-message></p>
+          <button class="generate-button" type="submit">Send reset link</button>
+          <button class="password-toggle" type="button" data-auth-mode="login">Back to sign in</button>
+        </form>
+        <form class="auth-form" id="resetPasswordForm" hidden>
+          <h2>Choose new password</h2>
+          <p class="builder-intro">Create a fresh password for your account.</p>
+          <input type="hidden" id="resetToken" name="token">
+          <div class="field">
+            <label for="resetPassword">New password</label>
+            <div class="password-field">
+              <input type="password" id="resetPassword" name="password" minlength="8" autocomplete="new-password" required>
+              <button class="password-toggle" type="button" data-password-toggle="resetPassword">Show</button>
+            </div>
+          </div>
+          <p class="auth-message" data-auth-message></p>
+          <button class="generate-button" type="submit">Reset password</button>
         </form>
         <form class="auth-form" id="registerForm" hidden>
           <h2>Create your account</h2>
@@ -1828,7 +1900,17 @@
   </section>
 
   <header class="app-header" id="appHeader" hidden>
-    <span class="brand">Invitation Studio</span>
+    <span class="brand">
+      <svg class="brand-glyph" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+        <rect class="glyph-paper" x="9" y="16" width="46" height="34" rx="6"/>
+        <path class="glyph-line" d="M13 22L32 36L51 22"/>
+        <path class="glyph-line" d="M14 46L27 34M50 46L37 34"/>
+        <circle class="glyph-seal" cx="32" cy="36" r="5"/>
+        <path class="glyph-line" d="M48 9V15M45 12H51"/>
+        <path class="glyph-line" d="M17 10L19 14L23 16L19 18L17 22L15 18L11 16L15 14Z"/>
+      </svg>
+      Invitation Studio
+    </span>
     <div class="user-menu">
       <span class="user-name" id="userName"></span>
       <nav class="header-nav" aria-label="Application">
@@ -1869,6 +1951,10 @@
   </div>
 
   <section class="dashboard" id="dashboard" hidden>
+    <div class="public-banner" id="verifyEmailNotice" hidden>
+      Please verify your email address.
+      <button class="text-button" id="resendVerificationButton" type="button">Resend verification email</button>
+    </div>
     <p class="builder-kicker">The Invitation Atelier</p>
     <h1>What are we celebrating?</h1>
     <p class="builder-intro">Choose an occasion to begin. Every card has its own details, mood, and thoughtfully designed layout.</p>

@@ -4,57 +4,72 @@ anshul@gmail.com/anshulgoel - ADMIN
 SVGs can be customizable
 
 ----Integrate Resend for email verification
-API Key re_MyWW3ZcC_MrMVXm7oejEqqpJSGD3kXNDz
+API Key [REDACTED - set via RESEND_API_KEY environment variable]-re_MyWW3ZcC_MrMVXm7oejEqqpJSGD3kXNDz
 100 mails per day free tier - 10 per sec rate limit. Pay as you go available
 anshul.goel.student@gmail.com
 https://resend.com/settings/usage
 
-Prompt: Integrate Resend for email verification, reset password etc. API Key for that is re_MyWW3ZcC_MrMVXm7oejEqqpJSGD3kXNDz.
+Prompt: Integrate 'Resend' for email verification, reset password etc. API Key should be set via RESEND_API_KEY environment variable.
 The account that I used for signing up is anshul.goel.student@gmail.com
 Make sure to add the email configuration seperately, as service provider may change in future and accordingly request and responses will also be changed.
 Later, there might be a seperate mail provider for Reset Password flow and Verify mail id.
 Just to let you know rate limit for email is 10 per sec and 100 per day.
 Also document this part properly.
  
+---Next prompt----
+
+I have not referred to put a glyphicon inside the app, I was referring to add an icon for browser tab icon with title. 
+
 ----Other Requirements:
 
 1. svg should also be customizable in card creation. There are a couple of SVGs in the ../SVGs folder. You can use those but make a slight change to avoid licence credits. Based on these SVGs you can create a couple of more and based on the events you can make it customised i.e. user should be selecting the SVGs in the card.
-5. Reset password should also be implemented.
-6. Signout should confirm if we actually want to sign out or not?
-7. Instead of pre filling all the card details, create a preview section under each card which contains details based on a demo data, the details can't be edited by a user. 
+2. Reset password should also be implemented.
+3. Signout confirmation UI should be a custom alert not browser alert?
+4. Instead of pre filling all the card details, create a preview section under each card which contains details based on a demo data, the details can't be edited by a user. 
 The data which is currently filled can act as a placeholder now.
-8. The theme for Light/Dark mode is limited to a number of things in UI. Thats not looking good.
-9. If we are redirecting to Home in between edit, it should display a warning before redirecting that any changes would be lost.
-10. If we click on create public link, it should tell us that the "Link creation will be allowed once for 10 minutes. For longer duration: Pay Now"
-11. Whenever a user clicks on Pay Now, it should be redirected to /plans page.(This page will contain various plans and Pay Now button which redirects to /payments)
-12. The complete UI is under index.html. 
+5. If we click on create public link, it should tell us that the "Link creation will be allowed once for 10 minutes. For longer duration: Pay Now"
+6. Whenever a user clicks on Pay Now, it should be redirected to /plans page.(This page will contain various plans and Pay Now button which redirects to /payments)
+7. The complete UI is under index.html. 
 Make it bit structured and seperate html,css and js if any. 
 Also seperate the data on basis of occasion, 
 so if I want to make changes only in wedding card, 
 I should know which files to modify. 
 Document the steps for modification.
-13. Invitation details should have a fingerprint/hash. If the same invitation (same category + same important details) is published again after the free publish, payment should be enforced.
-14. Invitation status should be maintained (Draft, Published, Expired, Paid) to support future payment and sharing features.
-15. Environment configuration should be centralized (config/constants) instead of reading environment variables from multiple files.
-16. Loading indicators should be shown while API calls are in progress instead of displaying empty states.(When user logs in, existing cards are not visible)
-17. Add rate limiting for authentication and public invitation APIs to prevent abuse.
-18. Public invitation page should be mobile responsive and optimized for WhatsApp sharing.
-19. User should be able to duplicate an existing invitation to create a new draft.
-20. We should have About, Contact Us, Terms and Conditions pages as well(Terms and conditions will come as a hyperlink while signup)
-21. Under weddings, we could have templates based on:
+8. Invitation status should be maintained (Draft, Published, Expired, Paid) to support future payment and sharing features.
+9. Environment configuration should be centralized (config/constants) instead of reading environment variables from multiple files.
+10. We should have About, Contact Us, Terms and Conditions pages as well(Terms and conditions will come as a hyperlink while signup)
+11. Under weddings, we could have templates based on:
 hindu-wedding
 muslim-wedding
 sikh-wedding
 telugu-wedding
 marathi-wedding
 We should be able to select a template type from dropdown under the cretaion page.
-22. Login as Guest should also be available. The person should see dashboard, create card/edit card but can not see public link creation button. The data will reset with page refresh.
-23. We should be able to add custom events. There might be some person who want to celebrate first month wedding ceremony, Roka ceremony. We can have some optional parameters, optional SVGs etc.
-24. If I am changing theme of a wedding card, as of now its changing the theme of complete application, it does not seem to look good.
-25. Application level theme color should be customised from profile section. 
-26. If I am permanently deleting a card and again creating it, I am able to create a public link again.
+12. Login as Guest should also be available. The person should see dashboard, create card/edit card but can not create public link before login. The data will reset with page refresh.
+13. We should be able to add custom events. There might be some person who want to celebrate first month wedding ceremony, Roka ceremony. We can have some optional parameters, optional SVGs etc.
+14. Application level theme color should be customised from profile section. 
+15. If I am permanently deleting a card and again creating it, I am able to create a public link again.
 What we could do is to soft delete the card for some timeline and validate the details from there to avoid user creating same card again and again and making it public.
-27. I should be able to delete multiple cards at a time
+
+
+----Basic Bugs/Features - Can be added Later
+
+1. Phone Number and Password validations needs to be added.
+2. Everytime I click on Copy Public link, its appending copied in UI. If I click it multiple times, it appends multiple times. This part does not look good.
+3. After redirecting to public link, it should not display 'Read-only view'.
+4. When I open Manage Profile UI, the backgroung UI should not be scrollable.
+5. I should be able to delete multiple cards at a time
+6. The theme for Light/Dark mode is limited to a number of things in UI. Thats not looking good.
+7. If we are redirecting to Home in between edit, it should display a warning before redirecting that any changes would be lost.
+8. Loading indicators should be shown while API calls are in progress instead of displaying empty states.(When user logs in, existing cards are not visible)
+9. Add rate limiting for authentication and public invitation APIs to prevent abuse.
+10. Public invitation page should be mobile responsive and optimized for WhatsApp sharing.
+11. User should be able to duplicate an existing invitation to create a new draft.
+12. If I am changing theme of a wedding card, as of now its changing the theme of complete application, it does not seem to look good.
+13. Add an icon for browser tab icon with title.
+14. Swagger is not working properly
+15. Expired card link is distorted
+
 
 -----Done
 
@@ -134,3 +149,6 @@ Database: MySQL
 16. The entire application (Dashboard, Add Content pages, etc.) should support Light and Dark themes. - Done
 17. Proper file comments should be added and the documentation should clearly mention all supported environment variables along with their default values. - Done
 
+---Example I found
+
+https://www.invifest.in/demo/meenal-avinash/?utm_source=ig&utm_medium=social&utm_content=link_in_bio&fbclid=PAdGRleAStf1NleHRuA2FlbQIxMQBzcnRjBmFwcF9pZA8xMjQwMjQ1NzQyODc0MTQAAaflNwIMtIv-_be_BaGaHQBV6bvM6s4atP62lRCDzI9qQGOwIdjJk-Z5O1nIhg_aem_dKYZJXrLoRtJXFLEIeHR7w

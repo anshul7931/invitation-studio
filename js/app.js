@@ -28,6 +28,7 @@ const elements = {
   copyShareLinkButton: document.getElementById("copyShareLinkButton"),
   saveStatus: document.getElementById("saveStatus"),
   publicBanner: document.getElementById("publicBanner"),
+  verifyEmailNotice: document.getElementById("verifyEmailNotice"),
   shareInfo: document.getElementById("shareInfo"),
   adminButton: document.getElementById("adminButton")
 };
@@ -149,6 +150,9 @@ function showOnly(section) {
   hideableSections.forEach((element) => element.hidden = element !== section);
   elements.cardActions.hidden = ![elements.weddingInvitation, elements.occasionInvitation].includes(section);
   elements.publicBanner.hidden = true;
+  if (elements.verifyEmailNotice) {
+    elements.verifyEmailNotice.hidden = !signedInUser || signedInUser.emailVerified;
+  }
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -381,6 +385,34 @@ async function loadRoute() {
   const parts = location.pathname.split("/").filter(Boolean);
   const route = parts[0];
 
+  if (route === "verify-email") {
+    elements.appHeader.hidden = true;
+    showOnly(elements.authShell);
+    setAuthMode("login");
+    const message = document.querySelector("#loginForm [data-auth-message]");
+    try {
+      const token = new URLSearchParams(location.search).get("token");
+      const { user, message: apiMessage } = await api("/api/auth/verify-email", {
+        method: "POST",
+        body: JSON.stringify({ token })
+      });
+      if (signedInUser && user) signedInUser = { ...signedInUser, emailVerified: user.emailVerified };
+      message.textContent = apiMessage || "Email verified successfully. Please sign in.";
+    } catch (error) {
+      message.textContent = error.message;
+    }
+    history.replaceState({}, "", "/login");
+    return;
+  }
+
+  if (route === "reset-password") {
+    elements.appHeader.hidden = true;
+    showOnly(elements.authShell);
+    setAuthMode("reset");
+    document.getElementById("resetToken").value = new URLSearchParams(location.search).get("token") || "";
+    return;
+  }
+
   if (route === "share" && parts[1]) {
     try {
       const invitation = await api(`/api/public/${parts[1]}`);
@@ -455,6 +487,7 @@ function cleanLogoutUi() {
   elements.appHeader.hidden = true;
   elements.cardActions.hidden = true;
   elements.publicBanner.hidden = true;
+  elements.verifyEmailNotice.hidden = true;
   elements.copyShareLinkButton.hidden = true;
   elements.savedCards.replaceChildren();
   elements.savedEmpty.textContent = "You have not saved an invitation yet.";
@@ -472,6 +505,8 @@ function setAuthMode(mode) {
   });
   document.getElementById("loginForm").hidden = mode !== "login";
   document.getElementById("registerForm").hidden = mode !== "register";
+  document.getElementById("forgotPasswordForm").hidden = mode !== "forgot";
+  document.getElementById("resetPasswordForm").hidden = mode !== "reset";
   document.querySelectorAll("[data-auth-message]").forEach((message) => message.textContent = "");
 }
 
@@ -495,6 +530,7 @@ async function enterApplication() {
   document.getElementById("profileName").value = signedInUser.name;
   document.getElementById("profileEmail").value = signedInUser.email;
   document.getElementById("profilePhone").value = signedInUser.phone || "";
+  elements.verifyEmailNotice.hidden = signedInUser.emailVerified;
   await loadRoute();
 }
 
@@ -586,7 +622,7 @@ elements.copyShareLinkButton.addEventListener("click", async () => {
   try {
     await copyText(link);
     elements.copyShareLinkButton.textContent = "Copied!";
-    elements.shareInfo.textContent = `${elements.shareInfo.textContent} · copied`;
+    elements.saveStatus.textContent = "Public link copied.";
   } catch {
     elements.saveStatus.textContent = "Unable to copy automatically. Please copy the public link from above.";
   } finally {
@@ -664,12 +700,67 @@ document.getElementById("loginForm").addEventListener("submit", (event) => {
   submitAuth(event.currentTarget, "/api/auth/login");
 });
 
+document.getElementById("forgotPasswordButton").addEventListener("click", () => {
+  setAuthMode("forgot");
+});
+
+document.getElementById("forgotPasswordForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const message = event.currentTarget.querySelector("[data-auth-message]");
+  message.textContent = "Sending reset link…";
+  try {
+    const result = await api("/api/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify(formValues(event.currentTarget))
+    });
+    message.textContent = result.message;
+  } catch (error) {
+    message.textContent = error.message;
+  }
+});
+
+document.getElementById("resetPasswordForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const message = event.currentTarget.querySelector("[data-auth-message]");
+  message.textContent = "Resetting password…";
+  try {
+    const result = await api("/api/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify(formValues(event.currentTarget))
+    });
+    message.textContent = result.message;
+    event.currentTarget.reset();
+    window.setTimeout(() => setAuthMode("login"), 900);
+  } catch (error) {
+    message.textContent = error.message;
+  }
+});
+
 document.getElementById("registerForm").addEventListener("submit", (event) => {
   event.preventDefault();
   submitAuth(event.currentTarget, "/api/auth/register");
 });
 
+document.getElementById("resendVerificationButton").addEventListener("click", async () => {
+  const button = document.getElementById("resendVerificationButton");
+  const previousText = button.textContent;
+  button.disabled = true;
+  button.textContent = "Sending…";
+  try {
+    const result = await api("/api/auth/verify-email/request", { method: "POST" });
+    button.textContent = result.message || "Sent";
+  } catch (error) {
+    button.textContent = error.message;
+  } finally {
+    window.setTimeout(() => {
+      button.disabled = false;
+      button.textContent = previousText;
+    }, 2200);
+  }
+});
+
 document.getElementById("logoutButton").addEventListener("click", async () => {
+  if (!window.confirm("Are you sure you want to sign out?")) return;
   await api("/api/auth/logout", { method: "POST" });
   cleanLogoutUi();
 });
@@ -694,7 +785,12 @@ window.addEventListener("popstate", () => {
 applyWorkspaceMode(localStorage.getItem("invitation_studio_mode") || "light");
 
 (async function bootstrap() {
-  if (location.pathname.startsWith("/share/") || location.pathname === "/payment") {
+  if (
+    location.pathname.startsWith("/share/") ||
+    location.pathname === "/payment" ||
+    location.pathname === "/verify-email" ||
+    location.pathname === "/reset-password"
+  ) {
     elements.appHeader.hidden = true;
     await loadRoute();
     return;

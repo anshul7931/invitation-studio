@@ -54,7 +54,7 @@ async function currentUser(request) {
   const token = parseCookies(request)[config.session.cookieName];
   if (!token) return null;
   const [rows] = await database().execute(
-    `SELECT u.id, u.name, u.email, u.phone, u.role
+    `SELECT u.id, u.name, u.email, u.phone, u.role, u.email_verified_at
      FROM sessions s JOIN users u ON u.id = s.user_id
      WHERE s.token_hash = ? AND s.expires_at > NOW()`,
     [tokenHash(token)]

@@ -23,6 +23,11 @@ invitation-studio/
 │   ├── auth.js                 # Password hashing, sessions, and auth helpers
 │   ├── config.js               # Central constants and environment-variable defaults
 │   ├── database.js             # MySQL connection and auto-migration bootstrap
+│   ├── env-loader.js           # Loads local .env/.env.local files before config is built
+│   ├── email/
+│   │   ├── service.js          # Provider-neutral transactional email orchestration
+│   │   └── providers/
+│   │       └── resend.js       # Resend adapter
 │   ├── occasion-schema.js      # Backend occasion defaults, validation, titles, fingerprints
 │   └── openapi.js              # Swagger/OpenAPI document generation
 ├── index.html                  # Single-page app markup and inline styling
@@ -62,11 +67,14 @@ Open:
 
 All configuration is centralized in `server/config.js`. If an environment variable is not set, the default below is used.
 
+Local `.env` and `.env.local` files are loaded automatically on startup, so you do not need to prefix every `npm start` command with environment variables. These files are ignored by Git. Use `.env.example` as the safe template.
+
 | Variable | Default | Description |
 |---|---|---|
 | `APP_NAME` | `Invitation Studio` | Application name used by server-side configuration. |
 | `HOST` | `127.0.0.1` | App host value in config. |
 | `PORT` | `3000` | HTTP server port. |
+| `PUBLIC_APP_URL` | `http://127.0.0.1:3000` | Public base URL used in emailed verification/reset links. |
 | `PUBLIC_SHARE_MINUTES` | `10` | Number of minutes a generated public card link remains valid. |
 | `ADMIN_EMAILS` | `admin@invitation.local` | Comma-separated emails that receive the `ADMIN` role on registration. |
 | `DB_HOST` | `127.0.0.1` | MySQL host. |
@@ -79,6 +87,45 @@ All configuration is centralized in `server/config.js`. If an environment variab
 | `SESSION_DAYS` | `30` | Login session duration in days. |
 | `PAYMENT_PATH` | `/payment` | Placeholder payment route used when free public-link generation is exhausted. |
 | `MAX_JSON_BODY_BYTES` | `1000000` | Maximum JSON request body size accepted by the API. |
+| `EMAIL_ENABLED` | `false` | Enables real transactional email sending when set to `true`. |
+| `EMAIL_PROVIDER` | `resend` | Default email provider key. |
+| `VERIFY_EMAIL_PROVIDER` | value of `EMAIL_PROVIDER` | Provider used for verification emails. |
+| `RESET_PASSWORD_EMAIL_PROVIDER` | value of `EMAIL_PROVIDER` | Provider used for reset-password emails. |
+| `EMAIL_FROM` | `Invitation Studio <onboarding@resend.dev>` | Sender used for transactional emails. Replace with a verified sender/domain before production. |
+| `EMAIL_REPLY_TO` | empty | Optional reply-to email address. |
+| `EMAIL_VERIFY_TOKEN_MINUTES` | `60` | Verification link validity window. |
+| `PASSWORD_RESET_TOKEN_MINUTES` | `30` | Password-reset link validity window. |
+| `EMAIL_RATE_LIMIT_PER_SECOND` | `10` | Application-level email send limit per second. |
+| `EMAIL_RATE_LIMIT_PER_DAY` | `100` | Application-level email send limit per day. |
+| `RESEND_API_KEY` | empty | Resend API key. Keep this in the environment; do not commit it. |
+| `RESEND_API_URL` | `https://api.resend.com/emails` | Resend send-email API endpoint. |
+
+## Email verification and password reset
+
+Transactional email is intentionally provider-neutral:
+
+- `server/email/service.js` contains shared orchestration, provider selection, send logging, and app-level rate limiting.
+- `server/email/providers/resend.js` contains the Resend-specific request/response mapping.
+- Verification emails and password-reset emails can use different providers through `VERIFY_EMAIL_PROVIDER` and `RESET_PASSWORD_EMAIL_PROVIDER`.
+
+Email sending is disabled unless `EMAIL_ENABLED=true`. When disabled, verification/reset tokens are still created and sends are logged as `SKIPPED`, which is useful for local development without accidentally using a real provider.
+
+To use Resend locally:
+
+```bash
+cp .env.example .env
+```
+
+Then edit `.env` and set `RESEND_API_KEY` plus your verified `EMAIL_FROM` sender. After that, run `npm start` normally.
+
+Supported flows:
+
+- `POST /api/auth/verify-email/request` sends/resends a verification email for the signed-in user.
+- `POST /api/auth/verify-email` verifies a token from `/verify-email?token=...`.
+- `POST /api/auth/forgot-password` sends a reset link if the account exists.
+- `POST /api/auth/reset-password` resets the password using `/reset-password?token=...`.
+
+The current app-level email limits default to 10 sends per second and 100 sends per day.
 
 ## Postman authentication
 

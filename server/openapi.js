@@ -79,6 +79,62 @@ function createOpenApi(host, port) {
           responses: { 200: { description: "Session cleared" } }
         }
       },
+      "/api/auth/verify-email/request": {
+        post: {
+          tags: ["Authentication"],
+          summary: "Send or resend email verification link for the signed-in user",
+          security: [{ cookieAuth: [] }],
+          responses: {
+            200: { description: "Verification email sent or already verified" },
+            401: { description: "Authentication required" },
+            500: { description: "Email provider failure" }
+          }
+        }
+      },
+      "/api/auth/verify-email": {
+        post: {
+          tags: ["Authentication"],
+          summary: "Verify an email address using a token",
+          requestBody: body({ $ref: "#/components/schemas/TokenRequest" }),
+          responses: {
+            200: { description: "Email verified" },
+            400: { description: "Invalid or expired token" }
+          }
+        }
+      },
+      "/api/auth/forgot-password": {
+        post: {
+          tags: ["Authentication"],
+          summary: "Send a password reset email if the account exists",
+          requestBody: body({
+            type: "object",
+            required: ["email"],
+            properties: { email: { type: "string", format: "email" } }
+          }),
+          responses: {
+            200: { description: "Generic reset response" },
+            400: { description: "Invalid email" }
+          }
+        }
+      },
+      "/api/auth/reset-password": {
+        post: {
+          tags: ["Authentication"],
+          summary: "Reset password using a reset token",
+          requestBody: body({
+            type: "object",
+            required: ["token", "password"],
+            properties: {
+              token: { type: "string" },
+              password: { type: "string", format: "password", minLength: 8 }
+            }
+          }),
+          responses: {
+            200: { description: "Password reset" },
+            400: { description: "Invalid token or password" }
+          }
+        }
+      },
       "/api/profile": {
         put: {
           tags: ["Profile"],
@@ -268,6 +324,13 @@ function createOpenApi(host, port) {
           properties: {
             email: { type: "string", format: "email" },
             password: { type: "string", format: "password" }
+          }
+        },
+        TokenRequest: {
+          type: "object",
+          required: ["token"],
+          properties: {
+            token: { type: "string" }
           }
         },
         InvitationFields: {

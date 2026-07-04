@@ -253,7 +253,7 @@ async function renderInvitationFromData(invitation, readOnly = false) {
   if (readOnly) {
     elements.cardActions.hidden = true;
     elements.publicBanner.hidden = false;
-    elements.publicBanner.textContent = `Shared invitation from ${invitation.owner || "Invitation Studio"} · Read-only view`;
+    elements.publicBanner.textContent = `Shared invitation from ${invitation.owner || "Invitation Studio"}`;
   } else {
     elements.saveStatus.textContent = "Saved in your account.";
     updateShareDisplay();

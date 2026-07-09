@@ -33,7 +33,7 @@ const occasions = {
     titleSuffix: "'s Birthday",
     fingerprintFields: ["celebrant", "age", "date", "time", "venue", "address"],
     defaults: {
-      celebrant: "Ananya Kapoor",
+      celebrant: "Bheem Kapoor",
       age: "30",
       date: "2026-09-19",
       time: "19:30",
@@ -42,7 +42,7 @@ const occasions = {
       host: "The Kapoor Family",
       dressCode: "Cocktail Elegance",
       message: "Join us for an evening of warmth, laughter and beautiful memories.",
-      rsvp: "Rhea · 98765 43210",
+      rsvp: "Arjun · 98765 43210",
       palette: "plum"
     }
   },

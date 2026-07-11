@@ -30,7 +30,14 @@ const elements = {
   publicBanner: document.getElementById("publicBanner"),
   verifyEmailNotice: document.getElementById("verifyEmailNotice"),
   shareInfo: document.getElementById("shareInfo"),
-  adminButton: document.getElementById("adminButton")
+  adminButton: document.getElementById("adminButton"),
+  aboutPage: document.getElementById("aboutPage"),
+  contactPage: document.getElementById("contactPage"),
+  privacyPage: document.getElementById("privacyPage"),
+  termsPage: document.getElementById("termsPage"),
+  refundPage: document.getElementById("refundPage"),
+  disclaimerPage: document.getElementById("disclaimerPage"),
+  acceptableUsePage: document.getElementById("acceptableUsePage")
 };
 
 let activeOccasion = "wedding";
@@ -56,6 +63,15 @@ const hideableSections = [
   elements.dashboard,
   elements.adminDashboard,
   elements.paymentPage,
+
+  elements.aboutPage,
+  elements.contactPage,
+  elements.privacyPage,
+  elements.termsPage,
+  elements.refundPage,
+  elements.disclaimerPage,
+  elements.acceptableUsePage,
+
   elements.weddingBuilder,
   elements.occasionBuilder,
   elements.weddingInvitation,
@@ -432,6 +448,41 @@ async function loadRoute() {
   if (route === "payment") {
     showOnly(elements.paymentPage);
     return;
+  }
+
+  if (route === "about") {
+    showOnly(elements.aboutPage);
+    return;
+  }
+
+  if (route === "contact") {
+      showOnly(elements.contactPage);
+      return;
+  }
+
+  if (route === "privacy") {
+      showOnly(elements.privacyPage);
+      return;
+  }
+
+  if (route === "terms") {
+      showOnly(elements.termsPage);
+      return;
+  }
+
+  if (route === "refund") {
+      showOnly(elements.refundPage);
+      return;
+  }
+
+  if (route === "disclaimer") {
+      showOnly(elements.disclaimerPage);
+      return;
+  }
+
+  if (route === "acceptable-use") {
+      showOnly(elements.acceptableUsePage);
+      return;
   }
 
   if (route === "admin") {

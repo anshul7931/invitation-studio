@@ -55,7 +55,27 @@ const config = {
     maxJsonBodyBytes: Number(process.env.MAX_JSON_BODY_BYTES) || 1_000_000
   },
   routing: {
-    pageRoutes: ["/", "/login", "/admin", "/payment", "/verify-email", "/reset-password", "/wedding", "/birthday", "/engagement", "/office"],
+    pageRoutes: [
+      "/",
+      "/login",
+      "/admin",
+      "/payment",
+      "/verify-email",
+      "/reset-password",
+
+      "/about",
+      "/contact",
+      "/privacy",
+      "/terms",
+      "/refund",
+      "/disclaimer",
+      "/acceptable-use",
+
+      "/wedding",
+      "/birthday",
+      "/engagement",
+      "/office"
+    ],
     shareRoutePrefix: "/share/"
   },
   staticFiles: {

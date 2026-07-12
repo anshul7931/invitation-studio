@@ -1,0 +1,24 @@
+<section class="admin-dashboard" id="adminDashboard" hidden>
+    <p class="builder-kicker">Admin Dashboard</p>
+    <h1>Application Overview</h1>
+    <p class="builder-intro">Monitor users, invitations, published cards, and API documentation from one place.</p>
+    <div class="admin-card">
+      <h2>Statistics</h2>
+      <div class="admin-stats" id="adminStats"></div>
+    </div>
+    <div class="admin-grid">
+      <article class="admin-card">
+        <h2>Users</h2>
+        <ul id="adminUsers"></ul>
+      </article>
+      <article class="admin-card">
+        <h2>Cards</h2>
+        <ul id="adminInvitations"></ul>
+      </article>
+      <article class="admin-card full">
+        <h2>API docs</h2>
+        <p class="builder-intro">Swagger is available from the admin dashboard.</p>
+        <button class="generate-button" type="button" onclick="window.open('/api-docs', '_blank')">Open Swagger</button>
+      </article>
+    </div>
+  </section>

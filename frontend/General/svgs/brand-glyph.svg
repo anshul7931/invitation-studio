@@ -1,0 +1,8 @@
+<svg class="brand-glyph" viewBox="0 0 64 64" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+  <rect class="glyph-paper" x="9" y="16" width="46" height="34" rx="6"/>
+  <path class="glyph-line" d="M13 22L32 36L51 22"/>
+  <path class="glyph-line" d="M14 46L27 34M50 46L37 34"/>
+  <circle class="glyph-seal" cx="32" cy="36" r="5"/>
+  <path class="glyph-line" d="M48 9V15M45 12H51"/>
+  <path class="glyph-line" d="M17 10L19 14L23 16L19 18L17 22L15 18L11 16L15 14Z"/>
+</svg>

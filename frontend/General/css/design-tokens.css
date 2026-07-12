@@ -1,0 +1,21 @@
+:root {
+  --maroon: #64162a;
+  --maroon-deep: #3c0a18;
+  --wine: #7e243d;
+  --rose: #c9797d;
+  --blush: #f2d8d1;
+  --ivory: #fffaf0;
+  --paper: #f9f0df;
+  --gold: #c79a43;
+  --gold-light: #efd08a;
+  --gold-deep: #9b6a20;
+  --sage: #738469;
+  --ink: #462e2f;
+  --muted: #7b6260;
+  --page-start: #3b0c18;
+  --page-middle: #681a30;
+  --page-end: #300913;
+  --display-font: "Great Vibes", cursive;
+  --body-font: "Cormorant Garamond", Georgia, serif;
+  --label-font: "Montserrat", sans-serif;
+}

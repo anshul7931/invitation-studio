@@ -1,0 +1,46 @@
+<section class="dashboard" id="dashboard" hidden>
+    <div class="public-banner" id="verifyEmailNotice" hidden>
+      Please verify your email address.
+      <button class="text-button" id="resendVerificationButton" type="button">Resend verification email</button>
+    </div>
+    <p class="builder-kicker">The Invitation Atelier</p>
+    <h1>What are we celebrating?</h1>
+    <p class="builder-intro">Choose an occasion to begin. Every card has its own details, mood, and thoughtfully designed layout.</p>
+    <div class="occasion-grid">
+      <button class="occasion-choice" type="button" data-select-occasion="wedding">
+        <span class="occasion-icon">
+          <svg viewBox="0 0 48 48" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="27" r="12"/><circle cx="30" cy="27" r="12"/><path d="M20 9L24 4L28 9L24 14Z" fill="#efd08a" stroke="#c79a43"/></g></svg>
+        </span>
+        <span><h2>Wedding</h2><p>A complete Indian wedding invitation with optional celebrations.</p></span>
+      </button>
+      <button class="occasion-choice" type="button" data-select-occasion="birthday">
+        <span class="occasion-icon">
+          <svg viewBox="0 0 48 48" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M10 36H38V43H10Z"/><path d="M14 24H34V36H14Z"/><path d="M18 14H30V24H18Z"/><path d="M24 4Q18 10 24 14Q30 10 24 4Z" fill="#efd08a" stroke="#c79a43"/></g></svg>
+        </span>
+        <span><h2>Birthday</h2><p>An elegant milestone celebration—festive, grown-up, and polished.</p></span>
+      </button>
+      <button class="occasion-choice" type="button" data-select-occasion="engagement">
+        <span class="occasion-icon">
+          <svg viewBox="0 0 48 48" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="18" cy="28" r="12"/><circle cx="30" cy="28" r="12"/><path d="M26 10L31 4L36 10L31 16Z" fill="#efd08a" stroke="#c79a43"/></g></svg>
+        </span>
+        <span><h2>Engagement</h2><p>A romantic announcement dedicated to the couple and their new chapter.</p></span>
+      </button>
+      <button class="occasion-choice" type="button" data-select-occasion="office">
+        <span class="occasion-icon">
+          <svg viewBox="0 0 48 48" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2"><path d="M8 42H40M13 42V13H35V42M19 19H23M28 19H32M19 26H23M28 26H32M19 33H23M28 33H32"/><path d="M20 13V7H28V13" stroke="#c79a43"/></g></svg>
+        </span>
+        <span><h2>Office Party</h2><p>A smart corporate invitation for team celebrations and company events.</p></span>
+      </button>
+    </div>
+    <section class="saved-section">
+      <div class="saved-heading">
+        <div>
+          <h2>Your saved invitations</h2>
+          <p>Continue editing or reopen a card from any previous session.</p>
+        </div>
+      </div>
+      <div class="saved-grid" id="savedCards"></div>
+      <p class="loading-state" id="savedLoading" hidden>Loading your invitations…</p>
+      <p class="empty-state" id="savedEmpty">You have not saved an invitation yet.</p>
+    </section>
+  </section>

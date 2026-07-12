@@ -8,17 +8,15 @@ A login-based invitation creator for Wedding, Birthday, Engagement, and Office P
 invitation-studio/
 ├── database/
 │   └── schema.sql              # Reference MySQL schema used by the app
+├── frontend/
+│   ├── Occasions/              # Occasion-specific frontend source files
+│   ├── Dashboard/              # User/Admin dashboard HTML ownership
+│   ├── General/                # Shared dialogs, SVGs, CSS tokens, reusable JS
+│   └── StaticPages/            # About, Contact, Terms, 404 and policy pages
 ├── js/
 │   ├── app.js                  # Browser controller: auth, routing, saves, sharing, UI state
-│   ├── occasions/
-│   │   ├── registry.js         # Frontend occasion registry
-│   │   ├── wedding.js          # Wedding card renderer
-│   │   ├── birthday.js         # Birthday presentation metadata and renderer
-│   │   ├── engagement.js       # Engagement presentation metadata and renderer
-│   │   ├── office.js           # Office-party presentation metadata and renderer
-│   │   └── README.md           # Notes for adding a new occasion
-│   └── ui/
-│       └── form-renderer.js    # Shared renderer for dynamic non-wedding forms
+│   ├── occasions/              # Compatibility wrappers into frontend/Occasions
+│   └── ui/                     # Compatibility wrapper into frontend/General/js
 ├── server/
 │   ├── auth.js                 # Password hashing, sessions, and auth helpers
 │   ├── config.js               # Central constants and environment-variable defaults
@@ -30,16 +28,21 @@ invitation-studio/
 │   │       └── resend.js       # Resend adapter
 │   ├── occasion-schema.js      # Backend occasion defaults, validation, titles, fingerprints
 │   └── openapi.js              # Swagger/OpenAPI document generation
-├── index.html                  # Single-page app markup and inline styling
+├── index.html                  # Single-page shell with server-side frontend includes
 ├── server.js                   # HTTP server, API routes, static serving, Swagger UI
 ├── package.json                # Node project metadata and scripts
 └── requirements.txt            # Requirement/task tracker notes
 ```
 
+### Frontend modification guide
+
+For UI changes, start with `frontend/README.md`. It maps each occasion, dashboard, reusable dialog/SVG, and static page to the right file. `index.html` now uses server-side include markers that are resolved from the `frontend/` files by `server.js`.
+
 ### Occasion data ownership
 
 - `server/occasion-schema.js` is the source of truth for API defaults, required fields, invitation title fields, and public-link fingerprint fields.
-- `js/occasions/*.js` owns only frontend presentation details: form labels/sections, theme choices, and how each card is rendered.
+- `frontend/Occasions/*/*.js` owns frontend presentation details: form labels/sections, theme choices, and how each card is rendered.
+- `js/occasions/*.js` exists as compatibility wrappers for the current browser imports.
 - The browser fetches `/api/occasions/:occasion` before rendering dynamic occasion forms so backend defaults prefill the UI without duplicating demo values in every frontend module.
 
 ## Run locally

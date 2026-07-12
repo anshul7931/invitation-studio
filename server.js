@@ -71,6 +71,39 @@ function serveFile(response, filePath) {
   });
 }
 
+function renderHtmlWithIncludes(filePath, seen = new Set()) {
+  const normalized = path.normalize(filePath);
+  if (!normalized.startsWith(__dirname)) {
+    throw new Error("Template include path is outside the application directory.");
+  }
+  if (seen.has(normalized)) {
+    throw new Error(`Circular template include detected for ${path.relative(__dirname, normalized)}`);
+  }
+  seen.add(normalized);
+
+  const template = fs.readFileSync(normalized, "utf8");
+  const rendered = template.replace(/<!--\s*@include\s+([^>]+?)\s*-->/g, (_match, includePath) => {
+    const includeFile = path.normalize(path.join(__dirname, includePath.trim()));
+    return renderHtmlWithIncludes(includeFile, seen);
+  });
+  seen.delete(normalized);
+  return rendered;
+}
+
+function serveHtmlTemplate(response, filePath) {
+  try {
+    const html = renderHtmlWithIncludes(filePath);
+    response.writeHead(200, {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store"
+    });
+    response.end(html);
+  } catch (error) {
+    console.error(error);
+    sendJson(response, 500, { error: "Unable to render page template" });
+  }
+}
+
 function swaggerPage() {
   return `<!doctype html>
 <html><head><meta charset="utf-8"><title>Invitation Studio API</title>
@@ -665,11 +698,11 @@ async function start() {
       }
       if (pathname.startsWith("/api/") && await handleApi(request, response, pathname)) return;
       if (request.method === "GET" && pageRoutes.has(pathname)) {
-        serveFile(response, path.join(__dirname, "index.html"));
+        serveHtmlTemplate(response, path.join(__dirname, "index.html"));
         return;
       }
       if (request.method === "GET" && pathname.startsWith(config.routing.shareRoutePrefix)) {
-        serveFile(response, path.join(__dirname, "index.html"));
+        serveHtmlTemplate(response, path.join(__dirname, "index.html"));
         return;
       }
       if (request.method === "GET") {

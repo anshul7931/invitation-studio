@@ -1,0 +1,116 @@
+<section class="builder" id="builder" hidden>
+    <button class="back-button" type="button" data-back-dashboard>← All occasions</button>
+    <header class="builder-header">
+      <p class="builder-kicker">Bespoke Indian Wedding Stationery</p>
+      <h1>Create Your Invitation</h1>
+      <p class="builder-intro">Personalize the celebration details below. Haldi and Engagement are optional and will be omitted when left blank.</p>
+    </header>
+
+    <form class="details-form" id="invitationForm">
+      <fieldset class="form-section">
+        <legend>Couple &amp; Style</legend>
+        <div class="form-grid">
+          <div class="field">
+            <label for="brideInput">Bride's name</label>
+            <input id="brideInput" name="bride" value="Aisha Sharma" required>
+          </div>
+          <div class="field">
+            <label for="groomInput">Groom's name</label>
+            <input id="groomInput" name="groom" value="Rohan Mehta" required>
+          </div>
+          <div class="field full">
+            <label for="themeInput">Invitation theme</label>
+            <select id="themeInput" name="theme">
+              <option value="maroon">Royal Maroon &amp; Gold</option>
+              <option value="royal-blue">Royal Blue &amp; Gold</option>
+              <option value="emerald">Emerald &amp; Gold</option>
+              <option value="rose-gold">Blush &amp; Rose Gold</option>
+              <option value="sapphire">Sapphire &amp; Gold</option>
+              <option value="lavender">Lavender &amp; Antique Gold</option>
+              <option value="terracotta">Terracotta &amp; Gold</option>
+            </select>
+          </div>
+          <div class="field full">
+            <label for="messageInput">Invitation message / blessing</label>
+            <textarea id="messageInput" name="message">Together with our families, we joyfully invite you to celebrate our wedding!</textarea>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="form-section">
+        <legend>Wedding Ceremony</legend>
+        <div class="form-grid">
+          <div class="field">
+            <label for="weddingDateInput">Wedding date</label>
+            <input type="date" id="weddingDateInput" name="weddingDate" value="2026-12-12" required>
+          </div>
+          <div class="field">
+            <label for="weddingTimeInput">Ceremony time</label>
+            <input type="time" id="weddingTimeInput" name="weddingTime" value="19:00" required>
+          </div>
+          <div class="field">
+            <label for="venueInput">Venue</label>
+            <input id="venueInput" name="venue" value="The Grand Palace" required>
+          </div>
+          <div class="field">
+            <label for="addressInput">City / address</label>
+            <input id="addressInput" name="address" value="Jaipur, Rajasthan" required>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="form-section">
+        <legend>Haldi · Optional</legend>
+        <p class="optional-note">Clear all three fields to omit this event from the card.</p>
+        <div class="form-grid">
+          <div class="field">
+            <label for="haldiDateInput">Date</label>
+            <input type="date" id="haldiDateInput" name="haldiDate" value="2026-12-10">
+          </div>
+          <div class="field">
+            <label for="haldiTimeInput">Time</label>
+            <input type="time" id="haldiTimeInput" name="haldiTime" value="11:00">
+          </div>
+          <div class="field full">
+            <label for="haldiVenueInput">Venue</label>
+            <input id="haldiVenueInput" name="haldiVenue" value="Home Garden">
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="form-section">
+        <legend>Engagement · Optional</legend>
+        <p class="optional-note">Clear all three fields to omit this event from the card.</p>
+        <div class="form-grid">
+          <div class="field">
+            <label for="engagementDateInput">Date</label>
+            <input type="date" id="engagementDateInput" name="engagementDate" value="2026-12-08">
+          </div>
+          <div class="field">
+            <label for="engagementTimeInput">Time</label>
+            <input type="time" id="engagementTimeInput" name="engagementTime" value="18:00">
+          </div>
+          <div class="field full">
+            <label for="engagementVenueInput">Venue</label>
+            <input id="engagementVenueInput" name="engagementVenue" value="Lake View Hall">
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="form-section">
+        <legend>RSVP</legend>
+        <div class="form-grid">
+          <div class="field">
+            <label for="rsvpNameInput">Contact name</label>
+            <input id="rsvpNameInput" name="rsvpName" value="Priya">
+          </div>
+          <div class="field">
+            <label for="rsvpPhoneInput">Phone number</label>
+            <input type="tel" id="rsvpPhoneInput" name="rsvpPhone" value="99999 88888">
+          </div>
+        </div>
+      </fieldset>
+
+      <button class="generate-button" type="submit">Generate Card</button>
+    </form>
+  </section>

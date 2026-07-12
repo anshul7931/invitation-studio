@@ -1,0 +1,22 @@
+<dialog class="profile-dialog" id="profileDialog">
+    <form class="profile-content" id="profileForm">
+      <h2>Your profile</h2>
+      <div class="field">
+        <label for="profileName">Name</label>
+        <input id="profileName" name="name" required>
+      </div>
+      <div class="field">
+        <label for="profileEmail">Email address</label>
+        <input type="email" id="profileEmail" name="email" autocomplete="email" required>
+      </div>
+      <div class="field">
+        <label for="profilePhone">Phone number</label>
+        <input type="tel" id="profilePhone" name="phone" autocomplete="tel" placeholder="Optional">
+      </div>
+      <p class="auth-message" id="profileMessage"></p>
+      <div class="dialog-actions">
+        <button class="generate-button" type="submit">Save profile</button>
+        <button class="text-button" id="closeProfileButton" type="button">Close</button>
+      </div>
+    </form>
+  </dialog>

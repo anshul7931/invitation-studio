@@ -5,7 +5,7 @@
   "description": "A responsive multi-occasion invitation creator with a JSON API",
   "scripts": {
     "start": "node server.js",
-    "check": "node --check server.js"
+    "check": "node --check server.js && find backend -name '*.js' -print -exec node --check {} \\;"
   },
   "dependencies": {
     "mysql2": "^3.22.5"

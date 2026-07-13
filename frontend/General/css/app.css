@@ -54,6 +54,7 @@
     body[data-mode="dark"] .admin-dashboard,
     body[data-mode="dark"] .payment-page,
     body[data-mode="dark"] .builder,
+    body[data-mode="dark"] .static-page,
     body[data-mode="dark"] .app-header,
     body[data-mode="dark"] .auth-shell {
       color: #eee7dc;
@@ -67,14 +68,16 @@
     body[data-mode="dark"] .occasion-choice,
     body[data-mode="dark"] .saved-card,
     body[data-mode="dark"] .auth-panel,
-    body[data-mode="dark"] .profile-dialog {
+    body[data-mode="dark"] .profile-dialog,
+    body[data-mode="dark"] .modal-content {
       color: #eee7dc;
       background: linear-gradient(145deg, #202229, #191b21);
     }
 
     body[data-mode="dark"] .field input,
     body[data-mode="dark"] .field textarea,
-    body[data-mode="dark"] .field select {
+    body[data-mode="dark"] .field select,
+    body[data-mode="dark"] .profile-content .field select {
       color: #f5eee5;
       background: transparent;
       color-scheme: dark;
@@ -84,6 +87,9 @@
     body[data-mode="dark"] .admin-dashboard h1,
     body[data-mode="dark"] .payment-page h1,
     body[data-mode="dark"] .builder h1,
+    body[data-mode="dark"] .static-page h1,
+    body[data-mode="dark"] .profile-content h2,
+    body[data-mode="dark"] .modal-content h3,
     body[data-mode="dark"] .occasion-choice h2,
     body[data-mode="dark"] .saved-card h3,
     body[data-mode="dark"] .saved-heading h2,
@@ -448,6 +454,30 @@
       padding-right: 0;
     }
 
+    .profile-content .field select {
+      box-sizing: border-box;
+      width: 100%;
+      min-height: 48px;
+      color: var(--ink);
+      background: transparent;
+      border: 0;
+      border-bottom: 1px solid rgba(155, 106, 32, 0.42);
+      font: 500 1.08rem var(--body-font);
+      outline: none;
+    }
+
+    .profile-verify {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      color: var(--ink);
+      background: rgba(199, 154, 67, 0.12);
+      border: 1px solid rgba(199, 154, 67, 0.45);
+      border-radius: 14px;
+    }
+
     .dialog-actions {
       display: flex;
       gap: 10px;
@@ -474,7 +504,8 @@
       letter-spacing: 0.04em;
     }
 
-    body[data-theme="royal-blue"] {
+    body[data-theme="royal-blue"],
+    .invitation[data-theme="royal-blue"] {
       --maroon: #173f73;
       --maroon-deep: #081f43;
       --wine: #24558e;
@@ -491,7 +522,8 @@
       --label-font: "Cinzel", serif;
     }
 
-    body[data-theme="emerald"] {
+    body[data-theme="emerald"],
+    .invitation[data-theme="emerald"] {
       --maroon: #165849;
       --maroon-deep: #07362d;
       --wine: #247362;
@@ -508,7 +540,8 @@
       --label-font: "Cinzel", serif;
     }
 
-    body[data-theme="rose-gold"] {
+    body[data-theme="rose-gold"],
+    .invitation[data-theme="rose-gold"] {
       --maroon: #8d4050;
       --maroon-deep: #57232f;
       --wine: #a95867;
@@ -527,7 +560,8 @@
       --label-font: "Montserrat", sans-serif;
     }
 
-    body[data-theme="sapphire"] {
+    body[data-theme="sapphire"],
+    .invitation[data-theme="sapphire"] {
       --maroon: #174f78;
       --maroon-deep: #082c4d;
       --wine: #2472a0;
@@ -544,7 +578,8 @@
       --label-font: "Cinzel", serif;
     }
 
-    body[data-theme="lavender"] {
+    body[data-theme="lavender"],
+    .invitation[data-theme="lavender"] {
       --maroon: #665080;
       --maroon-deep: #3c2c52;
       --wine: #81669c;
@@ -562,7 +597,8 @@
       --body-font: "Lora", Georgia, serif;
     }
 
-    body[data-theme="terracotta"] {
+    body[data-theme="terracotta"],
+    .invitation[data-theme="terracotta"] {
       --maroon: #9a4f3e;
       --maroon-deep: #613025;
       --wine: #b3634e;
@@ -1392,6 +1428,16 @@
       width: 58px;
       max-height: 45px;
       color: var(--gold-deep);
+    }
+
+    .rings svg {
+      width: 58px;
+      height: 45px;
+      overflow: visible;
+    }
+
+    body.public-share .site-footer {
+      display: none !important;
     }
 
     .date-banner {

@@ -5,6 +5,13 @@ export const birthday = {
   intro: "A graceful celebration centred on the guest of honour and their milestone.",
   kicker: "A beautiful year to celebrate",
   defaultTheme: "plum",
+  defaultIcon: "cake",
+  icons: [
+    ["cake", "Celebration cake"],
+    ["diya", "Festive diya"],
+    ["lotus", "Lotus bloom"],
+    ["envelope", "Invitation seal"]
+  ],
   themes: [
     ["plum", "Plum & Gold"],
     ["midnight", "Midnight Blue & Gold"],

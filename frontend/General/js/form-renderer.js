@@ -11,11 +11,21 @@ function fieldControl(field) {
     return `<textarea ${attributes}>${value}</textarea>`;
   }
 
+  if (field.type === "select") {
+    const options = (field.options || [])
+      .map(([optionValue, label]) => `<option value="${optionValue}" ${optionValue === value ? "selected" : ""}>${label}</option>`)
+      .join("");
+    return `<select ${attributes}>${options}</select>`;
+  }
+
   return `<input type="${field.type || "text"}" value="${value}" ${attributes}>`;
 }
 
 export function renderOccasionForm(occasion, container) {
   const themeOptions = occasion.themes
+    .map(([value, label]) => `<option value="${value}">${label}</option>`)
+    .join("");
+  const iconOptions = (occasion.icons || [])
     .map(([value, label]) => `<option value="${value}">${label}</option>`)
     .join("");
 
@@ -57,6 +67,11 @@ export function renderOccasionForm(occasion, container) {
         <label for="occasion-palette">Colour theme</label>
         <select id="occasion-palette" name="palette">${themeOptions}</select>
       </div>
+      ${iconOptions ? `
+      <div class="field full theme-field">
+        <label for="occasion-cardIcon">Card motif</label>
+        <select id="occasion-cardIcon" name="cardIcon">${iconOptions}</select>
+      </div>` : ""}
     </section>
     ${sections}
   `;

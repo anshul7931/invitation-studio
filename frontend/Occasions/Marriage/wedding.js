@@ -29,7 +29,7 @@ export function renderWedding(form, helpers) {
   const venue = value("venue");
   const rsvp = [value("rsvpName").toUpperCase(), value("rsvpPhone")].filter(Boolean);
 
-  document.body.dataset.theme = value("theme");
+  document.getElementById("invitation").dataset.theme = value("theme");
   document.getElementById("brideName").textContent = firstName(bride);
   document.getElementById("groomName").textContent = firstName(groom);
   document.getElementById("blessingText").textContent = value("message");

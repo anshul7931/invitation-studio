@@ -5,6 +5,12 @@ export const office = {
   intro: "A polished company invitation with clear, practical event information.",
   kicker: "You are invited",
   defaultTheme: "navy",
+  defaultIcon: "officeTower",
+  icons: [
+    ["officeTower", "Office tower"],
+    ["envelope", "Formal invite"],
+    ["lotus", "Premium emblem"]
+  ],
   themes: [
     ["navy", "Corporate Navy & Gold"],
     ["charcoal", "Charcoal & Brass"],

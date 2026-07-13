@@ -28,7 +28,7 @@ const elements = {
   copyShareLinkButton: document.getElementById("copyShareLinkButton"),
   saveStatus: document.getElementById("saveStatus"),
   publicBanner: document.getElementById("publicBanner"),
-  verifyEmailNotice: document.getElementById("verifyEmailNotice"),
+  profileVerifyNotice: document.getElementById("profileVerifyNotice"),
   shareInfo: document.getElementById("shareInfo"),
   adminButton: document.getElementById("adminButton"),
   aboutPage: document.getElementById("aboutPage"),
@@ -52,10 +52,13 @@ let activeOccasionConfig = null;
 const supportedOccasions = ["wedding", "birthday", "engagement", "office"];
 const occasionSchemaCache = new Map();
 
-const cardIcons = {
-  birthday: `<svg viewBox="0 0 72 72"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><path d="M14 54H58V64H14Z"/><path d="M20 37H52V54H20Z"/><path d="M27 23H45V37H27Z"/><path d="M36 6Q27 16 36 23Q45 16 36 6Z" fill="var(--occasion-accent)"/><path d="M20 45Q27 39 34 45T48 45T52 45"/></g></svg>`,
-  engagement: `<svg viewBox="0 0 72 72"><g fill="none" stroke="currentColor" stroke-width="3"><circle cx="28" cy="43" r="18"/><circle cx="44" cy="43" r="18"/><path d="M37 18L45 8L53 18L45 28Z" fill="var(--occasion-accent)"/></g></svg>`,
-  office: `<svg viewBox="0 0 72 72"><g fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 63H61M18 63V21H54V63M27 29H33M40 29H46M27 39H33M40 39H46M27 49H33M40 49H46"/><path d="M29 21V11H43V21" stroke="var(--occasion-accent)"/></g></svg>`
+const visualMotifs = {
+  cake: `<svg viewBox="0 0 72 72"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><path d="M14 54H58V64H14Z"/><path d="M20 37H52V54H20Z"/><path d="M27 23H45V37H27Z"/><path d="M36 6Q28 16 36 23Q44 16 36 6Z" fill="var(--occasion-accent)"/><path d="M20 45Q28 39 36 45T52 45"/></g></svg>`,
+  rings: `<svg viewBox="0 0 72 72"><g fill="none" stroke="currentColor" stroke-width="3"><circle cx="28" cy="43" r="18"/><circle cx="44" cy="43" r="18"/><path d="M37 18L45 8L53 18L45 28Z" fill="var(--occasion-accent)"/></g></svg>`,
+  officeTower: `<svg viewBox="0 0 72 72"><g fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 63H61M18 63V21H54V63M27 29H33M40 29H46M27 39H33M40 39H46M27 49H33M40 49H46"/><path d="M29 21V11H43V21" stroke="var(--occasion-accent)"/></g></svg>`,
+  envelope: `<svg viewBox="0 0 72 72"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><rect x="13" y="22" width="46" height="32" rx="6"/><path d="M16 27L36 42L56 27M17 50L31 39M55 50L41 39"/><circle cx="36" cy="42" r="4" fill="var(--occasion-accent)"/><path d="M55 13V19M52 16H58M18 12L21 17L26 19L21 21L18 26L15 21L10 19L15 17Z"/></g></svg>`,
+  lotus: `<svg viewBox="0 0 72 72"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><path d="M36 51C23 51 15 44 11 35C22 34 31 39 36 51Z"/><path d="M36 51C49 51 57 44 61 35C50 34 41 39 36 51Z"/><path d="M36 50C27 39 28 25 36 14C44 25 45 39 36 50Z" fill="var(--occasion-accent)"/><path d="M17 58H55"/></g></svg>`,
+  diya: `<svg viewBox="0 0 72 72"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><path d="M14 43Q36 61 58 43Q47 55 25 55Q17 51 14 43Z"/><path d="M36 13Q25 27 36 36Q47 27 36 13Z" fill="var(--occasion-accent)"/><path d="M24 43H48M20 59H52"/></g></svg>`
 };
 
 const hideableSections = [
@@ -163,12 +166,10 @@ function formValues(form) {
 }
 
 function showOnly(section) {
+  document.body.classList.remove("public-share");
   hideableSections.forEach((element) => element.hidden = element !== section);
   elements.cardActions.hidden = ![elements.weddingInvitation, elements.occasionInvitation].includes(section);
   elements.publicBanner.hidden = true;
-  if (elements.verifyEmailNotice) {
-    elements.verifyEmailNotice.hidden = !signedInUser || signedInUser.emailVerified;
-  }
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -190,11 +191,23 @@ function applyWorkspaceMode(mode) {
   document.getElementById("themeModeButton").textContent = mode === "dark" ? "Light mode" : "Dark mode";
 }
 
+function applyAppTheme(theme) {
+  document.body.dataset.theme = theme || "maroon";
+  localStorage.setItem("invitation_studio_theme", document.body.dataset.theme);
+}
+
+function updateProfileVerifyNotice() {
+  if (elements.profileVerifyNotice) {
+    elements.profileVerifyNotice.hidden = !signedInUser || signedInUser.emailVerified;
+  }
+}
+
 function renderGenericCard(occasion, values = formValues(elements.occasionForm)) {
   const cardData = occasion.build(values, helpers);
   elements.occasionInvitation.dataset.occasion = occasion.id;
   elements.occasionInvitation.dataset.palette = values.palette || occasion.defaultTheme;
-  document.getElementById("occasionMark").innerHTML = cardIcons[occasion.id] || "";
+  document.getElementById("occasionMark").innerHTML =
+    visualMotifs[values.cardIcon || occasion.defaultIcon || "envelope"] || visualMotifs.envelope;
   document.getElementById("occasionCardKicker").textContent = occasion.kicker;
   document.getElementById("occasionCardTitle").textContent = cardData.title;
   document.getElementById("occasionCardSubtitle").textContent = cardData.subtitle;
@@ -218,6 +231,11 @@ function renderGenericCard(occasion, values = formValues(elements.occasionForm))
   document.title = cardData.documentTitle;
 }
 
+function renderWeddingMotif() {
+  const key = elements.weddingForm.elements.cardIcon?.value || "rings";
+  document.getElementById("weddingMotif").innerHTML = visualMotifs[key] || visualMotifs.rings;
+}
+
 function fillForm(form, values) {
   Object.entries(values || {}).forEach(([name, value]) => {
     if (form.elements[name]) form.elements[name].value = value;
@@ -231,7 +249,7 @@ async function openOccasion(occasionId, updateUrl = true) {
   if (updateUrl) history.pushState({}, "", `/${occasionId}`);
 
   if (occasionId === "wedding") {
-    document.body.dataset.theme = elements.weddingForm.elements.theme.value;
+    elements.weddingInvitation.dataset.theme = elements.weddingForm.elements.theme.value;
     showOnly(elements.weddingBuilder);
     return;
   }
@@ -256,6 +274,7 @@ async function renderInvitationFromData(invitation, readOnly = false) {
   if (invitation.occasion === "wedding") {
     fillForm(elements.weddingForm, invitation.fields);
     renderWedding(elements.weddingForm, helpers);
+    renderWeddingMotif();
     showOnly(elements.weddingInvitation);
   } else {
     const occasion = await getHydratedOccasion(invitation.occasion);
@@ -397,6 +416,14 @@ function openDeleteModal(invitation) {
   document.getElementById("deleteModal").classList.remove("hidden");
 }
 
+function openSignoutModal() {
+  document.getElementById("signoutModal").classList.remove("hidden");
+}
+
+function closeSignoutModal() {
+  document.getElementById("signoutModal").classList.add("hidden");
+}
+
 async function loadRoute() {
   const parts = location.pathname.split("/").filter(Boolean);
   const route = parts[0];
@@ -433,6 +460,7 @@ async function loadRoute() {
     try {
       const invitation = await api(`/api/public/${parts[1]}`);
       await renderInvitationFromData(invitation, true);
+      document.body.classList.add("public-share");
     } catch (error) {
       elements.appHeader.hidden = true;
       showOnly(elements.paymentPage);
@@ -498,13 +526,14 @@ async function loadRoute() {
 
   if (!route) {
     showOnly(elements.dashboard);
-    loadSavedCards();
+    await loadSavedCards();
     return;
   }
 
   if (!supportedOccasions.includes(route)) {
     history.replaceState({}, "", "/");
     showOnly(elements.dashboard);
+    await loadSavedCards();
     return;
   }
 
@@ -538,7 +567,7 @@ function cleanLogoutUi() {
   elements.appHeader.hidden = true;
   elements.cardActions.hidden = true;
   elements.publicBanner.hidden = true;
-  elements.verifyEmailNotice.hidden = true;
+  updateProfileVerifyNotice();
   elements.copyShareLinkButton.hidden = true;
   elements.savedCards.replaceChildren();
   elements.savedEmpty.textContent = "You have not saved an invitation yet.";
@@ -581,7 +610,8 @@ async function enterApplication() {
   document.getElementById("profileName").value = signedInUser.name;
   document.getElementById("profileEmail").value = signedInUser.email;
   document.getElementById("profilePhone").value = signedInUser.phone || "";
-  elements.verifyEmailNotice.hidden = signedInUser.emailVerified;
+  document.getElementById("profileAppTheme").value = localStorage.getItem("invitation_studio_theme") || document.body.dataset.theme || "maroon";
+  updateProfileVerifyNotice();
   await loadRoute();
 }
 
@@ -617,6 +647,7 @@ elements.weddingForm.addEventListener("submit", (event) => {
   if (!elements.weddingForm.reportValidity()) return;
   activeOccasion = "wedding";
   renderWedding(elements.weddingForm, helpers);
+  renderWeddingMotif();
   elements.saveStatus.textContent = currentInvitationId ? "Changes are ready to save." : "Card created. Save it to your account.";
   showOnly(elements.weddingInvitation);
 });
@@ -721,6 +752,8 @@ document.getElementById("profileButton").addEventListener("click", () => {
   document.getElementById("profileName").value = signedInUser.name;
   document.getElementById("profileEmail").value = signedInUser.email;
   document.getElementById("profilePhone").value = signedInUser.phone || "";
+  document.getElementById("profileAppTheme").value = localStorage.getItem("invitation_studio_theme") || document.body.dataset.theme || "maroon";
+  updateProfileVerifyNotice();
   document.getElementById("profileDialog").showModal();
 });
 
@@ -737,9 +770,11 @@ document.getElementById("profileForm").addEventListener("submit", async (event) 
       body: JSON.stringify(formValues(event.currentTarget))
     });
     signedInUser = user;
+    applyAppTheme(document.getElementById("profileAppTheme").value);
     document.getElementById("userName").textContent = `Hello, ${user.name}`;
     document.getElementById("profileEmail").value = user.email;
     document.getElementById("profilePhone").value = user.phone || "";
+    updateProfileVerifyNotice();
     message.textContent = "Profile updated.";
   } catch (error) {
     message.textContent = error.message;
@@ -810,9 +845,13 @@ document.getElementById("resendVerificationButton").addEventListener("click", as
   }
 });
 
-document.getElementById("logoutButton").addEventListener("click", async () => {
-  if (!window.confirm("Are you sure you want to sign out?")) return;
+document.getElementById("logoutButton").addEventListener("click", openSignoutModal);
+
+document.getElementById("cancelSignoutBtn").addEventListener("click", closeSignoutModal);
+
+document.getElementById("confirmSignoutBtn").addEventListener("click", async () => {
   await api("/api/auth/logout", { method: "POST" });
+  closeSignoutModal();
   cleanLogoutUi();
 });
 
@@ -834,6 +873,7 @@ window.addEventListener("popstate", () => {
 });
 
 applyWorkspaceMode(localStorage.getItem("invitation_studio_mode") || "light");
+applyAppTheme(localStorage.getItem("invitation_studio_theme") || document.body.dataset.theme || "maroon");
 
 (async function bootstrap() {
   if (

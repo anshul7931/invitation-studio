@@ -31,7 +31,8 @@ frontend/
 │   │   └── glyphs.css
 │   ├── dialogs/
 │   │   ├── delete-dialog.html
-│   │   └── profile-dialog.html
+│   │   ├── profile-dialog.html
+│   │   └── signout-dialog.html
 │   ├── js/form-renderer.js
 │   └── svgs/brand-glyph.svg
 └── StaticPages/
@@ -52,7 +53,7 @@ frontend/
 Edit:
 
 - `frontend/Occasions/Birthday/birthday.js`
-- `server/occasion-schema.js` → `birthday` only when changing API defaults/required fields/fingerprint fields.
+- `backend/occasion-schema.js` → `birthday` only when changing API defaults/required fields/fingerprint fields.
 
 ### Wedding / Marriage card only
 
@@ -62,21 +63,21 @@ Edit:
 - `frontend/Occasions/Marriage/wedding-form.html` as the form source reference.
 - `frontend/Occasions/Marriage/wedding-card.html` for the large wedding-card SVG/HTML runtime markup.
 - `frontend/Occasions/Marriage/wedding-card-map.md` to find the stable DOM IDs used by `wedding.js`.
-- `server/occasion-schema.js` → `wedding` only when changing API defaults/required fields/fingerprint fields.
+- `backend/occasion-schema.js` → `wedding` only when changing API defaults/required fields/fingerprint fields.
 
 ### Engagement card only
 
 Edit:
 
 - `frontend/Occasions/Engagement/engagement.js`
-- `server/occasion-schema.js` → `engagement` only when changing API defaults/required fields/fingerprint fields.
+- `backend/occasion-schema.js` → `engagement` only when changing API defaults/required fields/fingerprint fields.
 
 ### Office Party card only
 
 Edit:
 
 - `frontend/Occasions/OfficeParty/office.js`
-- `server/occasion-schema.js` → `office` only when changing API defaults/required fields/fingerprint fields.
+- `backend/occasion-schema.js` → `office` only when changing API defaults/required fields/fingerprint fields.
 
 ### Dashboard
 

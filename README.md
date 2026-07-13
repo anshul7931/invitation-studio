@@ -17,8 +17,13 @@ invitation-studio/
 │   ├── app.js                  # Browser controller: auth, routing, saves, sharing, UI state
 │   ├── occasions/              # Compatibility wrappers into frontend/Occasions
 │   └── ui/                     # Compatibility wrapper into frontend/General/js
-├── server/
+├── backend/
+│   ├── apis/                   # Auth, profile, admin, occasion, invitation, and public APIs
+│   ├── middleware/             # Request guards such as signed-in/admin checks
+│   ├── services/               # Business workflows such as email verification/reset flows
+│   ├── utils/                  # HTTP, template, DTO, text, and Swagger page helpers
 │   ├── auth.js                 # Password hashing, sessions, and auth helpers
+│   ├── app.js                  # HTTP server wiring, static routes, Swagger UI, SPA shell serving
 │   ├── config.js               # Central constants and environment-variable defaults
 │   ├── database.js             # MySQL connection and auto-migration bootstrap
 │   ├── env-loader.js           # Loads local .env/.env.local files before config is built
@@ -29,18 +34,18 @@ invitation-studio/
 │   ├── occasion-schema.js      # Backend occasion defaults, validation, titles, fingerprints
 │   └── openapi.js              # Swagger/OpenAPI document generation
 ├── index.html                  # Single-page shell with server-side frontend includes
-├── server.js                   # HTTP server, API routes, static serving, Swagger UI
+├── server.js                   # Thin launcher for backend/app.js
 ├── package.json                # Node project metadata and scripts
 └── requirements.txt            # Requirement/task tracker notes
 ```
 
 ### Frontend modification guide
 
-For UI changes, start with `frontend/README.md`. It maps each occasion, dashboard, reusable dialog/SVG, and static page to the right file. `index.html` now uses server-side include markers that are resolved from the `frontend/` files by `server.js`.
+For UI changes, start with `frontend/README.md`. It maps each occasion, dashboard, reusable dialog/SVG, and static page to the right file. `index.html` now uses server-side include markers that are resolved from the `frontend/` files by `backend/utils/http.js`.
 
 ### Occasion data ownership
 
-- `server/occasion-schema.js` is the source of truth for API defaults, required fields, invitation title fields, and public-link fingerprint fields.
+- `backend/occasion-schema.js` is the source of truth for API defaults, required fields, invitation title fields, and public-link fingerprint fields.
 - `frontend/Occasions/*/*.js` owns frontend presentation details: form labels/sections, theme choices, and how each card is rendered.
 - `js/occasions/*.js` exists as compatibility wrappers for the current browser imports.
 - The browser fetches `/api/occasions/:occasion` before rendering dynamic occasion forms so backend defaults prefill the UI without duplicating demo values in every frontend module.
@@ -68,7 +73,7 @@ Open:
 
 ## Environment variables
 
-All configuration is centralized in `server/config.js`. If an environment variable is not set, the default below is used.
+All configuration is centralized in `backend/config.js`. If an environment variable is not set, the default below is used.
 
 Local `.env` and `.env.local` files are loaded automatically on startup, so you do not need to prefix every `npm start` command with environment variables. These files are ignored by Git. Use `.env.example` as the safe template.
 
@@ -107,8 +112,8 @@ Local `.env` and `.env.local` files are loaded automatically on startup, so you 
 
 Transactional email is intentionally provider-neutral:
 
-- `server/email/service.js` contains shared orchestration, provider selection, send logging, and app-level rate limiting.
-- `server/email/providers/resend.js` contains the Resend-specific request/response mapping.
+- `backend/email/service.js` contains shared orchestration, provider selection, send logging, and app-level rate limiting.
+- `backend/email/providers/resend.js` contains the Resend-specific request/response mapping.
 - Verification emails and password-reset emails can use different providers through `VERIFY_EMAIL_PROVIDER` and `RESET_PASSWORD_EMAIL_PROVIDER`.
 
 Email sending is disabled unless `EMAIL_ENABLED=true`. When disabled, verification/reset tokens are still created and sends are logged as `SKIPPED`, which is useful for local development without accidentally using a real provider.

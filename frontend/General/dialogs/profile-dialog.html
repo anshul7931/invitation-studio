@@ -13,6 +13,22 @@
         <label for="profilePhone">Phone number</label>
         <input type="tel" id="profilePhone" name="phone" autocomplete="tel" placeholder="Optional">
       </div>
+      <div class="field">
+        <label for="profileAppTheme">Application colour theme</label>
+        <select id="profileAppTheme" name="appTheme">
+          <option value="maroon">Maroon</option>
+          <option value="royal-blue">Royal Blue</option>
+          <option value="emerald">Emerald</option>
+          <option value="rose-gold">Rose Gold</option>
+          <option value="sapphire">Sapphire</option>
+          <option value="lavender">Lavender</option>
+          <option value="terracotta">Terracotta</option>
+        </select>
+      </div>
+      <div class="profile-verify" id="profileVerifyNotice" hidden>
+        <span>Please verify your email address.</span>
+        <button class="text-button" id="resendVerificationButton" type="button">Resend verification email</button>
+      </div>
       <p class="auth-message" id="profileMessage"></p>
       <div class="dialog-actions">
         <button class="generate-button" type="submit">Save profile</button>

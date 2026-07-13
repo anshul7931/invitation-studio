@@ -4,7 +4,7 @@ Use this folder when changing only the wedding invitation.
 
 - `wedding.js` updates rendered wedding-card text and DOM field mapping.
 - `wedding-form.html` documents the wedding form ownership and required IDs.
-- `server/occasion-schema.js` still owns backend defaults, required fields, title fields, and duplicate-public fingerprint fields for `wedding`.
+- `backend/occasion-schema.js` still owns backend defaults, required fields, title fields, and duplicate-public fingerprint fields for `wedding`.
 - The large current wedding-card HTML/SVG runtime markup still lives in `index.html` until a template build step is introduced.
 
 Stable IDs used by `wedding.js`:

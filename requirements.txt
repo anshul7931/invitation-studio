@@ -1,5 +1,6 @@
 ansh@gmail.com/anshulgoel - USER
 anshul@gmail.com/anshulgoel - ADMIN
+anshul.goel.student@gmail.com/tarungoel
 
 SVGs can be customizable
 
@@ -22,54 +23,62 @@ I have not referred to put a glyphicon inside the app, I was referring to add an
 
 ----Other Requirements:
 
-1. svg should also be customizable in card creation. There are a couple of SVGs in the ../SVGs folder. You can use those but make a slight change to avoid licence credits. Based on these SVGs you can create a couple of more and based on the events you can make it customised i.e. user should be selecting the SVGs in the card.
-2. Reset password should also be implemented.
-3. Signout confirmation UI should be a custom alert not browser alert?
+1(Not properly done) svg should also be customizable in card creation. There are a couple of SVGs in the SVGs folder. You can use those but make a slight change to avoid licence credits. Based on these SVGs you can create a couple of more and based on the events you can make it customised i.e. user should be selecting the SVGs in the card.
+2(Mail functionality not properly working). Reset password is not working after opening the link from mail
+3.(Done) Signout confirmation UI should be a custom alert not browser alert?
 4. Instead of pre filling all the card details, create a preview section under each card which contains details based on a demo data, the details can't be edited by a user. 
 The data which is currently filled can act as a placeholder now.
 5. If we click on create public link, it should tell us that the "Link creation will be allowed once for 10 minutes. For longer duration: Pay Now"
 6. Whenever a user clicks on Pay Now, it should be redirected to /plans page.(This page will contain various plans and Pay Now button which redirects to /payments)
-7. The complete UI is under index.html. 
-Make it bit structured and seperate html,css and js if any. 
-Also seperate the data on basis of occasion, 
-so if I want to make changes only in wedding card, 
-I should know which files to modify. 
+7.(Done) The complete HTML content is under index.html. - Done
+Better create a frontend folder and add all the seperate html,css and js files(Without modifying existing content), under folder structure like Frontend->Occassions->Birthday/Marriage/Engagement etc, Frontend->Dashboard->UserDashboard/AdminDashboard, Frontend->General(It can contain reusable things like dialog boxes/svgs),Frontend->Static Pages->About/404/ContactUs etc 
+Also seperate the data on basis of occasion, so if I want to make changes only in wedding card, I should know which files to modify. 
 Document the steps for modification.
-8. Invitation status should be maintained (Draft, Published, Expired, Paid) to support future payment and sharing features.
-9. Environment configuration should be centralized (config/constants) instead of reading environment variables from multiple files.
-10. We should have About, Contact Us, Terms and Conditions pages as well(Terms and conditions will come as a hyperlink while signup)
-11. Under weddings, we could have templates based on:
+8.(done) The backend APIs are mostly in server.js.
+server folder and server.js all together confuses a lot.  
+The server folder is mostly related to configurations and setups only and can be named accordingly.
+Break the server.js in modules like Utilities, AuthAPIs, AdminAPIs, PublicAPIs etc.
+Better maintain a backend folder
+9. Invitation status should be maintained (Draft, Published, Expired, Paid) to support future payment and sharing features.
+10. Environment configuration should be centralized (config/constants) instead of reading environment variables from multiple files.
+11.(Do with the help of Chat GPT) We should have About, Contact Us, Terms and Conditions pages as well(Terms and conditions will come as a hyperlink while signup). The links for them is already available in footers. 
+As of now just write the content 'The page is under construction' for all the links under their pages.
+12. Under weddings, we could have templates based on:
 hindu-wedding
 muslim-wedding
 sikh-wedding
 telugu-wedding
 marathi-wedding
 We should be able to select a template type from dropdown under the cretaion page.
-12. Login as Guest should also be available. The person should see dashboard, create card/edit card but can not create public link before login. The data will reset with page refresh.
 13. We should be able to add custom events. There might be some person who want to celebrate first month wedding ceremony, Roka ceremony. We can have some optional parameters, optional SVGs etc.
-14. Application level theme color should be customised from profile section. 
-15. If I am permanently deleting a card and again creating it, I am able to create a public link again.
-What we could do is to soft delete the card for some timeline and validate the details from there to avoid user creating same card again and again and making it public.
-
+14(Done) Application level theme color should be customised from profile section. 
+15. We should not be able to delete a card from UI. Similar to 'Your Saved Invitation' we should have 'Your Expired Invitations'
+If user edits the expired invitation and saves it, it should come under 'Your Saved Invitation'.
+If the expired invitation had a public link that got expired, without payment, it should not create a public link.
+If the card is under 'Your Expired Invitations' for more than 365 days, it should be automatically deleted permanently. That timer should also come in UI.
+16. Swagger can only be opened if the user is admin.
+17. Login as Guest should also be available. The person should see dashboard, create card/edit card but can not create public link before login. The data will reset with page refresh.
+18. After writting document.getElementById("adminDashboard").hidden = false in the console, I am able to get Admin Dashboard. Although data is not coming but UI is visible to normal user.
 
 ----Basic Bugs/Features - Can be added Later
 
 1. Phone Number and Password validations needs to be added.
-2. Everytime I click on Copy Public link, its appending copied in UI. If I click it multiple times, it appends multiple times. This part does not look good.
-3. After redirecting to public link, it should not display 'Read-only view'.
-4. When I open Manage Profile UI, the backgroung UI should not be scrollable.
-5. I should be able to delete multiple cards at a time
+2(Done). Everytime I click on Copy Public link, its appending copied in UI. If I click it multiple times, it appends multiple times. This part does not look good.
+3(Done manually). After redirecting to public link, it should not display 'Read-only view'.
+4. When I open Manage Profile UI, the background UI should not be scrollable.
+5(Not needed now). I should be able to delete multiple cards at a time
 6. The theme for Light/Dark mode is limited to a number of things in UI. Thats not looking good.
 7. If we are redirecting to Home in between edit, it should display a warning before redirecting that any changes would be lost.
 8. Loading indicators should be shown while API calls are in progress instead of displaying empty states.(When user logs in, existing cards are not visible)
 9. Add rate limiting for authentication and public invitation APIs to prevent abuse.
-10. Public invitation page should be mobile responsive and optimized for WhatsApp sharing.
+10.(Done) Public invitation page should not show the footer section.
 11. User should be able to duplicate an existing invitation to create a new draft.
-12. If I am changing theme of a wedding card, as of now its changing the theme of complete application, it does not seem to look good.
+12.(done) If I am changing theme of a wedding card, as of now its changing the theme of complete application, it does not seem to look good.
 13. Add an icon for browser tab icon with title.
-14. Swagger is not working properly
-15. Expired card link is distorted
-
+14(Done) Swagger is not working properly - Instead of localhost, use 127.0.0.1
+15(Done) The verify mail option should not show on the dashboard and it should be shown in the profile section
+16. Reset password is failing with "Cannot read properties of null (reading 'reset')"
+17. When I click on Save Profile, dialog box should be closed.
 
 -----Done
 
@@ -152,3 +161,8 @@ Database: MySQL
 ---Example I found
 
 https://www.invifest.in/demo/meenal-avinash/?utm_source=ig&utm_medium=social&utm_content=link_in_bio&fbclid=PAdGRleAStf1NleHRuA2FlbQIxMQBzcnRjBmFwcF9pZA8xMjQwMjQ1NzQyODc0MTQAAaflNwIMtIv-_be_BaGaHQBV6bvM6s4atP62lRCDzI9qQGOwIdjJk-Z5O1nIhg_aem_dKYZJXrLoRtJXFLEIeHR7w
+
+
+------Next
+
+Please continue the part which was left pending previously.

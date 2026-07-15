@@ -50,6 +50,10 @@
       --ivory: #f9f1e5;
     }
 
+    body.modal-open {
+      overflow: hidden;
+    }
+
     body[data-mode="dark"] .dashboard,
     body[data-mode="dark"] .admin-dashboard,
     body[data-mode="dark"] .payment-page,
@@ -629,7 +633,8 @@
     }
 
     .admin-dashboard,
-    .payment-page {
+    .payment-page,
+    .static-page {
       width: min(100%, 1080px);
       margin: 0 auto;
       padding: clamp(28px, 6vw, 64px);
@@ -641,7 +646,8 @@
     }
 
     .admin-dashboard h1,
-    .payment-page h1 {
+    .payment-page h1,
+    .static-page h1 {
       margin: 4px 0 12px;
       color: var(--maroon);
       font-family: var(--display-font);
@@ -649,6 +655,47 @@
       font-weight: 400;
       line-height: 1;
       text-align: center;
+    }
+
+    .static-page {
+      text-align: left;
+      line-height: 1.65;
+    }
+
+    .static-page h2,
+    .static-page h3,
+    .static-page strong {
+      color: var(--maroon);
+    }
+
+    .static-page p,
+    .static-page li {
+      color: var(--ink);
+    }
+
+    .static-page a {
+      color: var(--maroon);
+      font-weight: 700;
+    }
+
+    .plans-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin: 28px 0;
+    }
+
+    .plan-card {
+      padding: 22px;
+      background: linear-gradient(145deg, #fffdf8, #f7eddd);
+      border: 1px solid rgba(199, 154, 67, 0.48);
+      border-radius: 18px;
+      text-align: center;
+    }
+
+    .plan-card h2,
+    .plan-card strong {
+      color: var(--maroon);
     }
 
     .admin-grid {
@@ -1172,6 +1219,13 @@
       overflow: visible;
     }
 
+    .motif-img {
+      display: block;
+      width: 72%;
+      height: 72%;
+      object-fit: contain;
+    }
+
     .occasion-card-kicker {
       margin: 0;
       color: var(--occasion-main);
@@ -1300,6 +1354,22 @@
       filter: drop-shadow(0 5px 5px rgba(100, 22, 42, 0.13));
     }
 
+    .ganesha-ref {
+      width: clamp(165px, 25vw, 215px);
+      height: clamp(165px, 25vw, 215px);
+      object-fit: contain;
+      padding: 16px;
+      background: radial-gradient(circle, rgba(255,250,240,.95), rgba(239,208,138,.18));
+      border: 1px solid rgba(199,154,67,.45);
+      border-radius: 50%;
+      filter: sepia(.2) saturate(.9) hue-rotate(330deg);
+    }
+
+    .ganesha-ref.is-cropped {
+      object-fit: cover;
+      object-position: center;
+    }
+
     .shubh {
       margin: 0;
       color: var(--gold-deep);
@@ -1394,6 +1464,13 @@
       display: block;
       width: 100%;
       height: auto;
+    }
+
+    .couple-ref {
+      width: min(100%, 360px);
+      max-height: 360px;
+      margin: 0 auto;
+      object-fit: contain;
     }
 
     .monogram-row {

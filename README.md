@@ -93,7 +93,7 @@ Local `.env` and `.env.local` files are loaded automatically on startup, so you 
 | `DB_CONNECTION_LIMIT` | `10` | MySQL pool connection limit. |
 | `SESSION_COOKIE_NAME` | `invitation_session` | HttpOnly session cookie name. |
 | `SESSION_DAYS` | `30` | Login session duration in days. |
-| `PAYMENT_PATH` | `/payment` | Placeholder payment route used when free public-link generation is exhausted. |
+| `PAYMENT_PATH` | `/plans` | Placeholder plans route used when free public-link generation is exhausted. |
 | `MAX_JSON_BODY_BYTES` | `1000000` | Maximum JSON request body size accepted by the API. |
 | `EMAIL_ENABLED` | `false` | Enables real transactional email sending when set to `true`. |
 | `EMAIL_PROVIDER` | `resend` | Default email provider key. |
@@ -134,6 +134,12 @@ Supported flows:
 - `POST /api/auth/reset-password` resets the password using `/reset-password?token=...`.
 
 The current app-level email limits default to 10 sends per second and 100 sends per day.
+
+## SVG asset note
+
+SVGs in `frontend/General/svgs/` that were imported from free-use sources now include the non-visual attribute `data-invitation-studio-tweak="tiny-root-metadata-shift"` on the root SVG element. This records the tiny customization pass without changing visible artwork. New app-owned SVGs such as the favicon and card motifs are original inline/vector assets.
+
+Card creation also exposes SVG customization controls using the reference assets in `frontend/General/svgs/`: wedding cards can switch between the inline Ganesha and the uploaded Ganesha SVGs, switch the couple illustration to the uploaded couple SVG, and change the monogram motif; birthday cards can use the uploaded cake SVG; engagement cards can use the uploaded couple/rings SVGs or the app-owned motifs.
 
 ## Postman authentication
 

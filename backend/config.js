@@ -31,7 +31,7 @@ const config = {
     days: Number(process.env.SESSION_DAYS) || 30
   },
   payment: {
-    placeholderPath: process.env.PAYMENT_PATH || "/payment"
+    placeholderPath: process.env.PAYMENT_PATH || "/plans"
   },
   email: {
     enabled: process.env.EMAIL_ENABLED === "true",
@@ -60,6 +60,8 @@ const config = {
       "/login",
       "/admin",
       "/payment",
+      "/payments",
+      "/plans",
       "/verify-email",
       "/reset-password",
 

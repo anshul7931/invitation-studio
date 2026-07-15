@@ -1,6 +1,15 @@
 const firstName = (name) => name.trim().split(/\s+/)[0] || "";
 const initial = (name) => firstName(name).charAt(0).toUpperCase();
 
+const ganeshaSources = {
+  "ganesha-icon": "/frontend/General/svgs/ganesha-icon-111519-512.svg",
+  ganesh: "/frontend/General/svgs/ganesha-icon-111519-512.svg"
+};
+
+const coupleSources = {
+  "couple-ref": "/frontend/General/svgs/wedding-couple-svgrepo-com.svg"
+};
+
 function setOptionalEvent(form, prefix, title, helpers) {
   const value = (name) => form.elements[name].value.trim();
   const date = value(`${prefix}Date`);
@@ -30,6 +39,20 @@ export function renderWedding(form, helpers) {
   const rsvp = [value("rsvpName").toUpperCase(), value("rsvpPhone")].filter(Boolean);
 
   document.getElementById("invitation").dataset.theme = value("theme");
+  const ganeshaChoice = value("ganeshaVariant") || "inline";
+  const inlineGanesha = document.querySelector(".ganesha-wrap svg.ganesha");
+  const refGanesha = document.getElementById("ganeshaReferenceSvg");
+  inlineGanesha.hidden = ganeshaChoice !== "inline";
+  refGanesha.hidden = ganeshaChoice === "inline";
+  refGanesha.classList.toggle("is-cropped", ganeshaChoice === "ganesh");
+  if (ganeshaSources[ganeshaChoice]) refGanesha.src = ganeshaSources[ganeshaChoice];
+
+  const coupleChoice = value("coupleVariant") || "inline";
+  const inlineCouple = document.querySelector(".couple-frame svg.couple-art");
+  const refCouple = document.getElementById("coupleReferenceSvg");
+  inlineCouple.hidden = coupleChoice !== "inline";
+  refCouple.hidden = coupleChoice === "inline";
+  if (coupleSources[coupleChoice]) refCouple.src = coupleSources[coupleChoice];
   document.getElementById("brideName").textContent = firstName(bride);
   document.getElementById("groomName").textContent = firstName(groom);
   document.getElementById("blessingText").textContent = value("message");

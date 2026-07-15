@@ -7,6 +7,7 @@ export const birthday = {
   defaultTheme: "plum",
   defaultIcon: "cake",
   icons: [
+    ["cakeRef", "Reference cake SVG"],
     ["cake", "Celebration cake"],
     ["diya", "Festive diya"],
     ["lotus", "Lotus bloom"],

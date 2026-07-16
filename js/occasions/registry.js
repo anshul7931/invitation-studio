@@ -6,9 +6,10 @@
 import { birthday } from "./birthday.js";
 import { engagement } from "./engagement.js";
 import { office } from "./office.js";
+import { custom } from "./custom.js";
 
 export const occasionRegistry = new Map(
-  [birthday, engagement, office].map((occasion) => [occasion.id, occasion])
+  [birthday, engagement, office, custom].map((occasion) => [occasion.id, occasion])
 );
 
 export function getOccasion(id) {

@@ -49,10 +49,15 @@ let signedInUser = null;
 let pendingDelete = null;
 let shareTimer = null;
 let activeOccasionConfig = null;
+let pendingHomeAction = null;
 
-const supportedOccasions = ["wedding", "birthday", "engagement", "office"];
+const supportedOccasions = ["wedding", "birthday", "engagement", "office", "custom"];
 const publicStaticRoutes = ["about", "contact", "privacy", "terms", "refund", "disclaimer", "acceptable-use"];
 const occasionSchemaCache = new Map();
+
+function isGuestUser() {
+  return signedInUser?.guest === true;
+}
 
 const visualMotifs = {
   cakeRef: `<img class="motif-img" src="/frontend/General/svgs/cake-svgrepo-com.svg" alt="">`,
@@ -66,6 +71,53 @@ const visualMotifs = {
   coupleRef: `<img class="motif-img" src="/frontend/General/svgs/wedding-couple-svgrepo-com.svg" alt="">`,
   couple: `<svg viewBox="0 0 72 72"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="27" cy="22" r="7"/><circle cx="45" cy="22" r="7"/><path d="M20 58Q22 36 27 30Q32 36 34 58ZM38 58Q40 36 45 30Q50 36 52 58Z"/><path d="M22 16L27 10L32 16M40 15L45 9L50 15" fill="var(--occasion-accent)"/></g></svg>`
 };
+
+const weddingPreviewMotifs = {
+  inlineGanesha: `<svg viewBox="0 0 72 72"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 23Q36 12 48 23Q53 34 43 43"/><path d="M25 25Q14 21 11 34Q10 46 25 45M47 25Q58 21 61 34Q62 46 47 45"/><path d="M32 35Q31 49 41 49Q49 49 46 41"/><path d="M25 57Q36 49 47 57"/><path d="M28 18L32 9L36 16L40 9L44 18" fill="var(--gold-light)"/></g></svg>`,
+  ganeshaRef: `<img class="motif-img" src="/frontend/General/svgs/ganesha-icon-111519-512.svg" alt="">`
+};
+
+function initPreviewSelect(selectId, previews) {
+  const select = document.getElementById(selectId);
+  if (!select || select.dataset.previewReady) return;
+  select.dataset.previewReady = "true";
+  select.classList.add("visual-select-source");
+  const grid = document.createElement("div");
+  grid.className = "svg-preview-grid";
+  [...select.options].forEach((option) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "svg-preview-option";
+    button.dataset.value = option.value;
+    button.innerHTML = `<span class="svg-preview-art">${previews[option.value] || visualMotifs[option.value] || ""}</span><span>${option.textContent}</span>`;
+    button.addEventListener("click", () => {
+      select.value = option.value;
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    grid.append(button);
+  });
+  const sync = () => grid.querySelectorAll(".svg-preview-option")
+    .forEach((button) => button.classList.toggle("is-selected", button.dataset.value === select.value));
+  select.addEventListener("change", sync);
+  select.after(grid);
+  sync();
+}
+
+function initWeddingSvgPreviews() {
+  initPreviewSelect("weddingIconInput", {});
+  initPreviewSelect("ganeshaVariantInput", {
+    inline: weddingPreviewMotifs.inlineGanesha,
+    "ganesha-icon": weddingPreviewMotifs.ganeshaRef
+  });
+  initPreviewSelect("coupleVariantInput", {
+    inline: visualMotifs.couple,
+    "couple-ref": visualMotifs.coupleRef
+  });
+}
+
+function initGenericMotifPreview() {
+  initPreviewSelect("occasion-cardIcon", {});
+}
 
 const hideableSections = [
   elements.authShell,
@@ -192,6 +244,27 @@ function resetCurrentCard() {
   clearInterval(shareTimer);
 }
 
+function hasActiveCardWork() {
+  return [elements.weddingBuilder, elements.occasionBuilder, elements.weddingInvitation, elements.occasionInvitation]
+    .some((section) => section && !section.hidden);
+}
+
+function goHome() {
+  resetCurrentCard();
+  history.pushState({}, "", "/");
+  showOnly(elements.dashboard);
+  loadSavedCards();
+}
+
+function confirmBeforeHome(action = goHome) {
+  if (!hasActiveCardWork()) {
+    action();
+    return;
+  }
+  pendingHomeAction = action;
+  document.getElementById("unsavedModal").classList.remove("hidden");
+}
+
 function applyWorkspaceMode(mode) {
   document.body.dataset.mode = mode;
   localStorage.setItem("invitation_studio_mode", mode);
@@ -274,6 +347,7 @@ async function openOccasion(occasionId, updateUrl = true) {
   document.getElementById("occasionFormKicker").textContent =
     `Create your ${occasion.name.toLowerCase()} card`;
   renderOccasionForm(occasion, elements.occasionFields);
+  initGenericMotifPreview();
   showOnly(elements.occasionBuilder);
 }
 
@@ -294,6 +368,7 @@ async function renderInvitationFromData(invitation, readOnly = false) {
     activeOccasionConfig = occasion;
     renderOccasionForm(occasion, elements.occasionFields);
     fillForm(elements.occasionForm, invitation.fields);
+    initGenericMotifPreview();
     renderGenericCard(occasion, invitation.fields);
     showOnly(elements.occasionInvitation);
   }
@@ -376,6 +451,12 @@ async function copyText(text) {
 async function loadSavedCards() {
   if (!signedInUser) return;
   elements.savedCards.replaceChildren();
+  if (isGuestUser()) {
+    elements.savedLoading.hidden = true;
+    elements.savedEmpty.hidden = false;
+    elements.savedEmpty.textContent = "Guest cards are not saved and will reset after refresh.";
+    return;
+  }
   elements.savedEmpty.hidden = true;
   elements.savedLoading.hidden = false;
   try {
@@ -435,6 +516,14 @@ function openSignoutModal() {
 
 function closeSignoutModal() {
   document.getElementById("signoutModal").classList.add("hidden");
+}
+
+function openPublicLinkModal() {
+  document.getElementById("publicLinkModal").classList.remove("hidden");
+}
+
+function closePublicLinkModal() {
+  document.getElementById("publicLinkModal").classList.add("hidden");
 }
 
 async function loadRoute() {
@@ -634,6 +723,12 @@ async function enterApplication() {
   elements.appHeader.hidden = false;
   document.getElementById("userName").textContent = `Hello, ${signedInUser.name}`;
   elements.adminButton.hidden = signedInUser.role !== "ADMIN";
+  document.getElementById("profileButton").hidden = isGuestUser();
+  document.getElementById("logoutButton").textContent = isGuestUser() ? "Exit Guest" : "Sign out";
+  if (isGuestUser()) {
+    await loadRoute();
+    return;
+  }
   document.getElementById("profileName").value = signedInUser.name;
   document.getElementById("profileEmail").value = signedInUser.email;
   document.getElementById("profilePhone").value = signedInUser.phone || "";
@@ -649,7 +744,7 @@ document.querySelectorAll("[data-select-occasion]").forEach((button) => {
 document.addEventListener("click", (event) => {
   if (event.target.closest("[data-back-dashboard]")) {
     event.preventDefault();
-    resetCurrentCard();
+    confirmBeforeHome(() => {
     if (window.history.length > 1 && !location.pathname.startsWith("/login")) {
       history.back();
       return;
@@ -663,6 +758,7 @@ document.addEventListener("click", (event) => {
       elements.appHeader.hidden = true;
       showOnly(elements.authShell);
     }
+    });
   }
 });
 
@@ -679,6 +775,8 @@ document.querySelectorAll("[data-password-toggle]").forEach((button) => {
     button.textContent = show ? "Hide" : "Show";
   });
 });
+
+initWeddingSvgPreviews();
 
 elements.weddingForm.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -699,6 +797,10 @@ elements.occasionForm.addEventListener("submit", (event) => {
 });
 
 elements.saveButton.addEventListener("click", async () => {
+  if (isGuestUser()) {
+    elements.saveStatus.textContent = "Please sign in to save this card.";
+    return;
+  }
   elements.saveButton.disabled = true;
   elements.saveStatus.textContent = "Saving…";
   try {
@@ -714,7 +816,7 @@ elements.saveButton.addEventListener("click", async () => {
   }
 });
 
-elements.shareButton.addEventListener("click", async () => {
+async function createPublicLink() {
   elements.saveStatus.textContent = "";
   try {
     if (!currentInvitationId) {
@@ -733,6 +835,31 @@ elements.shareButton.addEventListener("click", async () => {
     }
     elements.saveStatus.textContent = error.message;
   }
+}
+
+elements.shareButton.addEventListener("click", () => {
+  if (isGuestUser()) {
+    elements.saveStatus.textContent = "Please sign in to create a public link.";
+    return;
+  }
+  if (!currentInvitationId) {
+    elements.saveStatus.textContent = "Save the card before generating a public link.";
+    return;
+  }
+  openPublicLinkModal();
+});
+
+document.getElementById("cancelPublicLinkBtn").addEventListener("click", closePublicLinkModal);
+
+document.getElementById("publicLinkPayNowBtn").addEventListener("click", () => {
+  closePublicLinkModal();
+  history.pushState({}, "", "/plans");
+  showOnly(elements.plansPage);
+});
+
+document.getElementById("confirmPublicLinkBtn").addEventListener("click", async () => {
+  closePublicLinkModal();
+  await createPublicLink();
 });
 
 elements.copyShareLinkButton.addEventListener("click", async () => {
@@ -757,17 +884,23 @@ document.getElementById("editButton").addEventListener("click", () => {
 });
 
 document.getElementById("newCardButton").addEventListener("click", () => {
-  resetCurrentCard();
-  history.pushState({}, "", "/");
-  showOnly(elements.dashboard);
-  loadSavedCards();
+  confirmBeforeHome();
 });
 
 document.getElementById("homeButton").addEventListener("click", () => {
-  resetCurrentCard();
-  history.pushState({}, "", "/");
-  showOnly(elements.dashboard);
-  loadSavedCards();
+  confirmBeforeHome();
+});
+
+document.getElementById("cancelUnsavedBtn").addEventListener("click", () => {
+  pendingHomeAction = null;
+  document.getElementById("unsavedModal").classList.add("hidden");
+});
+
+document.getElementById("confirmUnsavedBtn").addEventListener("click", () => {
+  document.getElementById("unsavedModal").classList.add("hidden");
+  const action = pendingHomeAction || goHome;
+  pendingHomeAction = null;
+  action();
 });
 
 document.getElementById("adminButton").addEventListener("click", async () => {
@@ -792,6 +925,7 @@ document.getElementById("themeModeButton").addEventListener("click", () => {
 });
 
 document.getElementById("profileButton").addEventListener("click", () => {
+  if (isGuestUser()) return;
   document.getElementById("profileMessage").textContent = "";
   document.getElementById("profileName").value = signedInUser.name;
   document.getElementById("profileEmail").value = signedInUser.email;
@@ -833,6 +967,12 @@ document.getElementById("profileForm").addEventListener("submit", async (event) 
 document.getElementById("loginForm").addEventListener("submit", (event) => {
   event.preventDefault();
   submitAuth(event.currentTarget, "/api/auth/login");
+});
+
+document.getElementById("guestLoginButton").addEventListener("click", async () => {
+  signedInUser = { name: "Guest", role: "GUEST", emailVerified: true, guest: true };
+  history.replaceState({}, "", "/");
+  await enterApplication();
 });
 
 document.getElementById("forgotPasswordButton").addEventListener("click", () => {
@@ -899,7 +1039,7 @@ document.getElementById("logoutButton").addEventListener("click", openSignoutMod
 document.getElementById("cancelSignoutBtn").addEventListener("click", closeSignoutModal);
 
 document.getElementById("confirmSignoutBtn").addEventListener("click", async () => {
-  await api("/api/auth/logout", { method: "POST" });
+  if (!isGuestUser()) await api("/api/auth/logout", { method: "POST" });
   closeSignoutModal();
   cleanLogoutUi();
 });

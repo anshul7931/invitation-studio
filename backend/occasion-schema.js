@@ -80,6 +80,25 @@ const occasions = {
       rsvp: "People Team · events@northstar.example",
       palette: "navy"
     }
+  },
+  custom: {
+    required: ["eventName", "date", "time", "venue", "address", "message"],
+    titleFields: ["eventName"],
+    fingerprintFields: ["eventName", "date", "time", "venue", "address"],
+    defaults: {
+      eventType: "Roka Ceremony",
+      eventName: "A Special Celebration",
+      date: "2026-11-21",
+      time: "18:00",
+      venue: "Celebration Hall",
+      address: "Your City",
+      host: "With love from our family",
+      dressCode: "",
+      extraNote: "Blessings and good wishes are warmly welcome.",
+      message: "We joyfully invite you to celebrate this special occasion with us.",
+      rsvp: "RSVP contact",
+      palette: "champagne"
+    }
   }
 };
 

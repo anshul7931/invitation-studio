@@ -76,7 +76,8 @@ const config = {
       "/wedding",
       "/birthday",
       "/engagement",
-      "/office"
+      "/office",
+      "/custom"
     ],
     shareRoutePrefix: "/share/"
   },

@@ -2,8 +2,7 @@ const firstName = (name) => name.trim().split(/\s+/)[0] || "";
 const initial = (name) => firstName(name).charAt(0).toUpperCase();
 
 const ganeshaSources = {
-  "ganesha-icon": "/frontend/General/svgs/ganesha-icon-111519-512.svg",
-  ganesh: "/frontend/General/svgs/ganesha-icon-111519-512.svg"
+  "ganesha-icon": "/frontend/General/svgs/ganesha-icon-111519-512.svg"
 };
 
 const coupleSources = {
@@ -40,18 +39,23 @@ export function renderWedding(form, helpers) {
 
   document.getElementById("invitation").dataset.theme = value("theme");
   const ganeshaChoice = value("ganeshaVariant") || "inline";
-  const inlineGanesha = document.querySelector(".ganesha-wrap svg.ganesha");
+  const ganeshaWrap = document.querySelector(".ganesha-wrap");
+  const inlineGanesha = document.getElementById("ganeshaInlineSvg");
   const refGanesha = document.getElementById("ganeshaReferenceSvg");
-  inlineGanesha.hidden = ganeshaChoice !== "inline";
-  refGanesha.hidden = ganeshaChoice === "inline";
-  refGanesha.classList.toggle("is-cropped", ganeshaChoice === "ganesh");
+  const useReferenceGanesha = ganeshaChoice !== "inline";
+  ganeshaWrap.dataset.selected = useReferenceGanesha ? "ref" : "inline";
+  inlineGanesha.hidden = useReferenceGanesha;
+  refGanesha.hidden = !useReferenceGanesha;
   if (ganeshaSources[ganeshaChoice]) refGanesha.src = ganeshaSources[ganeshaChoice];
 
   const coupleChoice = value("coupleVariant") || "inline";
-  const inlineCouple = document.querySelector(".couple-frame svg.couple-art");
+  const coupleFrame = document.querySelector(".couple-frame");
+  const inlineCouple = document.getElementById("coupleInlineSvg");
   const refCouple = document.getElementById("coupleReferenceSvg");
-  inlineCouple.hidden = coupleChoice !== "inline";
-  refCouple.hidden = coupleChoice === "inline";
+  const useReferenceCouple = coupleChoice !== "inline";
+  coupleFrame.dataset.selected = useReferenceCouple ? "ref" : "inline";
+  inlineCouple.hidden = useReferenceCouple;
+  refCouple.hidden = !useReferenceCouple;
   if (coupleSources[coupleChoice]) refCouple.src = coupleSources[coupleChoice];
   document.getElementById("brideName").textContent = firstName(bride);
   document.getElementById("groomName").textContent = firstName(groom);

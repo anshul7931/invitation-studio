@@ -7,7 +7,7 @@
 	<g>
 		<polygon style="fill-rule:evenodd;clip-rule:evenodd;fill:#C79369;" points="139.868,59.515 150.065,60.765 153.003,44.613 
 			142.807,43.364 		"/>
-		<path style="fill-rule:evenodd;clip-rule:evenodd;fill:#D9ECED;" d="M42.867,16.54c24.19-6.091,51.487,18.689,62.622,55.964
+		<path style="fill-rule:evenodd;clip-rule:evenodd;fill:#F6D7E6;" d="M42.867,16.54c24.19-6.091,51.487,18.689,62.622,55.964
 			C95.45,85.526,81.076,95.42,63.821,99.765c-17.254,4.345-34.6,2.437-49.607-4.279C6.369,57.383,18.676,22.631,42.867,16.54z"/>
 		<path style="fill-rule:evenodd;clip-rule:evenodd;fill:#E7B791;" d="M75.618,72.693c4.62-1.206,14.358-5.043,17.962-8.06
 			l2.035,3.481C92.585,72,82.841,77.31,78.458,79.754L75.618,72.693z"/>
@@ -20,14 +20,14 @@
 			<rect x="50.657" y="59.49" transform="matrix(-0.968 0.2509 -0.2509 -0.968 128.1275 119.0598)" style="fill-rule:evenodd;clip-rule:evenodd;fill:#C79369;" width="11.633" height="16.416"/>
 		<path style="fill-rule:evenodd;clip-rule:evenodd;fill:#E7B791;" d="M62.296,105.684l-9.273-19.877l-1.808-15.216
 			c3.843-0.349,7.594-1.342,11.261-2.918c2.957,0.66,7.304,6.845,8.068,12.755l3.331,22.255L62.296,105.684z"/>
-		<path style="fill-rule:evenodd;clip-rule:evenodd;fill:#F5F0F0;" d="M70.589,101.248c24.945,0,45.366,30.695,47.062,69.56
+		<path style="fill-rule:evenodd;clip-rule:evenodd;fill:#B03A72;" d="M70.589,101.248c24.945,0,45.366,30.695,47.062,69.56
 			c-12.914,10.177-29.269,16.262-47.062,16.262c-17.793,0-29.428-8.23-42.341-18.407C29.943,129.798,45.644,101.248,70.589,101.248z
 			"/>
-		<path style="fill-rule:evenodd;clip-rule:evenodd;fill:#F5F0F0;" d="M53.023,85.807c1.392-0.335,9.265-11.864,15.74-11.179
+		<path style="fill-rule:evenodd;clip-rule:evenodd;fill:#B03A72;" d="M53.023,85.807c1.392-0.335,9.265-11.864,15.74-11.179
 			c0.869,1.82,1.524,3.825,1.78,5.8l3.298,22.029l0.033,0.226l-11.579,3.001L53.023,85.807z"/>
 		<path style="fill-rule:evenodd;clip-rule:evenodd;fill:#E7B791;" d="M62.975,76.206c9.295,8.038,24.634,17.502,39.36,21.626
 			l-1.217,4.013c-14.233-2.01-33.279-9.635-41.144-14.983C50.58,80.473,53.599,68.097,62.975,76.206z"/>
-		<path style="fill-rule:evenodd;clip-rule:evenodd;fill:#F5F0F0;" d="M74.49,192.218c4.62,0,8.388-1.893,8.388-4.213
+		<path style="fill-rule:evenodd;clip-rule:evenodd;fill:#F6D7E6;" d="M74.49,192.218c4.62,0,8.388-1.893,8.388-4.213
 			c0-2.319-3.768-4.212-8.388-4.212c-4.619,0-8.387,1.893-8.387,4.212C66.104,190.325,69.871,192.218,74.49,192.218z"/>
 		<g>
 			<path style="fill-rule:evenodd;clip-rule:evenodd;fill:#323232;" d="M127.086,186.817l-2.566-55.118l-0.018-12.87l-0.013-4.289
@@ -71,7 +71,7 @@
 		
 			<ellipse transform="matrix(-0.327 -0.945 0.945 -0.327 29.2796 392.9934)" style="fill-rule:evenodd;clip-rule:evenodd;fill:#1A1A1A;" cx="154.577" cy="186.071" rx="4.619" ry="9.197"/>
 		
-			<ellipse transform="matrix(0.3481 -0.9375 0.9375 0.3481 -141.5662 163.8561)" style="fill-rule:evenodd;clip-rule:evenodd;fill:#F5F0F0;" cx="47.03" cy="183.715" rx="4.213" ry="8.387"/>
+			<ellipse transform="matrix(0.3481 -0.9375 0.9375 0.3481 -141.5662 163.8561)" style="fill-rule:evenodd;clip-rule:evenodd;fill:#F6D7E6;" cx="47.03" cy="183.715" rx="4.213" ry="8.387"/>
 		<g>
 			
 				<ellipse transform="matrix(0.4068 -0.9135 0.9135 0.4068 69.7285 183.6045)" style="fill-rule:evenodd;clip-rule:evenodd;fill:#E7B791;" cx="176.242" cy="38.11" rx="5.78" ry="3.699"/>

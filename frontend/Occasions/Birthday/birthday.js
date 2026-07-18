@@ -5,7 +5,7 @@ export const birthday = {
   intro: "A graceful celebration centred on the guest of honour and their milestone.",
   kicker: "A beautiful year to celebrate",
   defaultTheme: "plum",
-  defaultIcon: "cake",
+  defaultIcon: "cakeRef",
   icons: [
     ["cakeRef", "Reference cake SVG"],
     ["cake", "Celebration cake"],

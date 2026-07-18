@@ -9,7 +9,7 @@ loadLocalEnv();
 const config = {
   app: {
     name: process.env.APP_NAME || "Invitation Studio",
-    host: process.env.HOST || "127.0.0.1",
+    host: process.env.HOST || "0.0.0.0",
     port: Number(process.env.PORT) || 3000,
     publicUrl: process.env.PUBLIC_APP_URL || `http://${process.env.HOST || "127.0.0.1"}:${Number(process.env.PORT) || 3000}`,
     publicShareMinutes: Number(process.env.PUBLIC_SHARE_MINUTES) || 10,
@@ -19,7 +19,7 @@ const config = {
       .filter(Boolean)
   },
   db: {
-    host: process.env.DB_HOST || "127.0.0.1",
+    host: process.env.DB_HOST || "0.0.0.0",
     port: Number(process.env.DB_PORT) || 3306,
     user: process.env.DB_USER || "root",
     password: process.env.DB_PASSWORD || "root",

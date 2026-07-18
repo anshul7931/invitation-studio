@@ -18,7 +18,7 @@ async function start() {
 
   const server = http.createServer(async (request, response) => {
     try {
-      const url = new URL(request.url, `http://${request.headers.host || `127.0.0.1:${config.app.port}`}`);
+      const url = new URL(request.url, `http://${request.headers.host || `0.0.0.0:${config.app.port}`}`);
       const pathname = url.pathname.replace(/\/+$/, "") || "/";
 
       if (request.method === "OPTIONS") {

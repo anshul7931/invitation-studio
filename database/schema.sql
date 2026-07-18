@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS invitations (
   public_generated_at DATETIME NULL,
   public_fingerprint CHAR(64) NULL,
   status ENUM('DRAFT', 'PUBLISHED', 'EXPIRED', 'PAID') NOT NULL DEFAULT 'DRAFT',
-  occasion ENUM('wedding', 'birthday', 'engagement', 'office') NOT NULL,
+  occasion ENUM('wedding', 'birthday', 'engagement', 'office', 'custom') NOT NULL,
   title VARCHAR(255) NOT NULL,
   fields JSON NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

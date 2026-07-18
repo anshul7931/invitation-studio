@@ -9,6 +9,27 @@ const coupleSources = {
   "couple-ref": "/frontend/General/svgs/wedding-couple-svgrepo-com.svg"
 };
 
+function driveImageUrl(link) {
+  const text = String(link || "").trim();
+  const id = text.match(/\/d\/([^/]+)/)?.[1] || text.match(/[?&]id=([^&]+)/)?.[1];
+  return id ? `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w1200` : text;
+}
+
+function renderPhotoGallery(values) {
+  const gallery = document.getElementById("weddingPhotoGallery");
+  const urls = values.templateType === "premium"
+    ? String(values.photoLinks || "").split(/\n|,/).map(driveImageUrl).filter(Boolean).slice(0, 10)
+    : [];
+  gallery.hidden = urls.length === 0;
+  gallery.replaceChildren(...urls.map((url) => {
+    const img = document.createElement("img");
+    img.src = url;
+    img.alt = "Wedding photo";
+    img.loading = "lazy";
+    return img;
+  }));
+}
+
 function setOptionalEvent(form, prefix, title, helpers) {
   const value = (name) => form.elements[name].value.trim();
   const date = value(`${prefix}Date`);
@@ -76,6 +97,7 @@ export function renderWedding(form, helpers) {
   document.getElementById("venueAddress").textContent = value("address");
   document.getElementById("rsvpDetails").textContent = rsvp.join(" · ");
   document.getElementById("rsvpSection").hidden = rsvp.length === 0;
+  renderPhotoGallery({ templateType: value("templateType"), photoLinks: value("photoLinks") });
 
   setOptionalEvent(form, "haldi", "Haldi", helpers);
   setOptionalEvent(form, "engagement", "Engagement", helpers);

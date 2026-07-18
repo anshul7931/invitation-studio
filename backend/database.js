@@ -67,7 +67,7 @@ async function initializeDatabase() {
       public_generated_at DATETIME NULL,
       public_fingerprint CHAR(64) NULL,
       status ENUM('DRAFT', 'PUBLISHED', 'EXPIRED', 'PAID') NOT NULL DEFAULT 'DRAFT',
-      occasion ENUM('wedding', 'birthday', 'engagement', 'office') NOT NULL,
+      occasion ENUM('wedding', 'birthday', 'engagement', 'office', 'custom') NOT NULL,
       title VARCHAR(255) NOT NULL,
       fields JSON NOT NULL,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -97,6 +97,7 @@ async function initializeDatabase() {
   await ensureColumn("invitations", "public_generated_at", "ALTER TABLE invitations ADD COLUMN public_generated_at DATETIME NULL AFTER public_expires_at");
   await ensureColumn("invitations", "public_fingerprint", "ALTER TABLE invitations ADD COLUMN public_fingerprint CHAR(64) NULL AFTER public_generated_at");
   await ensureColumn("invitations", "status", "ALTER TABLE invitations ADD COLUMN status ENUM('DRAFT', 'PUBLISHED', 'EXPIRED', 'PAID') NOT NULL DEFAULT 'DRAFT' AFTER public_fingerprint");
+  await pool.query("ALTER TABLE invitations MODIFY occasion ENUM('wedding', 'birthday', 'engagement', 'office', 'custom') NOT NULL");
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS email_tokens (

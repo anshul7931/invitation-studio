@@ -267,13 +267,39 @@ function confirmBeforeHome(action = goHome) {
 
 function applyWorkspaceMode(mode) {
   document.body.dataset.mode = mode;
-  localStorage.setItem("invitation_studio_mode", mode);
-  document.getElementById("themeModeButton").textContent = mode === "dark" ? "Light mode" : "Dark mode";
 }
 
 function applyAppTheme(theme) {
   document.body.dataset.theme = theme || "maroon";
-  localStorage.setItem("invitation_studio_theme", document.body.dataset.theme);
+}
+
+function applyFontTheme(font) {
+  document.body.dataset.font = font || "default";
+}
+
+function preferenceKey() {
+  return signedInUser?.email ? `invitation_studio_preferences_${signedInUser.email.toLowerCase()}` : null;
+}
+
+function currentPreferences() {
+  return {
+    theme: document.body.dataset.theme || "maroon",
+    mode: document.body.dataset.mode || "light",
+    font: document.body.dataset.font || "default"
+  };
+}
+
+function saveUserPreferences() {
+  const key = preferenceKey();
+  if (key) localStorage.setItem(key, JSON.stringify(currentPreferences()));
+}
+
+function applyUserPreferences() {
+  const key = preferenceKey();
+  const prefs = key ? JSON.parse(localStorage.getItem(key) || "{}") : {};
+  applyAppTheme(prefs.theme || "maroon");
+  applyWorkspaceMode(prefs.mode || "light");
+  applyFontTheme(prefs.font || "default");
 }
 
 function updateProfileVerifyNotice() {
@@ -288,6 +314,28 @@ function resetPaymentPage() {
     "Razorpay integration will be added here in a future release.";
 }
 
+function driveImageUrl(link) {
+  const text = String(link || "").trim();
+  const id = text.match(/\/d\/([^/]+)/)?.[1] || text.match(/[?&]id=([^&]+)/)?.[1];
+  return id ? `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w1200` : text;
+}
+
+function photoUrls(values) {
+  if (values.templateType !== "premium") return [];
+  return String(values.photoLinks || "").split(/\n|,/).map(driveImageUrl).filter(Boolean).slice(0, 10);
+}
+
+function renderPhotoGallery(container, urls) {
+  container.hidden = urls.length === 0;
+  container.replaceChildren(...urls.map((url) => {
+    const img = document.createElement("img");
+    img.src = url;
+    img.alt = "Invitation photo";
+    img.loading = "lazy";
+    return img;
+  }));
+}
+
 function renderGenericCard(occasion, values = formValues(elements.occasionForm)) {
   const cardData = occasion.build(values, helpers);
   elements.occasionInvitation.dataset.occasion = occasion.id;
@@ -298,6 +346,7 @@ function renderGenericCard(occasion, values = formValues(elements.occasionForm))
   document.getElementById("occasionCardTitle").textContent = cardData.title;
   document.getElementById("occasionCardSubtitle").textContent = cardData.subtitle;
   document.getElementById("occasionCardMessage").textContent = cardData.message;
+  renderPhotoGallery(document.getElementById("occasionPhotoGallery"), photoUrls(values));
   document.getElementById("occasionCardRsvp").textContent =
     cardData.rsvp ? `RSVP · ${cardData.rsvp}` : "";
 
@@ -680,6 +729,9 @@ async function loadAdminDashboard() {
 function cleanLogoutUi() {
   resetCurrentCard();
   signedInUser = null;
+  applyAppTheme("maroon");
+  applyWorkspaceMode("light");
+  applyFontTheme("default");
   elements.appHeader.hidden = true;
   elements.cardActions.hidden = true;
   elements.publicBanner.hidden = true;
@@ -719,6 +771,7 @@ async function submitAuth(form, endpoint) {
 }
 
 async function enterApplication() {
+  applyUserPreferences();
   elements.authShell.hidden = true;
   elements.appHeader.hidden = false;
   document.getElementById("userName").textContent = `Hello, ${signedInUser.name}`;
@@ -732,7 +785,9 @@ async function enterApplication() {
   document.getElementById("profileName").value = signedInUser.name;
   document.getElementById("profileEmail").value = signedInUser.email;
   document.getElementById("profilePhone").value = signedInUser.phone || "";
-  document.getElementById("profileAppTheme").value = localStorage.getItem("invitation_studio_theme") || document.body.dataset.theme || "maroon";
+  document.getElementById("profileAppTheme").value = document.body.dataset.theme || "maroon";
+  document.getElementById("profileModeTheme").value = document.body.dataset.mode || "light";
+  document.getElementById("profileFontTheme").value = document.body.dataset.font || "default";
   updateProfileVerifyNotice();
   await loadRoute();
 }
@@ -920,17 +975,15 @@ document.getElementById("planPayButton").addEventListener("click", () => {
   showOnly(elements.paymentPage);
 });
 
-document.getElementById("themeModeButton").addEventListener("click", () => {
-  applyWorkspaceMode(document.body.dataset.mode === "dark" ? "light" : "dark");
-});
-
 document.getElementById("profileButton").addEventListener("click", () => {
   if (isGuestUser()) return;
   document.getElementById("profileMessage").textContent = "";
   document.getElementById("profileName").value = signedInUser.name;
   document.getElementById("profileEmail").value = signedInUser.email;
   document.getElementById("profilePhone").value = signedInUser.phone || "";
-  document.getElementById("profileAppTheme").value = localStorage.getItem("invitation_studio_theme") || document.body.dataset.theme || "maroon";
+  document.getElementById("profileAppTheme").value = document.body.dataset.theme || "maroon";
+  document.getElementById("profileModeTheme").value = document.body.dataset.mode || "light";
+  document.getElementById("profileFontTheme").value = document.body.dataset.font || "default";
   updateProfileVerifyNotice();
   document.body.classList.add("modal-open");
   document.getElementById("profileDialog").showModal();
@@ -954,6 +1007,9 @@ document.getElementById("profileForm").addEventListener("submit", async (event) 
     });
     signedInUser = user;
     applyAppTheme(document.getElementById("profileAppTheme").value);
+    applyWorkspaceMode(document.getElementById("profileModeTheme").value);
+    applyFontTheme(document.getElementById("profileFontTheme").value);
+    saveUserPreferences();
     document.getElementById("userName").textContent = `Hello, ${user.name}`;
     document.getElementById("profileEmail").value = user.email;
     document.getElementById("profilePhone").value = user.phone || "";
@@ -1061,8 +1117,9 @@ window.addEventListener("popstate", () => {
   if (signedInUser || location.pathname.startsWith("/share/")) loadRoute();
 });
 
-applyWorkspaceMode(localStorage.getItem("invitation_studio_mode") || "light");
-applyAppTheme(localStorage.getItem("invitation_studio_theme") || document.body.dataset.theme || "maroon");
+applyAppTheme("maroon");
+applyWorkspaceMode("light");
+applyFontTheme("default");
 
 (async function bootstrap() {
   const bootRoute = location.pathname.replace(/^\/+/, "");
@@ -1081,6 +1138,7 @@ applyAppTheme(localStorage.getItem("invitation_studio_theme") || document.body.d
         signedInUser = user;
         elements.appHeader.hidden = !signedInUser;
         if (signedInUser) {
+          applyUserPreferences();
           document.getElementById("userName").textContent = `Hello, ${signedInUser.name}`;
           elements.adminButton.hidden = signedInUser.role !== "ADMIN";
         }

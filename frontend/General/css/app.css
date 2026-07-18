@@ -521,9 +521,6 @@
       --page-start: #06162f;
       --page-middle: #173f73;
       --page-end: #030d1f;
-      --display-font: "Parisienne", cursive;
-      --body-font: "Playfair Display", Georgia, serif;
-      --label-font: "Cinzel", serif;
     }
 
     body[data-theme="emerald"],
@@ -539,9 +536,6 @@
       --page-start: #06251f;
       --page-middle: #165849;
       --page-end: #031713;
-      --display-font: "Great Vibes", cursive;
-      --body-font: "EB Garamond", Georgia, serif;
-      --label-font: "Cinzel", serif;
     }
 
     body[data-theme="rose-gold"],
@@ -559,9 +553,6 @@
       --page-start: #4d202a;
       --page-middle: #9a5360;
       --page-end: #32151c;
-      --display-font: "Parisienne", cursive;
-      --body-font: "Lora", Georgia, serif;
-      --label-font: "Montserrat", sans-serif;
     }
 
     body[data-theme="sapphire"],
@@ -577,9 +568,6 @@
       --page-start: #06243c;
       --page-middle: #17628a;
       --page-end: #031522;
-      --display-font: "Parisienne", cursive;
-      --body-font: "Playfair Display", Georgia, serif;
-      --label-font: "Cinzel", serif;
     }
 
     body[data-theme="lavender"],
@@ -597,8 +585,6 @@
       --page-start: #31233f;
       --page-middle: #725986;
       --page-end: #21172b;
-      --display-font: "Great Vibes", cursive;
-      --body-font: "Lora", Georgia, serif;
     }
 
     body[data-theme="terracotta"],
@@ -616,8 +602,24 @@
       --page-start: #4d251d;
       --page-middle: #a75a45;
       --page-end: #321711;
-      --display-font: "Parisienne", cursive;
+    }
+
+    body[data-font="classic"] {
+      --display-font: "Playfair Display", Georgia, serif;
       --body-font: "EB Garamond", Georgia, serif;
+      --label-font: "Cinzel", serif;
+    }
+
+    body[data-font="modern"] {
+      --display-font: "Cormorant Garamond", Georgia, serif;
+      --body-font: "Lora", Georgia, serif;
+      --label-font: "Montserrat", sans-serif;
+    }
+
+    body[data-font="script"] {
+      --display-font: "Parisienne", cursive;
+      --body-font: "Cormorant Garamond", Georgia, serif;
+      --label-font: "Montserrat", sans-serif;
     }
 
     .dashboard {
@@ -1317,6 +1319,23 @@
       color: var(--muted);
       font-size: 1.2rem;
       line-height: 1.6;
+    }
+
+    .photo-gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 10px;
+      max-width: 680px;
+      margin: 24px auto 30px;
+    }
+
+    .photo-gallery img {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      border: 2px solid var(--gold);
+      border-radius: 16px;
+      box-shadow: 0 10px 24px rgba(60, 10, 24, 0.14);
     }
 
     .occasion-details {

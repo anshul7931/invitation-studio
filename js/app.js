@@ -15,6 +15,7 @@ const elements = {
   paymentPage: document.getElementById("paymentPage"),
   weddingBuilder: document.getElementById("builder"),
   occasionBuilder: document.getElementById("occasionBuilder"),
+  templateChoice: document.getElementById("templateChoice"),
   weddingInvitation: document.getElementById("invitation"),
   occasionInvitation: document.getElementById("occasionInvitation"),
   weddingForm: document.getElementById("invitationForm"),
@@ -27,6 +28,7 @@ const elements = {
   saveButton: document.getElementById("saveCardButton"),
   shareButton: document.getElementById("shareCardButton"),
   copyShareLinkButton: document.getElementById("copyShareLinkButton"),
+  statusBadge: document.getElementById("invitationStatusBadge"),
   saveStatus: document.getElementById("saveStatus"),
   publicBanner: document.getElementById("publicBanner"),
   profileVerifyNotice: document.getElementById("profileVerifyNotice"),
@@ -50,6 +52,9 @@ let pendingDelete = null;
 let shareTimer = null;
 let activeOccasionConfig = null;
 let pendingHomeAction = null;
+let pendingTemplateFields = null;
+let currentTemplateType = "basic";
+let currentInvitationStatus = "DRAFT";
 
 const supportedOccasions = ["wedding", "birthday", "engagement", "office", "custom"];
 const publicStaticRoutes = ["about", "contact", "privacy", "terms", "refund", "disclaimer", "acceptable-use"];
@@ -136,6 +141,7 @@ const hideableSections = [
 
   elements.weddingBuilder,
   elements.occasionBuilder,
+  elements.templateChoice,
   elements.weddingInvitation,
   elements.occasionInvitation
 ].filter(Boolean);
@@ -241,11 +247,28 @@ function resetCurrentCard() {
   elements.copyShareLinkButton.hidden = true;
   elements.saveStatus.textContent = "";
   elements.shareInfo.textContent = "";
+  updateStatusBadge("DRAFT");
   clearInterval(shareTimer);
+  pendingTemplateFields = null;
+  currentTemplateType = "basic";
+}
+
+function effectiveStatus(status, expiresAt) {
+  if (status === "PAID") return "PAID";
+  if (status === "PUBLISHED" && expiresAt && new Date(expiresAt).getTime() <= Date.now()) return "EXPIRED";
+  return status || "DRAFT";
+}
+
+function updateStatusBadge(status = currentInvitationStatus) {
+  currentInvitationStatus = effectiveStatus(status, currentPublicExpiresAt);
+  if (!elements.statusBadge) return;
+  const label = currentInvitationStatus.charAt(0) + currentInvitationStatus.slice(1).toLowerCase();
+  elements.statusBadge.textContent = label;
+  elements.statusBadge.className = `status-badge status-${currentInvitationStatus.toLowerCase()}`;
 }
 
 function hasActiveCardWork() {
-  return [elements.weddingBuilder, elements.occasionBuilder, elements.weddingInvitation, elements.occasionInvitation]
+  return [elements.weddingBuilder, elements.occasionBuilder, elements.templateChoice, elements.weddingInvitation, elements.occasionInvitation]
     .some((section) => section && !section.hidden);
 }
 
@@ -366,6 +389,40 @@ function renderGenericCard(occasion, values = formValues(elements.occasionForm))
   document.title = cardData.documentTitle;
 }
 
+function selectedBuilder() {
+  return activeOccasion === "wedding" ? elements.weddingBuilder : elements.occasionBuilder;
+}
+
+function selectedInvitation() {
+  return activeOccasion === "wedding" ? elements.weddingInvitation : elements.occasionInvitation;
+}
+
+function setFormTemplateType(templateType) {
+  const form = activeOccasion === "wedding" ? elements.weddingForm : elements.occasionForm;
+  currentTemplateType = templateType || "basic";
+  if (form.elements.templateType) form.elements.templateType.value = currentTemplateType;
+}
+
+function showTemplateChoice(fields) {
+  pendingTemplateFields = fields;
+  showOnly(elements.templateChoice);
+}
+
+function openSelectedTemplate(templateType) {
+  if (!pendingTemplateFields) return;
+  pendingTemplateFields = { ...pendingTemplateFields, templateType };
+  setFormTemplateType(templateType);
+  updateStatusBadge(currentInvitationId ? currentInvitationStatus : "DRAFT");
+  if (activeOccasion === "wedding") {
+    renderWedding(elements.weddingForm, helpers);
+    renderWeddingMotif();
+  } else {
+    renderGenericCard(activeOccasionConfig || getOccasion(activeOccasion), pendingTemplateFields);
+  }
+  elements.saveStatus.textContent = `${templateType === "premium" ? "Premium" : "Basic"} card selected. Save it to your account.`;
+  showOnly(selectedInvitation());
+}
+
 function renderWeddingMotif() {
   const key = elements.weddingForm.elements.cardIcon?.value || "rings";
   document.getElementById("weddingMotif").innerHTML = visualMotifs[key] || visualMotifs.rings;
@@ -405,6 +462,9 @@ async function renderInvitationFromData(invitation, readOnly = false) {
   currentInvitationId = readOnly ? null : invitation.id;
   currentShareUrl = invitation.shareUrl;
   currentPublicExpiresAt = invitation.publicExpiresAt;
+  updateStatusBadge(invitation.status);
+  currentTemplateType = invitation.fields?.templateType || (String(invitation.fields?.photoLinks || "").trim() ? "premium" : "basic");
+  pendingTemplateFields = invitation.fields || null;
   elements.saveButton.textContent = currentInvitationId ? "Update Card" : "Save Card";
 
   if (invitation.occasion === "wedding") {
@@ -433,7 +493,11 @@ async function renderInvitationFromData(invitation, readOnly = false) {
 }
 
 function currentFields() {
-  return formValues(activeOccasion === "wedding" ? elements.weddingForm : elements.occasionForm);
+  const fields = formValues(activeOccasion === "wedding" ? elements.weddingForm : elements.occasionForm);
+  fields.templateType = pendingTemplateFields?.templateType ||
+    currentTemplateType ||
+    (String(fields.photoLinks || "").trim() ? "premium" : fields.templateType || "basic");
+  return fields;
 }
 
 async function saveCurrentCard() {
@@ -447,6 +511,8 @@ async function saveCurrentCard() {
   currentInvitationId = invitation.id;
   currentShareUrl = invitation.shareUrl;
   currentPublicExpiresAt = invitation.publicExpiresAt;
+  currentTemplateType = invitation.fields?.templateType || currentFields().templateType || "basic";
+  pendingTemplateFields = invitation.fields || { ...currentFields(), templateType: currentTemplateType };
   elements.saveButton.textContent = "Update Card";
   history.replaceState({}, "", invitation.url);
   return invitation;
@@ -458,6 +524,7 @@ function updateShareDisplay() {
     elements.shareInfo.textContent = "";
     elements.shareButton.textContent = "Generate Public Link";
     elements.copyShareLinkButton.hidden = true;
+    updateStatusBadge(currentInvitationStatus);
     return;
   }
   const link = `${location.origin}${currentShareUrl}`;
@@ -469,6 +536,7 @@ function updateShareDisplay() {
     const remainingMs = new Date(currentPublicExpiresAt).getTime() - Date.now();
     if (remainingMs <= 0) {
       elements.shareInfo.textContent = `Public link expired: ${link}`;
+      updateStatusBadge("EXPIRED");
       clearInterval(shareTimer);
       return;
     }
@@ -518,6 +586,10 @@ async function loadSavedCards() {
       const type = document.createElement("span");
       type.className = "saved-card-type";
       type.textContent = invitation.occasion;
+      const status = document.createElement("span");
+      status.className = `status-badge status-${String(invitation.status || "DRAFT").toLowerCase()}`;
+      status.textContent = String(invitation.status || "DRAFT").charAt(0) +
+        String(invitation.status || "DRAFT").slice(1).toLowerCase();
       const title = document.createElement("h3");
       title.textContent = invitation.title;
       const time = document.createElement("time");
@@ -543,7 +615,10 @@ async function loadSavedCards() {
       remove.addEventListener("click", () => openDeleteModal(invitation));
 
       actions.append(open, remove);
-      card.append(type, title, time, actions);
+      const meta = document.createElement("div");
+      meta.className = "saved-card-meta";
+      meta.append(type, status);
+      card.append(meta, title, time, actions);
       elements.savedCards.append(card);
     });
   } catch (error) {
@@ -568,6 +643,11 @@ function closeSignoutModal() {
 }
 
 function openPublicLinkModal() {
+  const duration = currentFields().templateType === "premium" ? 5 : 10;
+  const text = document.getElementById("publicLinkDurationText");
+  if (text) text.textContent = `Link creation will be allowed once for ${duration} minutes.`;
+  const confirm = document.getElementById("confirmPublicLinkBtn");
+  if (confirm) confirm.textContent = `Create ${duration} min link`;
   document.getElementById("publicLinkModal").classList.remove("hidden");
 }
 
@@ -578,6 +658,7 @@ function closePublicLinkModal() {
 async function loadRoute() {
   const parts = location.pathname.split("/").filter(Boolean);
   const route = parts[0];
+  document.body.classList.toggle("preauth-static", publicStaticRoutes.includes(route) && !signedInUser);
   if (publicStaticRoutes.includes(route) && !signedInUser) elements.appHeader.hidden = true;
 
   if (route === "verify-email") {
@@ -837,18 +918,29 @@ elements.weddingForm.addEventListener("submit", (event) => {
   event.preventDefault();
   if (!elements.weddingForm.reportValidity()) return;
   activeOccasion = "wedding";
-  renderWedding(elements.weddingForm, helpers);
-  renderWeddingMotif();
-  elements.saveStatus.textContent = currentInvitationId ? "Changes are ready to save." : "Card created. Save it to your account.";
-  showOnly(elements.weddingInvitation);
+  showTemplateChoice(formValues(elements.weddingForm));
 });
 
 elements.occasionForm.addEventListener("submit", (event) => {
   event.preventDefault();
   if (!elements.occasionForm.reportValidity()) return;
-  renderGenericCard(activeOccasionConfig || getOccasion(activeOccasion));
-  elements.saveStatus.textContent = currentInvitationId ? "Changes are ready to save." : "Card created. Save it to your account.";
-  showOnly(elements.occasionInvitation);
+  showTemplateChoice(formValues(elements.occasionForm));
+});
+
+document.querySelectorAll("[data-open-template]").forEach((button) => {
+  button.addEventListener("click", () => openSelectedTemplate(button.dataset.openTemplate));
+});
+
+document.getElementById("backToDetailsButton")?.addEventListener("click", () => {
+  showOnly(selectedBuilder());
+});
+
+document.addEventListener("change", (event) => {
+  const toggle = event.target.closest("[data-premium-toggle]");
+  if (!toggle) return;
+  const wrapper = toggle.closest(".premium-options");
+  const fields = wrapper?.querySelector(".premium-fields");
+  if (fields) fields.hidden = !toggle.checked;
 });
 
 elements.saveButton.addEventListener("click", async () => {
@@ -863,6 +955,7 @@ elements.saveButton.addEventListener("click", async () => {
     elements.saveStatus.textContent = "Saved in your account.";
     currentShareUrl = invitation.shareUrl;
     currentPublicExpiresAt = invitation.publicExpiresAt;
+    updateStatusBadge(invitation.status);
     updateShareDisplay();
   } catch (error) {
     elements.saveStatus.textContent = error.message;
@@ -881,6 +974,7 @@ async function createPublicLink() {
     const invitation = await api(`/api/invitations/${activeOccasion}/${currentInvitationId}/share`, { method: "POST" });
     currentShareUrl = invitation.shareUrl;
     currentPublicExpiresAt = invitation.publicExpiresAt;
+    updateStatusBadge(invitation.status);
     updateShareDisplay();
   } catch (error) {
     if (error.status === 402 && error.data?.paymentUrl) {
@@ -1114,7 +1208,8 @@ document.getElementById("confirmDeleteBtn").addEventListener("click", async () =
 });
 
 window.addEventListener("popstate", () => {
-  if (signedInUser || location.pathname.startsWith("/share/")) loadRoute();
+  const route = location.pathname.split("/").filter(Boolean)[0];
+  if (signedInUser || location.pathname.startsWith("/share/") || publicStaticRoutes.includes(route)) loadRoute();
 });
 
 applyAppTheme("maroon");

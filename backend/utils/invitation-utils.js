@@ -2,6 +2,7 @@
  * Mapping and normalization helpers for users and invitations.
  */
 const crypto = require("crypto");
+const { config } = require("../config");
 const { occasions } = require("../occasion-schema");
 
 function invitationTitle(occasion, fields) {
@@ -14,17 +15,29 @@ function invitationTitle(occasion, fields) {
 }
 
 function invitationDto(row) {
-  const publicExpiresAt = row.public_expires_at ? new Date(row.public_expires_at) : null;
+  const fields = typeof row.fields === "string" ? JSON.parse(row.fields) : row.fields;
+  let publicExpiresAt = row.public_expires_at ? new Date(row.public_expires_at) : null;
+  const isPremium = fields.templateType === "premium" || String(fields.photoLinks || "").trim().length > 0;
+  if (isPremium && row.public_generated_at) {
+    publicExpiresAt = new Date(new Date(row.public_generated_at).getTime() + 5 * 60 * 1000);
+  } else if (publicExpiresAt && row.public_generated_at && config.app.publicShareMinutes !== 10) {
+    publicExpiresAt = new Date(new Date(row.public_generated_at).getTime() + config.app.publicShareMinutes * 60 * 1000);
+  }
+  const status = row.status === "PAID"
+    ? "PAID"
+    : row.status === "PUBLISHED" && publicExpiresAt && publicExpiresAt.getTime() <= Date.now()
+      ? "EXPIRED"
+      : row.status || "DRAFT";
   return {
     id: row.id,
     occasion: row.occasion,
     title: row.title,
-    fields: typeof row.fields === "string" ? JSON.parse(row.fields) : row.fields,
+    fields,
     url: `/${row.occasion}?id=${row.id}`,
     shareUrl: row.public_token ? `/share/${row.public_token}` : null,
     publicExpiresAt: publicExpiresAt ? publicExpiresAt.toISOString() : null,
     publicGeneratedAt: row.public_generated_at ? new Date(row.public_generated_at).toISOString() : null,
-    status: row.status,
+    status,
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString()
   };

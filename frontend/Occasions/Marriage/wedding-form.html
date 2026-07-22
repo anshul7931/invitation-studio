@@ -7,6 +7,7 @@
     </header>
 
     <form class="details-form" id="invitationForm">
+      <input type="hidden" name="templateType" value="basic">
       <fieldset class="form-section">
         <legend>Couple &amp; Style</legend>
         <div class="form-grid">
@@ -55,17 +56,6 @@
               <option value="inline">Inline wedding couple</option>
               <option value="couple-ref">Reference couple SVG</option>
             </select>
-          </div>
-          <div class="field full">
-            <label for="weddingTemplateInput">Card template</label>
-            <select id="weddingTemplateInput" name="templateType">
-              <option value="basic">Basic</option>
-              <option value="premium">Premium with photos</option>
-            </select>
-          </div>
-          <div class="field full">
-            <label for="weddingPhotoLinksInput">Google Drive photo links <span class="optional-label">Premium · up to 10</span></label>
-            <textarea id="weddingPhotoLinksInput" name="photoLinks" placeholder="Paste one public Google Drive image link per line, up to 10"></textarea>
           </div>
           <div class="field full">
             <label for="messageInput">Invitation message / blessing</label>
@@ -144,6 +134,20 @@
           <div class="field">
             <label for="rsvpPhoneInput">Phone number</label>
             <input type="tel" id="rsvpPhoneInput" name="rsvpPhone" value="99999 88888">
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="form-section premium-options">
+        <legend>Premium</legend>
+        <label class="switch-row">
+          <input type="checkbox" data-premium-toggle>
+          <span>Go Premium</span>
+        </label>
+        <div class="premium-fields" hidden>
+          <div class="field full">
+            <label for="weddingPhotoLinksInput">Google Drive photo links <span class="optional-label">Premium · up to 10</span></label>
+            <textarea id="weddingPhotoLinksInput" name="photoLinks" placeholder="Paste one public Google Drive image link per line, up to 10"></textarea>
           </div>
         </div>
       </fieldset>

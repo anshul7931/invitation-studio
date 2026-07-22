@@ -55,6 +55,7 @@ export function renderOccasionForm(occasion, container) {
   }).join("");
 
   container.innerHTML = `
+    <input type="hidden" name="templateType" value="basic">
     <section class="form-chapter theme-chapter">
       <div class="chapter-heading">
         <span class="chapter-number">✦</span>
@@ -72,18 +73,19 @@ export function renderOccasionForm(occasion, container) {
         <label for="occasion-cardIcon">Card motif</label>
         <select id="occasion-cardIcon" name="cardIcon">${iconOptions}</select>
       </div>` : ""}
-      <div class="field full theme-field">
-        <label for="occasion-templateType">Card template</label>
-        <select id="occasion-templateType" name="templateType">
-          <option value="basic">Basic</option>
-          <option value="premium">Premium with photos</option>
-        </select>
-      </div>
-      <div class="field full theme-field">
-        <label for="occasion-photoLinks">Google Drive photo links <span class="optional-label">Premium · up to 10</span></label>
-        <textarea id="occasion-photoLinks" name="photoLinks" placeholder="Paste one public Google Drive image link per line, up to 10"></textarea>
-      </div>
     </section>
     ${sections}
+    <section class="form-chapter premium-options">
+      <label class="switch-row">
+        <input type="checkbox" data-premium-toggle>
+        <span>Go Premium</span>
+      </label>
+      <div class="premium-fields" hidden>
+        <div class="field full">
+          <label for="occasion-photoLinks">Google Drive photo links <span class="optional-label">Premium · up to 10</span></label>
+          <textarea id="occasion-photoLinks" name="photoLinks" placeholder="Paste one public Google Drive image link per line, up to 10"></textarea>
+        </div>
+      </div>
+    </section>
   `;
 }

@@ -21,7 +21,12 @@ async function handlePublicApi(request, response, pathname) {
       sendJson(response, 404, { error: "Shared invitation not found" });
       return true;
     }
-    sendJson(response, 200, { ...invitationDto(rows[0]), owner: rows[0].owner_name, readOnly: true });
+    const invitation = invitationDto(rows[0]);
+    if (invitation.publicExpiresAt && new Date(invitation.publicExpiresAt).getTime() <= Date.now()) {
+      sendJson(response, 404, { error: "Shared invitation not found" });
+      return true;
+    }
+    sendJson(response, 200, { ...invitation, owner: rows[0].owner_name, readOnly: true });
     return true;
   }
 
@@ -46,6 +51,8 @@ async function handlePublicApi(request, response, pathname) {
       return true;
     }
     const fields = typeof invitation.fields === "string" ? JSON.parse(invitation.fields) : invitation.fields;
+    const hasPremiumPhotos = String(fields.photoLinks || "").trim().length > 0;
+    const freeMinutes = fields.templateType === "premium" || hasPremiumPhotos ? 5 : config.app.publicShareMinutes;
     const fingerprint = fingerprintFor(shareMatch[1], fields);
     const [duplicates] = await database().execute(
       `SELECT id FROM invitations
@@ -66,8 +73,8 @@ async function handlePublicApi(request, response, pathname) {
        SET public_token = ?, public_expires_at = DATE_ADD(NOW(), INTERVAL ? MINUTE),
            public_generated_at = COALESCE(public_generated_at, NOW()),
            public_fingerprint = ?, status = 'PUBLISHED'
-       WHERE id = ? AND user_id = ?`,
-      [publicToken, config.app.publicShareMinutes, fingerprint, shareMatch[2], user.id]
+      WHERE id = ? AND user_id = ?`,
+      [publicToken, freeMinutes, fingerprint, shareMatch[2], user.id]
     );
     const [updated] = await database().execute("SELECT * FROM invitations WHERE id = ?", [shareMatch[2]]);
     sendJson(response, 200, invitationDto(updated[0]));

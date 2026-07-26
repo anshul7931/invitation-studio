@@ -1,6 +1,14 @@
 <section class="payment-page" id="paymentPage" hidden>
-    <p class="builder-kicker">Payment</p>
-    <h1>Page Under Development</h1>
-    <p class="builder-intro">Razorpay integration will be added here in a future release.</p>
-    <button class="generate-button" type="button" id="paymentHomeButton">Back to Dashboard</button>
+    <p class="builder-kicker">Dummy Payment</p>
+    <h1>Complete Payment</h1>
+    <p class="builder-intro" id="paymentSummary">Select a plan first. Razorpay integration will be added here later.</p>
+    <form class="dummy-payment-form" id="dummyPaymentForm">
+      <div class="field">
+        <label for="paymentAmountInput">Amount</label>
+        <input type="number" id="paymentAmountInput" name="amount" min="1" required>
+      </div>
+      <p class="auth-message" id="paymentMessage"></p>
+      <button class="generate-button" type="submit">Pay</button>
+      <button class="text-button" type="button" id="paymentHomeButton">Back to Dashboard</button>
+    </form>
   </section>

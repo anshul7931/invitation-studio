@@ -38,6 +38,7 @@ function createOpenApi(host, port) {
       { name: "Profile" },
       { name: "Occasions" },
       { name: "Invitations" },
+      { name: "Plans" },
       { name: "Public" },
       { name: "Admin" }
     ],
@@ -264,6 +265,42 @@ function createOpenApi(host, port) {
           responses: {
             200: { description: "Read-only invitation" },
             404: { description: "Not found or expired" }
+          }
+        }
+      },
+      "/api/plans": {
+        get: {
+          tags: ["Plans"],
+          summary: "List plan catalog with period pricing and discounts",
+          responses: { 200: { description: "Plan catalog" } }
+        }
+      },
+      "/api/plans/me": {
+        get: {
+          tags: ["Plans"],
+          summary: "List current user's active purchases and credit transactions",
+          security: [{ cookieAuth: [] }],
+          responses: { 200: { description: "Plan balances and transactions" }, 401: { description: "Authentication required" } }
+        }
+      },
+      "/api/plans/purchase": {
+        post: {
+          tags: ["Plans"],
+          summary: "Complete dummy payment and add credits",
+          security: [{ cookieAuth: [] }],
+          requestBody: body({
+            type: "object",
+            required: ["planId", "billingPeriod", "amount"],
+            properties: {
+              planId: { type: "string", enum: ["single_basic", "single_premium", "multi_basic", "multi_premium"] },
+              billingPeriod: { type: "string", enum: ["monthly", "quarterly", "halfyearly", "yearly"] },
+              amount: { type: "number", example: 149 }
+            }
+          }),
+          responses: {
+            201: { description: "Payment accepted and credits added" },
+            400: { description: "Invalid plan or amount" },
+            401: { description: "Authentication required" }
           }
         }
       },

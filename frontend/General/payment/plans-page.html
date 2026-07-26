@@ -1,18 +1,42 @@
 <section class="payment-page plans-page" id="plansPage" hidden>
-    <p class="builder-kicker">Premium Plans</p>
+    <p class="builder-kicker">Invitation Credits</p>
     <h1>Choose a Plan</h1>
-    <p class="builder-intro">Public link regeneration will be available through paid plans. Razorpay integration is coming soon.</p>
-    <div class="plans-grid">
-      <article class="plan-card">
-        <h2>Starter</h2>
-        <p>Regenerate one public invitation link.</p>
-        <strong>₹49</strong>
+    <p class="builder-intro">Select a billing period to view discounted card credits. Razorpay will replace the dummy payment later.</p>
+
+    <div class="billing-tabs" id="billingTabs" aria-label="Billing period"></div>
+
+    <section class="feature-grid">
+      <article class="feature-card basic-feature">
+        <span class="free-highlight">Free for 10 mins</span>
+        <h2>Basic Card</h2>
+        <ul>
+          <li>Includes all Basic Details</li>
+        </ul>
       </article>
-      <article class="plan-card">
-        <h2>Celebration</h2>
-        <p>More link generations for repeated edits.</p>
-        <strong>₹149</strong>
+      <article class="feature-card premium-feature">
+        <span class="free-highlight">Free for 5 mins</span>
+        <h2>Premium Card</h2>
+        <ul>
+          <li>Includes all Basic Details</li>
+          <li>Add your pictures with Google Drive</li>
+          <li>Add Countdown</li>
+          <li>Add hashtag in the invitation link</li>
+        </ul>
       </article>
-    </div>
-    <button class="generate-button" type="button" id="planPayButton">Pay Now</button>
+    </section>
+
+    <h2 class="plans-heading">Single card plans</h2>
+    <div class="plans-grid" id="singlePlanGrid"></div>
+
+    <h2 class="plans-heading">Multi card plans</h2>
+    <div class="plans-grid" id="multiPlanGrid"></div>
+
+    <section class="plan-conditions">
+      <h2>Credit conditions</h2>
+      <ul>
+        <li>Basic Card credits can be used only for Basic cards.</li>
+        <li>Premium Card credits can be used for either Basic or Premium cards.</li>
+        <li>Multi-card plans add 10 credits and can generate multiple public links until credits or plan validity ends.</li>
+      </ul>
+    </section>
   </section>

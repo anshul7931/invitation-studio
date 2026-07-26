@@ -6,6 +6,7 @@ const { handleAdminApi } = require("./admin-api");
 const { handleAuthApi } = require("./auth-api");
 const { handleInvitationApi } = require("./invitation-api");
 const { handleOccasionApi } = require("./occasion-api");
+const { handlePlansApi } = require("./plans-api");
 const { handleProfileApi } = require("./profile-api");
 const { handlePublicApi } = require("./public-api");
 
@@ -13,6 +14,7 @@ const apiHandlers = [
   handleAuthApi,
   handleProfileApi,
   handleAdminApi,
+  handlePlansApi,
   handleOccasionApi,
   handlePublicApi,
   handleInvitationApi

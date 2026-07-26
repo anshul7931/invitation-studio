@@ -8,6 +8,7 @@ const { config } = require("./config");
 const { createOpenApi } = require("./openapi");
 const { initializeDatabase } = require("./database");
 const { handleApi } = require("./apis");
+const { requireAdmin } = require("./middleware/auth-guards");
 const { appRoot, sendJson, serveFile, serveHtmlTemplate } = require("./utils/http");
 const { swaggerPage } = require("./utils/swagger-page");
 
@@ -26,10 +27,14 @@ async function start() {
         return;
       }
       if (request.method === "GET" && pathname === "/openapi.json") {
+        const admin = await requireAdmin(request, response);
+        if (!admin) return;
         sendJson(response, 200, createOpenApi(config.app.host, config.app.port));
         return;
       }
       if (request.method === "GET" && pathname === "/api-docs") {
+        const admin = await requireAdmin(request, response);
+        if (!admin) return;
         response.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
         response.end(swaggerPage());
         return;

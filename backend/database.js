@@ -133,6 +133,47 @@ async function initializeDatabase() {
     )
   `);
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS plan_purchases (
+      id CHAR(36) PRIMARY KEY,
+      user_id CHAR(36) NOT NULL,
+      plan_id VARCHAR(60) NOT NULL,
+      plan_title VARCHAR(160) NOT NULL,
+      billing_period ENUM('monthly', 'quarterly', 'halfyearly', 'yearly') NOT NULL,
+      credit_type ENUM('BASIC', 'PREMIUM') NOT NULL,
+      total_credits INT NOT NULL,
+      available_credits INT NOT NULL,
+      amount DECIMAL(10,2) NOT NULL,
+      expires_at DATETIME NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT fk_plan_purchases_user
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      INDEX idx_plan_purchases_user_active (user_id, expires_at, available_credits)
+    )
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS credit_transactions (
+      id CHAR(36) PRIMARY KEY,
+      user_id CHAR(36) NOT NULL,
+      purchase_id CHAR(36) NULL,
+      invitation_id CHAR(36) NULL,
+      transaction_type ENUM('PURCHASE', 'CREDIT_USED') NOT NULL,
+      credit_type ENUM('BASIC', 'PREMIUM') NOT NULL,
+      credits INT NOT NULL,
+      amount DECIMAL(10,2) NULL,
+      note VARCHAR(500) NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT fk_credit_transactions_user
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      CONSTRAINT fk_credit_transactions_purchase
+        FOREIGN KEY (purchase_id) REFERENCES plan_purchases(id) ON DELETE SET NULL,
+      CONSTRAINT fk_credit_transactions_invitation
+        FOREIGN KEY (invitation_id) REFERENCES invitations(id) ON DELETE SET NULL,
+      INDEX idx_credit_transactions_user_created (user_id, created_at)
+    )
+  `);
+
   await pool.query("DELETE FROM sessions WHERE expires_at <= NOW()");
   await pool.query("DELETE FROM email_tokens WHERE expires_at <= NOW() OR used_at IS NOT NULL");
   return pool;

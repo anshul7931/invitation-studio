@@ -25,6 +25,9 @@ const elements = {
   savedCards: document.getElementById("savedCards"),
   savedEmpty: document.getElementById("savedEmpty"),
   savedLoading: document.getElementById("savedLoading"),
+  purchasedPlans: document.getElementById("purchasedPlans"),
+  plansEmpty: document.getElementById("plansEmpty"),
+  plansLoading: document.getElementById("plansLoading"),
   saveButton: document.getElementById("saveCardButton"),
   shareButton: document.getElementById("shareCardButton"),
   copyShareLinkButton: document.getElementById("copyShareLinkButton"),
@@ -55,6 +58,11 @@ let pendingHomeAction = null;
 let pendingTemplateFields = null;
 let currentTemplateType = "basic";
 let currentInvitationStatus = "DRAFT";
+let planCatalog = null;
+let selectedBillingPeriod = "monthly";
+let selectedPlanForPayment = null;
+let profilePreviewPreferences = null;
+let profileChangesCommitted = false;
 
 const supportedOccasions = ["wedding", "birthday", "engagement", "office", "custom"];
 const publicStaticRoutes = ["about", "contact", "privacy", "terms", "refund", "disclaimer", "acceptable-use"];
@@ -277,6 +285,7 @@ function goHome() {
   history.pushState({}, "", "/");
   showOnly(elements.dashboard);
   loadSavedCards();
+  loadPlanSummary();
 }
 
 function confirmBeforeHome(action = goHome) {
@@ -325,6 +334,18 @@ function applyUserPreferences() {
   applyFontTheme(prefs.font || "default");
 }
 
+function setProfilePreferenceFields(preferences = currentPreferences()) {
+  document.getElementById("profileAppTheme").value = preferences.theme || "maroon";
+  document.getElementById("profileModeTheme").value = preferences.mode || "light";
+  document.getElementById("profileFontTheme").value = preferences.font || "default";
+}
+
+function applyProfilePreview() {
+  applyAppTheme(document.getElementById("profileAppTheme").value);
+  applyWorkspaceMode(document.getElementById("profileModeTheme").value);
+  applyFontTheme(document.getElementById("profileFontTheme").value);
+}
+
 function updateProfileVerifyNotice() {
   if (elements.profileVerifyNotice) {
     elements.profileVerifyNotice.hidden = !signedInUser || signedInUser.emailVerified;
@@ -332,9 +353,72 @@ function updateProfileVerifyNotice() {
 }
 
 function resetPaymentPage() {
-  document.querySelector("#paymentPage h1").textContent = "Page Under Development";
-  document.querySelector("#paymentPage .builder-intro").textContent =
-    "Razorpay integration will be added here in a future release.";
+  selectedPlanForPayment = null;
+  document.querySelector("#paymentPage h1").textContent = "Complete Payment";
+  document.getElementById("paymentSummary").textContent =
+    "Select a plan first. Razorpay integration will be added here later.";
+  document.getElementById("paymentAmountInput").value = "";
+  document.getElementById("paymentMessage").textContent = "";
+}
+
+function formatCurrency(value) {
+  return `₹${Number(value).toLocaleString("en-IN")}`;
+}
+
+async function getPlanCatalog() {
+  if (!planCatalog) planCatalog = await api("/api/plans");
+  return planCatalog;
+}
+
+function renderPlanCard(plan) {
+  const period = planCatalog.periods[selectedBillingPeriod];
+  const price = plan.prices[selectedBillingPeriod];
+  const article = document.createElement("article");
+  article.className = `plan-card ${plan.cardType === "premium" ? "premium-plan" : ""}`;
+  article.innerHTML = `
+    <span class="template-badge">${plan.credits} credit${plan.credits > 1 ? "s" : ""}</span>
+    <h2>${plan.title}</h2>
+    <p>${plan.creditType === "PREMIUM" ? "Premium credits can publish Basic or Premium cards." : "Basic credits publish Basic cards only."}</p>
+    <div class="plan-price">
+      <del>${formatCurrency(price.actual)}</del>
+      <strong>${formatCurrency(price.price)}</strong>
+      <span>${price.discount}% off vs monthly</span>
+    </div>
+    <small>${period.label} validity · ${period.days} days</small>
+    <button class="generate-button" type="button">Pay Now</button>
+  `;
+  article.querySelector("button").addEventListener("click", () => openPayment(plan, price, period));
+  return article;
+}
+
+async function renderPlansPage() {
+  await getPlanCatalog();
+  const tabs = document.getElementById("billingTabs");
+  tabs.replaceChildren(...Object.entries(planCatalog.periods).map(([id, period]) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `text-button ${id === selectedBillingPeriod ? "is-active" : ""}`;
+    button.textContent = period.label;
+    button.addEventListener("click", () => {
+      selectedBillingPeriod = id;
+      renderPlansPage();
+    });
+    return button;
+  }));
+  const single = document.getElementById("singlePlanGrid");
+  const multi = document.getElementById("multiPlanGrid");
+  single.replaceChildren(...planCatalog.plans.filter((plan) => !plan.multi).map(renderPlanCard));
+  multi.replaceChildren(...planCatalog.plans.filter((plan) => plan.multi).map(renderPlanCard));
+}
+
+function openPayment(plan, price, period) {
+  selectedPlanForPayment = { planId: plan.id, billingPeriod: selectedBillingPeriod, amount: price.price };
+  document.getElementById("paymentSummary").textContent =
+    `${plan.title} · ${period.label} · ${plan.credits} credit${plan.credits > 1 ? "s" : ""} · ${formatCurrency(price.price)}`;
+  document.getElementById("paymentAmountInput").value = price.price;
+  document.getElementById("paymentMessage").textContent = "";
+  history.pushState({}, "", "/payments");
+  showOnly(elements.paymentPage);
 }
 
 function driveImageUrl(link) {
@@ -628,6 +712,53 @@ async function loadSavedCards() {
   }
 }
 
+async function loadPlanSummary() {
+  if (!signedInUser || isGuestUser()) return;
+  if (elements.purchasedPlans) {
+    elements.purchasedPlans.replaceChildren();
+    elements.plansEmpty.hidden = true;
+    elements.plansLoading.hidden = false;
+  }
+  try {
+    const { purchases, transactions } = await api("/api/plans/me");
+    if (elements.purchasedPlans) {
+      elements.plansLoading.hidden = true;
+      elements.plansEmpty.hidden = purchases.length > 0;
+      elements.purchasedPlans.replaceChildren(...purchases.map((plan) => {
+        const card = document.createElement("article");
+        card.className = "saved-card";
+        card.innerHTML = `
+          <div class="saved-card-meta">
+            <span class="saved-card-type">${plan.creditType}</span>
+            <span class="status-badge status-paid">${plan.availableCredits}/${plan.totalCredits} left</span>
+          </div>
+          <h3>${plan.planTitle}</h3>
+          <time>${plan.daysLeft} day${plan.daysLeft === 1 ? "" : "s"} left · Active cards: ${plan.totalCredits - plan.availableCredits}</time>
+        `;
+        return card;
+      }));
+    }
+    const profilePlans = document.getElementById("profilePlanDetails");
+    if (profilePlans) {
+      profilePlans.innerHTML = purchases.length
+        ? purchases.map((plan) => `<p><strong>${plan.planTitle}</strong><br>${plan.availableCredits}/${plan.totalCredits} ${plan.creditType} credits available · ${plan.daysLeft} days left</p>`).join("")
+        : "<p>No active plan credits.</p>";
+    }
+    const profileTransactions = document.getElementById("profileTransactions");
+    if (profileTransactions) {
+      profileTransactions.innerHTML = transactions.length
+        ? transactions.map((tx) => `<p><strong>${tx.type === "PURCHASE" ? "Plan purchased" : "Credit used"}</strong><br>${tx.note || tx.planTitle || tx.invitationTitle} ${tx.amount ? `· ${formatCurrency(tx.amount)}` : ""}</p>`).join("")
+        : "<p>No transactions yet.</p>";
+    }
+  } catch (error) {
+    if (elements.purchasedPlans) {
+      elements.plansLoading.hidden = true;
+      elements.plansEmpty.hidden = false;
+      elements.plansEmpty.textContent = error.message;
+    }
+  }
+}
+
 function openDeleteModal(invitation) {
   pendingDelete = invitation;
   document.getElementById("deleteCardTitle").textContent = invitation.title;
@@ -720,6 +851,7 @@ async function loadRoute() {
   }
 
   if (route === "plans") {
+    await renderPlansPage();
     showOnly(elements.plansPage);
     return;
   }
@@ -772,14 +904,14 @@ async function loadRoute() {
 
   if (!route) {
     showOnly(elements.dashboard);
-    await loadSavedCards();
+    await Promise.all([loadSavedCards(), loadPlanSummary()]);
     return;
   }
 
   if (!supportedOccasions.includes(route)) {
     history.replaceState({}, "", "/");
     showOnly(elements.dashboard);
-    await loadSavedCards();
+    await Promise.all([loadSavedCards(), loadPlanSummary()]);
     return;
   }
 
@@ -819,9 +951,12 @@ function cleanLogoutUi() {
   updateProfileVerifyNotice();
   elements.copyShareLinkButton.hidden = true;
   elements.savedCards.replaceChildren();
+  if (elements.purchasedPlans) elements.purchasedPlans.replaceChildren();
   elements.savedEmpty.textContent = "You have not saved an invitation yet.";
   elements.savedEmpty.hidden = false;
   elements.savedLoading.hidden = true;
+  if (elements.plansEmpty) elements.plansEmpty.hidden = false;
+  if (elements.plansLoading) elements.plansLoading.hidden = true;
   hideableSections.forEach((element) => element.hidden = true);
   elements.authShell.hidden = false;
   document.getElementById("userName").textContent = "";
@@ -866,9 +1001,7 @@ async function enterApplication() {
   document.getElementById("profileName").value = signedInUser.name;
   document.getElementById("profileEmail").value = signedInUser.email;
   document.getElementById("profilePhone").value = signedInUser.phone || "";
-  document.getElementById("profileAppTheme").value = document.body.dataset.theme || "maroon";
-  document.getElementById("profileModeTheme").value = document.body.dataset.mode || "light";
-  document.getElementById("profileFontTheme").value = document.body.dataset.font || "default";
+  setProfilePreferenceFields();
   updateProfileVerifyNotice();
   await loadRoute();
 }
@@ -889,6 +1022,7 @@ document.addEventListener("click", (event) => {
       history.pushState({}, "", "/");
       showOnly(elements.dashboard);
       loadSavedCards();
+      loadPlanSummary();
     } else {
       history.pushState({}, "", "/login");
       elements.appHeader.hidden = true;
@@ -957,6 +1091,7 @@ elements.saveButton.addEventListener("click", async () => {
     currentPublicExpiresAt = invitation.publicExpiresAt;
     updateStatusBadge(invitation.status);
     updateShareDisplay();
+    await loadPlanSummary();
   } catch (error) {
     elements.saveStatus.textContent = error.message;
   } finally {
@@ -1003,7 +1138,7 @@ document.getElementById("cancelPublicLinkBtn").addEventListener("click", closePu
 document.getElementById("publicLinkPayNowBtn").addEventListener("click", () => {
   closePublicLinkModal();
   history.pushState({}, "", "/plans");
-  showOnly(elements.plansPage);
+  renderPlansPage().then(() => showOnly(elements.plansPage));
 });
 
 document.getElementById("confirmPublicLinkBtn").addEventListener("click", async () => {
@@ -1061,24 +1196,40 @@ document.getElementById("paymentHomeButton").addEventListener("click", () => {
   history.pushState({}, "", "/");
   showOnly(elements.dashboard);
   loadSavedCards();
+  loadPlanSummary();
 });
 
-document.getElementById("planPayButton").addEventListener("click", () => {
-  history.pushState({}, "", "/payments");
-  resetPaymentPage();
-  showOnly(elements.paymentPage);
+document.getElementById("dummyPaymentForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const message = document.getElementById("paymentMessage");
+  if (!selectedPlanForPayment) {
+    message.textContent = "Please select a plan first.";
+    return;
+  }
+  message.textContent = "Processing dummy payment…";
+  try {
+    await api("/api/plans/purchase", {
+      method: "POST",
+      body: JSON.stringify({ ...selectedPlanForPayment, amount: Number(document.getElementById("paymentAmountInput").value) })
+    });
+    message.textContent = "Payment received. Credits added to your account.";
+    await loadPlanSummary();
+  } catch (error) {
+    message.textContent = error.message;
+  }
 });
 
 document.getElementById("profileButton").addEventListener("click", () => {
   if (isGuestUser()) return;
+  profilePreviewPreferences = currentPreferences();
+  profileChangesCommitted = false;
   document.getElementById("profileMessage").textContent = "";
   document.getElementById("profileName").value = signedInUser.name;
   document.getElementById("profileEmail").value = signedInUser.email;
   document.getElementById("profilePhone").value = signedInUser.phone || "";
-  document.getElementById("profileAppTheme").value = document.body.dataset.theme || "maroon";
-  document.getElementById("profileModeTheme").value = document.body.dataset.mode || "light";
-  document.getElementById("profileFontTheme").value = document.body.dataset.font || "default";
+  setProfilePreferenceFields(profilePreviewPreferences);
   updateProfileVerifyNotice();
+  loadPlanSummary();
   document.body.classList.add("modal-open");
   document.getElementById("profileDialog").showModal();
 });
@@ -1089,6 +1240,17 @@ document.getElementById("closeProfileButton").addEventListener("click", () => {
 
 document.getElementById("profileDialog").addEventListener("close", () => {
   document.body.classList.remove("modal-open");
+  if (!profileChangesCommitted && profilePreviewPreferences) {
+    applyAppTheme(profilePreviewPreferences.theme);
+    applyWorkspaceMode(profilePreviewPreferences.mode);
+    applyFontTheme(profilePreviewPreferences.font);
+  }
+  profilePreviewPreferences = null;
+  profileChangesCommitted = false;
+});
+
+["profileAppTheme", "profileModeTheme", "profileFontTheme"].forEach((id) => {
+  document.getElementById(id).addEventListener("change", applyProfilePreview);
 });
 
 document.getElementById("profileForm").addEventListener("submit", async (event) => {
@@ -1109,6 +1271,8 @@ document.getElementById("profileForm").addEventListener("submit", async (event) 
     document.getElementById("profilePhone").value = user.phone || "";
     updateProfileVerifyNotice();
     message.textContent = "Profile updated.";
+    profileChangesCommitted = true;
+    document.getElementById("profileDialog").close();
   } catch (error) {
     message.textContent = error.message;
   }

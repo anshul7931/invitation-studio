@@ -18,7 +18,7 @@ function invitationDto(row) {
   const fields = typeof row.fields === "string" ? JSON.parse(row.fields) : row.fields;
   let publicExpiresAt = row.public_expires_at ? new Date(row.public_expires_at) : null;
   const isPremium = fields.templateType === "premium" || String(fields.photoLinks || "").trim().length > 0;
-  if (isPremium && row.public_generated_at) {
+  if (row.status !== "PAID" && isPremium && row.public_generated_at) {
     publicExpiresAt = new Date(new Date(row.public_generated_at).getTime() + 5 * 60 * 1000);
   } else if (publicExpiresAt && row.public_generated_at && config.app.publicShareMinutes !== 10) {
     publicExpiresAt = new Date(new Date(row.public_generated_at).getTime() + config.app.publicShareMinutes * 60 * 1000);

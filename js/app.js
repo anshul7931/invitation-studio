@@ -31,6 +31,8 @@ const elements = {
   saveButton: document.getElementById("saveCardButton"),
   shareButton: document.getElementById("shareCardButton"),
   copyShareLinkButton: document.getElementById("copyShareLinkButton"),
+  previewBasicButton: document.getElementById("previewBasicButton"),
+  previewPremiumButton: document.getElementById("previewPremiumButton"),
   statusBadge: document.getElementById("invitationStatusBadge"),
   saveStatus: document.getElementById("saveStatus"),
   publicBanner: document.getElementById("publicBanner"),
@@ -58,11 +60,14 @@ let pendingHomeAction = null;
 let pendingTemplateFields = null;
 let currentTemplateType = "basic";
 let currentInvitationStatus = "DRAFT";
+let currentShareStates = {};
 let planCatalog = null;
 let selectedBillingPeriod = "monthly";
 let selectedPlanForPayment = null;
 let profilePreviewPreferences = null;
 let profileChangesCommitted = false;
+let pendingCreditPurchase = null;
+let activeAccountSection = "profile";
 
 const supportedOccasions = ["wedding", "birthday", "engagement", "office", "custom"];
 const publicStaticRoutes = ["about", "contact", "privacy", "terms", "refund", "disclaimer", "acceptable-use"];
@@ -250,6 +255,7 @@ function resetCurrentCard() {
   currentInvitationId = null;
   currentShareUrl = null;
   currentPublicExpiresAt = null;
+  currentShareStates = {};
   elements.saveButton.textContent = "Save Card";
   elements.shareButton.disabled = false;
   elements.copyShareLinkButton.hidden = true;
@@ -273,6 +279,18 @@ function updateStatusBadge(status = currentInvitationStatus) {
   const label = currentInvitationStatus.charAt(0) + currentInvitationStatus.slice(1).toLowerCase();
   elements.statusBadge.textContent = label;
   elements.statusBadge.className = `status-badge status-${currentInvitationStatus.toLowerCase()}`;
+}
+
+function shareStateForCurrentTemplate() {
+  return currentShareStates[currentTemplateType] || {};
+}
+
+function applyCurrentTemplateShareState() {
+  const state = shareStateForCurrentTemplate();
+  currentShareUrl = state.shareUrl || null;
+  currentPublicExpiresAt = state.publicExpiresAt || null;
+  updateStatusBadge(state.status || "DRAFT");
+  updateShareDisplay();
 }
 
 function hasActiveCardWork() {
@@ -344,6 +362,42 @@ function applyProfilePreview() {
   applyAppTheme(document.getElementById("profileAppTheme").value);
   applyWorkspaceMode(document.getElementById("profileModeTheme").value);
   applyFontTheme(document.getElementById("profileFontTheme").value);
+}
+
+function setAccountSection(section) {
+  activeAccountSection = section;
+  const titles = {
+    profile: "Profile",
+    settings: "App Settings",
+    plans: "Plan Details"
+  };
+  document.getElementById("accountDialogTitle").textContent = titles[section] || "Account";
+  document.querySelectorAll("[data-account-panel]").forEach((panel) => {
+    const active = panel.dataset.accountPanel === section;
+    panel.hidden = !active;
+    panel.querySelectorAll("input, select, textarea, button").forEach((control) => {
+      if (control.id !== "resendVerificationButton") control.disabled = !active;
+    });
+  });
+  const saveButton = document.getElementById("saveAccountButton");
+  saveButton.hidden = section === "plans";
+  saveButton.textContent = section === "settings" ? "Save settings" : "Save profile";
+}
+
+function openAccountDialog(section = "profile") {
+  if (isGuestUser()) return;
+  profilePreviewPreferences = currentPreferences();
+  profileChangesCommitted = false;
+  document.getElementById("profileMessage").textContent = "";
+  document.getElementById("profileName").value = signedInUser.name;
+  document.getElementById("profileEmail").value = signedInUser.email;
+  document.getElementById("profilePhone").value = signedInUser.phone || "";
+  setProfilePreferenceFields(profilePreviewPreferences);
+  updateProfileVerifyNotice();
+  loadPlanSummary();
+  setAccountSection(section);
+  document.body.classList.add("modal-open");
+  document.getElementById("profileDialog").showModal();
 }
 
 function updateProfileVerifyNotice() {
@@ -503,8 +557,39 @@ function openSelectedTemplate(templateType) {
   } else {
     renderGenericCard(activeOccasionConfig || getOccasion(activeOccasion), pendingTemplateFields);
   }
+  elements.previewBasicButton?.classList.toggle("is-active", templateType === "basic");
+  elements.previewPremiumButton?.classList.toggle("is-active", templateType === "premium");
   elements.saveStatus.textContent = `${templateType === "premium" ? "Premium" : "Basic"} card selected. Save it to your account.`;
   showOnly(selectedInvitation());
+}
+
+function renderCurrentTemplatePreview() {
+  setFormTemplateType(currentTemplateType);
+  pendingTemplateFields = { ...currentFields(), templateType: currentTemplateType };
+  if (activeOccasion === "wedding") {
+    renderWedding(elements.weddingForm, helpers);
+    renderWeddingMotif();
+  } else {
+    renderGenericCard(activeOccasionConfig || getOccasion(activeOccasion), pendingTemplateFields);
+  }
+  elements.previewBasicButton?.classList.toggle("is-active", currentTemplateType === "basic");
+  elements.previewPremiumButton?.classList.toggle("is-active", currentTemplateType === "premium");
+  applyCurrentTemplateShareState();
+}
+
+async function refreshShareStates() {
+  if (!currentInvitationId) {
+    currentShareStates = {};
+    applyCurrentTemplateShareState();
+    return;
+  }
+  try {
+    const { shareStates } = await api(`/api/invitations/${activeOccasion}/${currentInvitationId}/share-states`);
+    currentShareStates = shareStates || {};
+  } catch {
+    currentShareStates = {};
+  }
+  applyCurrentTemplateShareState();
 }
 
 function renderWeddingMotif() {
@@ -544,9 +629,7 @@ async function openOccasion(occasionId, updateUrl = true) {
 async function renderInvitationFromData(invitation, readOnly = false) {
   activeOccasion = invitation.occasion;
   currentInvitationId = readOnly ? null : invitation.id;
-  currentShareUrl = invitation.shareUrl;
-  currentPublicExpiresAt = invitation.publicExpiresAt;
-  updateStatusBadge(invitation.status);
+  currentShareStates = invitation.shareStates || {};
   currentTemplateType = invitation.fields?.templateType || (String(invitation.fields?.photoLinks || "").trim() ? "premium" : "basic");
   pendingTemplateFields = invitation.fields || null;
   elements.saveButton.textContent = currentInvitationId ? "Update Card" : "Save Card";
@@ -572,7 +655,7 @@ async function renderInvitationFromData(invitation, readOnly = false) {
     elements.publicBanner.textContent = `Shared invitation from ${invitation.owner || "Invitation Studio"}`;
   } else {
     elements.saveStatus.textContent = "Saved in your account.";
-    updateShareDisplay();
+    await refreshShareStates();
   }
 }
 
@@ -593,12 +676,12 @@ async function saveCurrentCard() {
     body: JSON.stringify(currentFields())
   });
   currentInvitationId = invitation.id;
-  currentShareUrl = invitation.shareUrl;
-  currentPublicExpiresAt = invitation.publicExpiresAt;
+  currentShareStates = invitation.shareStates || currentShareStates;
   currentTemplateType = invitation.fields?.templateType || currentFields().templateType || "basic";
   pendingTemplateFields = invitation.fields || { ...currentFields(), templateType: currentTemplateType };
   elements.saveButton.textContent = "Update Card";
   history.replaceState({}, "", invitation.url);
+  await refreshShareStates();
   return invitation;
 }
 
@@ -607,7 +690,9 @@ function updateShareDisplay() {
   if (!currentShareUrl || !currentPublicExpiresAt) {
     elements.shareInfo.textContent = "";
     elements.shareButton.textContent = "Generate Public Link";
+    elements.shareButton.disabled = false;
     elements.copyShareLinkButton.hidden = true;
+    delete elements.shareButton.dataset.action;
     updateStatusBadge(currentInvitationStatus);
     return;
   }
@@ -620,6 +705,10 @@ function updateShareDisplay() {
     const remainingMs = new Date(currentPublicExpiresAt).getTime() - Date.now();
     if (remainingMs <= 0) {
       elements.shareInfo.textContent = `Public link expired: ${link}`;
+      elements.shareButton.textContent = "Pay Now";
+      elements.shareButton.disabled = false;
+      elements.shareButton.dataset.action = "pay";
+      elements.copyShareLinkButton.hidden = true;
       updateStatusBadge("EXPIRED");
       clearInterval(shareTimer);
       return;
@@ -742,7 +831,7 @@ async function loadPlanSummary() {
     if (profilePlans) {
       profilePlans.innerHTML = purchases.length
         ? purchases.map((plan) => `<p><strong>${plan.planTitle}</strong><br>${plan.availableCredits}/${plan.totalCredits} ${plan.creditType} credits available · ${plan.daysLeft} days left</p>`).join("")
-        : "<p>No active plan credits.</p>";
+        : "<p><strong>Free tier</strong><br>No paid credits are active. You can still generate the first free public link for each card type.</p>";
     }
     const profileTransactions = document.getElementById("profileTransactions");
     if (profileTransactions) {
@@ -773,16 +862,39 @@ function closeSignoutModal() {
   document.getElementById("signoutModal").classList.add("hidden");
 }
 
-function openPublicLinkModal() {
+async function eligibleCreditForCurrentCard() {
+  const { purchases } = await api("/api/plans/me");
+  const isPremiumCard = currentFields().templateType === "premium";
+  return purchases.find((plan) => isPremiumCard
+    ? plan.creditType === "PREMIUM"
+    : ["BASIC", "PREMIUM"].includes(plan.creditType));
+}
+
+async function openPublicLinkModal() {
   const duration = currentFields().templateType === "premium" ? 5 : 10;
   const text = document.getElementById("publicLinkDurationText");
   if (text) text.textContent = `Link creation will be allowed once for ${duration} minutes.`;
   const confirm = document.getElementById("confirmPublicLinkBtn");
   if (confirm) confirm.textContent = `Create ${duration} min link`;
+  pendingCreditPurchase = null;
+  const creditButton = document.getElementById("confirmCreditPublicLinkBtn");
+  const creditText = document.getElementById("publicLinkCreditText");
+  try {
+    pendingCreditPurchase = await eligibleCreditForCurrentCard();
+  } catch {
+    pendingCreditPurchase = null;
+  }
+  creditButton.hidden = !pendingCreditPurchase;
+  creditText.hidden = !pendingCreditPurchase;
+  if (pendingCreditPurchase) {
+    creditText.textContent =
+      `Purchase this card with 1 ${pendingCreditPurchase.creditType} credit from ${pendingCreditPurchase.planTitle}. ${pendingCreditPurchase.availableCredits} credit(s) currently available.`;
+  }
   document.getElementById("publicLinkModal").classList.remove("hidden");
 }
 
 function closePublicLinkModal() {
+  pendingCreditPurchase = null;
   document.getElementById("publicLinkModal").classList.add("hidden");
 }
 
@@ -992,7 +1104,7 @@ async function enterApplication() {
   elements.appHeader.hidden = false;
   document.getElementById("userName").textContent = `Hello, ${signedInUser.name}`;
   elements.adminButton.hidden = signedInUser.role !== "ADMIN";
-  document.getElementById("profileButton").hidden = isGuestUser();
+  document.getElementById("accountButton").hidden = isGuestUser();
   document.getElementById("logoutButton").textContent = isGuestUser() ? "Exit Guest" : "Sign out";
   if (isGuestUser()) {
     await loadRoute();
@@ -1087,10 +1199,8 @@ elements.saveButton.addEventListener("click", async () => {
   try {
     const invitation = await saveCurrentCard();
     elements.saveStatus.textContent = "Saved in your account.";
-    currentShareUrl = invitation.shareUrl;
-    currentPublicExpiresAt = invitation.publicExpiresAt;
-    updateStatusBadge(invitation.status);
-    updateShareDisplay();
+    currentShareStates = invitation.shareStates || currentShareStates;
+    applyCurrentTemplateShareState();
     await loadPlanSummary();
   } catch (error) {
     elements.saveStatus.textContent = error.message;
@@ -1099,22 +1209,29 @@ elements.saveButton.addEventListener("click", async () => {
   }
 });
 
-async function createPublicLink() {
+async function createPublicLink(useCredit = false) {
   elements.saveStatus.textContent = "";
   try {
     if (!currentInvitationId) {
       elements.saveStatus.textContent = "Save the card before generating a public link.";
       return;
     }
-    const invitation = await api(`/api/invitations/${activeOccasion}/${currentInvitationId}/share`, { method: "POST" });
-    currentShareUrl = invitation.shareUrl;
-    currentPublicExpiresAt = invitation.publicExpiresAt;
-    updateStatusBadge(invitation.status);
-    updateShareDisplay();
+    const invitation = await api(`/api/invitations/${activeOccasion}/${currentInvitationId}/share`, {
+      method: "POST",
+      body: JSON.stringify({ useCredit, templateType: currentTemplateType })
+    });
+    currentShareStates = invitation.shareStates || currentShareStates;
+    applyCurrentTemplateShareState();
+    await loadPlanSummary();
   } catch (error) {
     if (error.status === 402 && error.data?.paymentUrl) {
       history.pushState({}, "", error.data.paymentUrl);
-      showOnly(elements.paymentPage);
+      if (error.data.paymentUrl === "/plans") {
+        await renderPlansPage();
+        showOnly(elements.plansPage);
+      } else {
+        showOnly(elements.paymentPage);
+      }
       return;
     }
     elements.saveStatus.textContent = error.message;
@@ -1122,6 +1239,11 @@ async function createPublicLink() {
 }
 
 elements.shareButton.addEventListener("click", () => {
+  if (elements.shareButton.dataset.action === "pay") {
+    history.pushState({}, "", "/plans");
+    renderPlansPage().then(() => showOnly(elements.plansPage));
+    return;
+  }
   if (isGuestUser()) {
     elements.saveStatus.textContent = "Please sign in to create a public link.";
     return;
@@ -1146,6 +1268,11 @@ document.getElementById("confirmPublicLinkBtn").addEventListener("click", async 
   await createPublicLink();
 });
 
+document.getElementById("confirmCreditPublicLinkBtn").addEventListener("click", async () => {
+  closePublicLinkModal();
+  await createPublicLink(true);
+});
+
 elements.copyShareLinkButton.addEventListener("click", async () => {
   const link = elements.copyShareLinkButton.dataset.link;
   if (!link) return;
@@ -1165,6 +1292,16 @@ elements.copyShareLinkButton.addEventListener("click", async () => {
 
 document.getElementById("editButton").addEventListener("click", () => {
   showOnly(activeOccasion === "wedding" ? elements.weddingBuilder : elements.occasionBuilder);
+});
+
+elements.previewBasicButton.addEventListener("click", () => {
+  currentTemplateType = "basic";
+  renderCurrentTemplatePreview();
+});
+
+elements.previewPremiumButton.addEventListener("click", () => {
+  currentTemplateType = "premium";
+  renderCurrentTemplatePreview();
 });
 
 document.getElementById("newCardButton").addEventListener("click", () => {
@@ -1219,19 +1356,27 @@ document.getElementById("dummyPaymentForm").addEventListener("submit", async (ev
   }
 });
 
-document.getElementById("profileButton").addEventListener("click", () => {
-  if (isGuestUser()) return;
-  profilePreviewPreferences = currentPreferences();
-  profileChangesCommitted = false;
-  document.getElementById("profileMessage").textContent = "";
-  document.getElementById("profileName").value = signedInUser.name;
-  document.getElementById("profileEmail").value = signedInUser.email;
-  document.getElementById("profilePhone").value = signedInUser.phone || "";
-  setProfilePreferenceFields(profilePreviewPreferences);
-  updateProfileVerifyNotice();
-  loadPlanSummary();
-  document.body.classList.add("modal-open");
-  document.getElementById("profileDialog").showModal();
+document.getElementById("accountButton").addEventListener("click", (event) => {
+  event.stopPropagation();
+  const menu = document.getElementById("accountMenu");
+  const nextHidden = !menu.hidden;
+  menu.hidden = nextHidden;
+  document.getElementById("accountButton").setAttribute("aria-expanded", String(!nextHidden));
+});
+
+document.querySelectorAll("[data-account-section]").forEach((button) => {
+  button.addEventListener("click", () => {
+    document.getElementById("accountMenu").hidden = true;
+    document.getElementById("accountButton").setAttribute("aria-expanded", "false");
+    openAccountDialog(button.dataset.accountSection);
+  });
+});
+
+document.addEventListener("click", (event) => {
+  if (!event.target.closest(".account-menu-wrap")) {
+    document.getElementById("accountMenu").hidden = true;
+    document.getElementById("accountButton").setAttribute("aria-expanded", "false");
+  }
 });
 
 document.getElementById("closeProfileButton").addEventListener("click", () => {
@@ -1257,20 +1402,22 @@ document.getElementById("profileForm").addEventListener("submit", async (event) 
   event.preventDefault();
   const message = document.getElementById("profileMessage");
   try {
-    const { user } = await api("/api/profile", {
-      method: "PUT",
-      body: JSON.stringify(formValues(event.currentTarget))
-    });
-    signedInUser = user;
+    if (activeAccountSection === "profile") {
+      const { user } = await api("/api/profile", {
+        method: "PUT",
+        body: JSON.stringify(formValues(event.currentTarget))
+      });
+      signedInUser = user;
+      document.getElementById("userName").textContent = `Hello, ${user.name}`;
+      document.getElementById("profileEmail").value = user.email;
+      document.getElementById("profilePhone").value = user.phone || "";
+      updateProfileVerifyNotice();
+    }
     applyAppTheme(document.getElementById("profileAppTheme").value);
     applyWorkspaceMode(document.getElementById("profileModeTheme").value);
     applyFontTheme(document.getElementById("profileFontTheme").value);
     saveUserPreferences();
-    document.getElementById("userName").textContent = `Hello, ${user.name}`;
-    document.getElementById("profileEmail").value = user.email;
-    document.getElementById("profilePhone").value = user.phone || "";
-    updateProfileVerifyNotice();
-    message.textContent = "Profile updated.";
+    message.textContent = activeAccountSection === "settings" ? "Settings updated." : "Profile updated.";
     profileChangesCommitted = true;
     document.getElementById("profileDialog").close();
   } catch (error) {

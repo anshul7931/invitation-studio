@@ -174,6 +174,29 @@ async function initializeDatabase() {
     )
   `);
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS invitation_public_links (
+      id CHAR(36) PRIMARY KEY,
+      invitation_id CHAR(36) NOT NULL,
+      user_id CHAR(36) NOT NULL,
+      template_type ENUM('basic', 'premium') NOT NULL,
+      public_token CHAR(36) NULL UNIQUE,
+      public_expires_at DATETIME NULL,
+      public_generated_at DATETIME NULL,
+      public_fingerprint CHAR(64) NULL,
+      status ENUM('PUBLISHED', 'EXPIRED', 'PAID') NOT NULL DEFAULT 'PUBLISHED',
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      CONSTRAINT fk_public_links_invitation
+        FOREIGN KEY (invitation_id) REFERENCES invitations(id) ON DELETE CASCADE,
+      CONSTRAINT fk_public_links_user
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      UNIQUE KEY uq_public_links_invitation_template (invitation_id, template_type),
+      INDEX idx_public_links_token (public_token),
+      INDEX idx_public_links_duplicate (user_id, template_type, public_fingerprint, public_generated_at)
+    )
+  `);
+
   await pool.query("DELETE FROM sessions WHERE expires_at <= NOW()");
   await pool.query("DELETE FROM email_tokens WHERE expires_at <= NOW() OR used_at IS NOT NULL");
   return pool;

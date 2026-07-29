@@ -15,7 +15,14 @@
       <nav class="header-nav" aria-label="Application">
         <button class="text-button" id="homeButton" type="button">Home</button>
         <button class="text-button" id="adminButton" type="button" hidden>Admin</button>
-        <button class="text-button" id="profileButton" type="button">Profile</button>
+        <div class="account-menu-wrap">
+          <button class="text-button" id="accountButton" type="button" aria-expanded="false">Account</button>
+          <div class="account-menu" id="accountMenu" hidden>
+            <button type="button" data-account-section="profile">Profile</button>
+            <button type="button" data-account-section="settings">App Settings</button>
+            <button type="button" data-account-section="plans">Plan Details</button>
+          </div>
+        </div>
         <button class="text-button" id="logoutButton" type="button">Sign out</button>
       </nav>
     </div>

@@ -242,13 +242,33 @@ function createOpenApi(host, port) {
       "/api/invitations/{occasion}/{id}/share": {
         post: {
           tags: ["Invitations"],
-          summary: "Generate a one-time 10-minute public read-only link",
+          summary: "Generate an isolated Basic or Premium public read-only link",
           security: [{ cookieAuth: [] }],
           parameters: [occasionParameter, idParameter],
+          requestBody: body({
+            type: "object",
+            properties: {
+              templateType: { type: "string", enum: ["basic", "premium"] },
+              useCredit: { type: "boolean", default: false }
+            }
+          }),
           responses: {
             200: { description: "Public link generated" },
             402: { description: "Public link already generated; payment required" },
             409: { description: "Same details were previously made public" }
+          }
+        }
+      },
+      "/api/invitations/{occasion}/{id}/share-states": {
+        get: {
+          tags: ["Invitations"],
+          summary: "Get separate Basic and Premium public link state for one invitation",
+          security: [{ cookieAuth: [] }],
+          parameters: [occasionParameter, idParameter],
+          responses: {
+            200: { description: "Template-specific public link states" },
+            401: { description: "Authentication required" },
+            404: { description: "Invitation not found" }
           }
         }
       },

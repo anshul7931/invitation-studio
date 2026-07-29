@@ -1,6 +1,7 @@
 <dialog class="profile-dialog" id="profileDialog">
     <form class="profile-content" id="profileForm">
-      <h2>Your profile</h2>
+      <h2 id="accountDialogTitle">Your profile</h2>
+      <section class="account-section" data-account-panel="profile">
       <div class="field">
         <label for="profileName">Name</label>
         <input id="profileName" name="name" required>
@@ -13,6 +14,12 @@
         <label for="profilePhone">Phone number</label>
         <input type="tel" id="profilePhone" name="phone" autocomplete="tel" placeholder="Optional">
       </div>
+      <div class="profile-verify" id="profileVerifyNotice" hidden>
+        <span>Please verify your email address.</span>
+        <button class="text-button" id="resendVerificationButton" type="button">Resend verification email</button>
+      </div>
+      </section>
+      <section class="account-section" data-account-panel="settings" hidden>
       <div class="field">
         <label for="profileAppTheme">Application colour theme</label>
         <select id="profileAppTheme" name="appTheme">
@@ -41,10 +48,8 @@
           <option value="script">Script headings</option>
         </select>
       </div>
-      <div class="profile-verify" id="profileVerifyNotice" hidden>
-        <span>Please verify your email address.</span>
-        <button class="text-button" id="resendVerificationButton" type="button">Resend verification email</button>
-      </div>
+      </section>
+      <section class="account-section" data-account-panel="plans" hidden>
       <section class="profile-ledger">
         <h3>Plan details</h3>
         <div id="profilePlanDetails" class="mini-ledger"></div>
@@ -53,9 +58,10 @@
         <h3>Transaction statement</h3>
         <div id="profileTransactions" class="mini-ledger"></div>
       </section>
+      </section>
       <p class="auth-message" id="profileMessage"></p>
       <div class="dialog-actions">
-        <button class="generate-button" type="submit">Save profile</button>
+        <button class="generate-button" id="saveAccountButton" type="submit">Save profile</button>
         <button class="text-button" id="closeProfileButton" type="button">Close</button>
       </div>
     </form>

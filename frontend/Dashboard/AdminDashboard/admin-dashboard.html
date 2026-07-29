@@ -20,5 +20,20 @@
         <p class="builder-intro">Swagger is available from the admin dashboard.</p>
         <button class="generate-button" type="button" onclick="window.open('/api-docs', '_blank')">Open Swagger</button>
       </article>
+      <article class="admin-card full">
+        <h2>Monitoring</h2>
+        <p class="builder-intro">Review recent server-side errors and operational issues.</p>
+        <button class="generate-button" type="button" id="openMonitoringButton">Open Monitoring</button>
+      </article>
+    </div>
+  </section>
+<section class="admin-dashboard" id="monitoringPage" hidden>
+    <button class="back-button" type="button" id="monitoringBackButton">← Admin Dashboard</button>
+    <p class="builder-kicker">Admin Monitoring</p>
+    <h1>Application Logs</h1>
+    <p class="builder-intro">Recent backend issues visible only to admin users.</p>
+    <div class="admin-card full">
+      <h2>Recent Issues</h2>
+      <ul id="monitoringLogs"></ul>
     </div>
   </section>

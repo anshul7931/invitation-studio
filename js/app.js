@@ -11,6 +11,7 @@ const elements = {
   appHeader: document.getElementById("appHeader"),
   dashboard: document.getElementById("dashboard"),
   adminDashboard: document.getElementById("adminDashboard"),
+  monitoringPage: document.getElementById("monitoringPage"),
   plansPage: document.getElementById("plansPage"),
   paymentPage: document.getElementById("paymentPage"),
   weddingBuilder: document.getElementById("builder"),
@@ -141,6 +142,7 @@ const hideableSections = [
   elements.authShell,
   elements.dashboard,
   elements.adminDashboard,
+  elements.monitoringPage,
   elements.plansPage,
   elements.paymentPage,
 
@@ -1014,6 +1016,17 @@ async function loadRoute() {
     return;
   }
 
+  if (route === "monitoring") {
+    if (signedInUser?.role !== "ADMIN") {
+      history.replaceState({}, "", "/");
+      showOnly(elements.dashboard);
+      return;
+    }
+    await loadMonitoringPage();
+    showOnly(elements.monitoringPage);
+    return;
+  }
+
   if (!route) {
     showOnly(elements.dashboard);
     await Promise.all([loadSavedCards(), loadPlanSummary()]);
@@ -1049,6 +1062,20 @@ async function loadAdminDashboard() {
   document.getElementById("adminInvitations").innerHTML = invitationsData.invitations
     .map((card) => `<li>${card.title} · ${card.occasion} · ${card.owner.name} (${card.owner.email})</li>`)
     .join("");
+}
+
+async function loadMonitoringPage() {
+  const { logs } = await api("/api/admin/logs");
+  const list = document.getElementById("monitoringLogs");
+  list.innerHTML = logs.length
+    ? logs.map((log) => `<li><strong>${log.level}</strong> · ${new Date(log.createdAt).toLocaleString("en-IN")} · ${log.message}${log.path ? ` · ${log.path}` : ""}</li>`).join("")
+    : "<li>No issues logged in this server session.</li>";
+}
+
+function enforceAdminVisibility() {
+  if (signedInUser?.role === "ADMIN") return;
+  if (elements.adminDashboard && !elements.adminDashboard.hidden) elements.adminDashboard.hidden = true;
+  if (elements.monitoringPage && !elements.monitoringPage.hidden) elements.monitoringPage.hidden = true;
 }
 
 function cleanLogoutUi() {
@@ -1122,6 +1149,16 @@ document.querySelectorAll("[data-select-occasion]").forEach((button) => {
   button.addEventListener("click", () => openOccasion(button.dataset.selectOccasion));
 });
 
+document.querySelectorAll(".static-page").forEach((page) => {
+  if (page.querySelector("[data-close-static]")) return;
+  const button = document.createElement("button");
+  button.className = "back-button static-close-button";
+  button.type = "button";
+  button.dataset.closeStatic = "";
+  button.textContent = "Close";
+  page.prepend(button);
+});
+
 document.addEventListener("click", (event) => {
   if (event.target.closest("[data-back-dashboard]")) {
     event.preventDefault();
@@ -1142,6 +1179,19 @@ document.addEventListener("click", (event) => {
     }
     });
   }
+  if (event.target.closest("[data-close-static]")) {
+    event.preventDefault();
+    if (signedInUser) {
+      history.pushState({}, "", "/");
+      showOnly(elements.dashboard);
+      loadSavedCards();
+      loadPlanSummary();
+    } else {
+      history.pushState({}, "", "/login");
+      elements.appHeader.hidden = true;
+      showOnly(elements.authShell);
+    }
+  }
 });
 
 document.querySelectorAll("[data-auth-mode]").forEach((button) => {
@@ -1157,6 +1207,33 @@ document.querySelectorAll("[data-password-toggle]").forEach((button) => {
     button.textContent = show ? "Hide" : "Show";
   });
 });
+
+function validPhone(value) {
+  const text = String(value || "").trim();
+  if (!text) return true;
+  const digits = text.replace(/\D/g, "");
+  return /^\+?[0-9\s-]+$/.test(text) && digits.length >= 10 && digits.length <= 15;
+}
+
+function validPassword(value) {
+  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(String(value || ""));
+}
+
+function syncRegisterButton() {
+  const form = document.getElementById("registerForm");
+  const consent = document.getElementById("registerConsent");
+  const phone = document.getElementById("registerPhone");
+  const password = document.getElementById("registerPassword");
+  phone.setCustomValidity(validPhone(phone.value) ? "" : "Enter a valid phone number with 10 to 15 digits.");
+  password.setCustomValidity(validPassword(password.value) ? "" : "Use at least 8 characters with uppercase, lowercase, and a number.");
+  document.getElementById("registerSubmitButton").disabled = !consent.checked || !form.checkValidity();
+}
+
+["registerName", "registerEmail", "registerPhone", "registerPassword", "registerConsent"].forEach((id) => {
+  document.getElementById(id).addEventListener("input", syncRegisterButton);
+  document.getElementById(id).addEventListener("change", syncRegisterButton);
+});
+syncRegisterButton();
 
 initWeddingSvgPreviews();
 
@@ -1329,11 +1406,27 @@ document.getElementById("adminButton").addEventListener("click", async () => {
   await loadRoute();
 });
 
+document.getElementById("openMonitoringButton").addEventListener("click", async () => {
+  history.pushState({}, "", "/monitoring");
+  await loadRoute();
+});
+
+document.getElementById("monitoringBackButton").addEventListener("click", async () => {
+  history.pushState({}, "", "/admin");
+  await loadRoute();
+});
+
 document.getElementById("paymentHomeButton").addEventListener("click", () => {
   history.pushState({}, "", "/");
   showOnly(elements.dashboard);
   loadSavedCards();
   loadPlanSummary();
+});
+
+document.getElementById("paymentPlansButton").addEventListener("click", async () => {
+  history.pushState({}, "", "/plans");
+  await renderPlansPage();
+  showOnly(elements.plansPage);
 });
 
 document.getElementById("dummyPaymentForm").addEventListener("submit", async (event) => {
@@ -1516,6 +1609,13 @@ document.getElementById("confirmDeleteBtn").addEventListener("click", async () =
   pendingDelete = null;
   document.getElementById("deleteModal").classList.add("hidden");
   await loadSavedCards();
+});
+
+[elements.adminDashboard, elements.monitoringPage].filter(Boolean).forEach((section) => {
+  new MutationObserver(enforceAdminVisibility).observe(section, {
+    attributes: true,
+    attributeFilter: ["hidden", "style", "class"]
+  });
 });
 
 window.addEventListener("popstate", () => {

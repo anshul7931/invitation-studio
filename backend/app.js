@@ -10,6 +10,7 @@ const { initializeDatabase } = require("./database");
 const { handleApi } = require("./apis");
 const { requireAdmin } = require("./middleware/auth-guards");
 const { appRoot, sendJson, serveFile, serveHtmlTemplate } = require("./utils/http");
+const { recordIssue } = require("./utils/monitoring");
 const { swaggerPage } = require("./utils/swagger-page");
 
 const pageRoutes = new Set(config.routing.pageRoutes);
@@ -57,6 +58,12 @@ async function start() {
       }
       sendJson(response, 404, { error: "Not found" });
     } catch (error) {
+      recordIssue({
+        level: "ERROR",
+        message: error.message,
+        path: request.url,
+        stack: error.stack
+      });
       console.error(error);
       sendJson(response, 500, { error: "Unexpected server error" });
     }

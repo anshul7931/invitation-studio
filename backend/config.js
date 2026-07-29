@@ -59,6 +59,7 @@ const config = {
       "/",
       "/login",
       "/admin",
+      "/monitoring",
       "/payment",
       "/payments",
       "/plans",

@@ -373,6 +373,11 @@
       text-transform: uppercase;
     }
 
+    button:disabled {
+      opacity: 0.48;
+      cursor: not-allowed;
+    }
+
     .saved-section {
       margin-top: 45px;
       padding-top: 34px;
@@ -783,6 +788,11 @@
     .static-page {
       text-align: left;
       line-height: 1.65;
+    }
+
+    .static-close-button {
+      float: right;
+      margin: 0 0 18px 18px;
     }
 
     .static-page h2,

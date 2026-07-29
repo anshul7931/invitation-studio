@@ -12,7 +12,7 @@
       </div>
       <div class="field">
         <label for="profilePhone">Phone number</label>
-        <input type="tel" id="profilePhone" name="phone" autocomplete="tel" placeholder="Optional">
+        <input type="tel" id="profilePhone" name="phone" autocomplete="tel" placeholder="Optional" pattern="^[+]?[0-9\\s-]{10,18}$" title="Enter a valid phone number with 10 to 15 digits.">
       </div>
       <div class="profile-verify" id="profileVerifyNotice" hidden>
         <span>Please verify your email address.</span>

@@ -353,6 +353,14 @@ function createOpenApi(host, port) {
           }],
           responses: { 200: { description: "Invitations" }, 403: { description: "Admin required" } }
         }
+      },
+      "/api/admin/logs": {
+        get: {
+          tags: ["Admin"],
+          summary: "List recent monitoring issues",
+          security: [{ cookieAuth: [] }],
+          responses: { 200: { description: "Recent issue logs" }, 403: { description: "Admin required" } }
+        }
       }
     },
     components: {

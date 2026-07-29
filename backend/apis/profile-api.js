@@ -5,6 +5,7 @@ const { database } = require("../database");
 const { requireUser } = require("../middleware/auth-guards");
 const { readJson, sendJson } = require("../utils/http");
 const { userDto } = require("../utils/invitation-utils");
+const { isValidPhone } = require("../utils/validation");
 const { sendVerificationEmail } = require("../services/email-flows");
 
 async function handleProfileApi(request, response, pathname) {
@@ -17,6 +18,10 @@ async function handleProfileApi(request, response, pathname) {
     const phone = String(body.phone || "").trim();
     if (!name || !email) {
       sendJson(response, 400, { error: "Name and email are required." });
+      return true;
+    }
+    if (!isValidPhone(phone)) {
+      sendJson(response, 400, { error: "Enter a valid phone number with 10 to 15 digits." });
       return true;
     }
     const [existing] = await database().execute(

@@ -6,6 +6,7 @@ const { database } = require("../database");
 const { requireAdmin } = require("../middleware/auth-guards");
 const { sendJson } = require("../utils/http");
 const { invitationDto } = require("../utils/invitation-utils");
+const { recentIssues } = require("../utils/monitoring");
 
 async function handleAdminApi(request, response, pathname) {
   if (request.method === "GET" && pathname === "/api/admin/stats") {
@@ -64,6 +65,13 @@ async function handleAdminApi(request, response, pathname) {
         owner: { name: row.owner_name, email: row.owner_email }
       }))
     });
+    return true;
+  }
+
+  if (request.method === "GET" && pathname === "/api/admin/logs") {
+    const admin = await requireAdmin(request, response);
+    if (!admin) return true;
+    sendJson(response, 200, { logs: recentIssues() });
     return true;
   }
 

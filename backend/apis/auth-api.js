@@ -16,6 +16,7 @@ const {
 const { requireUser } = require("../middleware/auth-guards");
 const { readJson, sendJson } = require("../utils/http");
 const { tokenHash, userDto } = require("../utils/invitation-utils");
+const { isValidPassword, isValidPhone } = require("../utils/validation");
 const { sendPasswordResetEmail, sendVerificationEmail } = require("../services/email-flows");
 
 async function handleAuthApi(request, response, pathname) {
@@ -31,10 +32,14 @@ async function handleAuthApi(request, response, pathname) {
     const email = String(body.email || "").trim().toLowerCase();
     const phone = String(body.phone || "").trim();
     const password = String(body.password || "");
-    if (!name || !email || password.length < 8) {
+    if (!name || !email || !isValidPassword(password)) {
       sendJson(response, 400, {
-        error: "Name, email, and a password of at least 8 characters are required."
+        error: "Name, email, and a password with uppercase, lowercase, number, and at least 8 characters are required."
       });
+      return true;
+    }
+    if (!isValidPhone(phone)) {
+      sendJson(response, 400, { error: "Enter a valid phone number with 10 to 15 digits." });
       return true;
     }
     const [existing] = await database().execute("SELECT id FROM users WHERE email = ?", [email]);
@@ -130,8 +135,8 @@ async function handleAuthApi(request, response, pathname) {
     const body = await readJson(request);
     const token = String(body.token || "").trim();
     const password = String(body.password || "");
-    if (!token || password.length < 8) {
-      sendJson(response, 400, { error: "A valid reset token and password of at least 8 characters are required." });
+    if (!token || !isValidPassword(password)) {
+      sendJson(response, 400, { error: "A valid reset token and password with uppercase, lowercase, number, and at least 8 characters are required." });
       return true;
     }
     const [rows] = await database().execute(

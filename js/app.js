@@ -438,7 +438,7 @@ function renderPlanCard(plan) {
     <div class="plan-price">
       <del>${formatCurrency(price.actual)}</del>
       <strong>${formatCurrency(price.price)}</strong>
-      <span>${price.discount}% off vs monthly</span>
+      <span>${price.discount}% off</span>
     </div>
     <small>${period.label} validity · ${period.days} days</small>
     <button class="generate-button" type="button">Pay Now</button>

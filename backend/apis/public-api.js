@@ -15,8 +15,31 @@ function templateTypeFromFields(fields, requestedTemplate) {
   return fields.templateType === "premium" || String(fields.photoLinks || "").trim() ? "premium" : "basic";
 }
 
-async function consumeCredit({ userId, invitation, templateType }) {
+async function consumeCredit({ userId, invitation, templateType, purchaseId = "" }) {
   const allowedTypes = templateType === "premium" ? ["PREMIUM"] : ["BASIC", "PREMIUM"];
+  if (purchaseId) {
+    const [selected] = await database().execute(
+      `SELECT * FROM plan_purchases
+       WHERE id = ? AND user_id = ? AND credit_type IN (${allowedTypes.map(() => "?").join(",")})
+         AND available_credits > 0 AND expires_at > NOW()
+       LIMIT 1`,
+      [purchaseId, userId, ...allowedTypes]
+    );
+    if (selected[0]) {
+      const purchase = selected[0];
+      await database().execute(
+        "UPDATE plan_purchases SET available_credits = available_credits - 1 WHERE id = ? AND available_credits > 0",
+        [purchase.id]
+      );
+      await database().execute(
+        `INSERT INTO credit_transactions
+         (id, user_id, purchase_id, invitation_id, transaction_type, credit_type, credits, note)
+         VALUES (?, ?, ?, ?, 'CREDIT_USED', ?, -1, ?)`,
+        [crypto.randomUUID(), userId, purchase.id, invitation.id, purchase.credit_type, `Public link generated for ${invitation.title}`]
+      );
+      return purchase;
+    }
+  }
   for (const creditType of allowedTypes) {
     const [purchases] = await database().execute(
       `SELECT * FROM plan_purchases
@@ -130,7 +153,7 @@ async function handlePublicApi(request, response, pathname) {
     const needsPaidCredit = Boolean(body.useCredit || existingLink?.public_generated_at || duplicates.length);
     let paidPurchase = null;
     if (needsPaidCredit) {
-      paidPurchase = await consumeCredit({ userId: user.id, invitation, templateType });
+      paidPurchase = await consumeCredit({ userId: user.id, invitation, templateType, purchaseId: String(body.purchaseId || "") });
       if (!paidPurchase) {
         sendJson(response, existingLink?.public_generated_at ? 402 : 409, {
           error: existingLink?.public_generated_at

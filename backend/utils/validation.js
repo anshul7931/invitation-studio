@@ -4,8 +4,7 @@
 function isValidPhone(value) {
   const text = String(value || "").trim();
   if (!text) return true;
-  const digits = text.replace(/\D/g, "");
-  return /^\+?[0-9\s-]+$/.test(text) && digits.length >= 10 && digits.length <= 15;
+  return /^[0-9]{10}$/.test(text);
 }
 
 function isValidPassword(value) {

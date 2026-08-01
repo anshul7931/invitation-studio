@@ -67,7 +67,7 @@ let selectedBillingPeriod = "monthly";
 let selectedPlanForPayment = null;
 let profilePreviewPreferences = null;
 let profileChangesCommitted = false;
-let pendingCreditPurchase = null;
+let pendingCreditPurchases = [];
 let activeAccountSection = "profile";
 
 const supportedOccasions = ["wedding", "birthday", "engagement", "office", "custom"];
@@ -715,13 +715,21 @@ function updateShareDisplay() {
       clearInterval(shareTimer);
       return;
     }
-    const minutes = Math.floor(remainingMs / 60000);
-    const seconds = Math.floor((remainingMs % 60000) / 1000);
-    elements.shareInfo.textContent =
-      `Public link: ${link} · expires in ${minutes}:${String(seconds).padStart(2, "0")}`;
+    elements.shareInfo.textContent = `Public link: ${link} · expires in ${formatRemainingTime(remainingMs)}`;
   };
   tick();
   shareTimer = setInterval(tick, 1000);
+}
+
+function formatRemainingTime(ms) {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (days) return `${days} day${days > 1 ? "s" : ""}${hours ? ` ${hours} hr${hours > 1 ? "s" : ""}` : ""}`;
+  if (hours) return `${hours} hr${hours > 1 ? "s" : ""}${minutes ? ` ${minutes} min${minutes > 1 ? "s" : ""}` : ""}`;
+  return `${minutes} min${minutes === 1 ? "" : "s"} ${seconds} sec`;
 }
 
 async function copyText(text) {
@@ -864,10 +872,10 @@ function closeSignoutModal() {
   document.getElementById("signoutModal").classList.add("hidden");
 }
 
-async function eligibleCreditForCurrentCard() {
+async function eligibleCreditsForCurrentCard() {
   const { purchases } = await api("/api/plans/me");
   const isPremiumCard = currentFields().templateType === "premium";
-  return purchases.find((plan) => isPremiumCard
+  return purchases.filter((plan) => isPremiumCard
     ? plan.creditType === "PREMIUM"
     : ["BASIC", "PREMIUM"].includes(plan.creditType));
 }
@@ -878,25 +886,36 @@ async function openPublicLinkModal() {
   if (text) text.textContent = `Link creation will be allowed once for ${duration} minutes.`;
   const confirm = document.getElementById("confirmPublicLinkBtn");
   if (confirm) confirm.textContent = `Create ${duration} min link`;
-  pendingCreditPurchase = null;
+  if (confirm) confirm.hidden = Boolean(shareStateForCurrentTemplate().shareUrl);
+  pendingCreditPurchases = [];
   const creditButton = document.getElementById("confirmCreditPublicLinkBtn");
   const creditText = document.getElementById("publicLinkCreditText");
+  const creditField = document.getElementById("publicLinkCreditField");
+  const creditSelect = document.getElementById("publicLinkCreditSelect");
   try {
-    pendingCreditPurchase = await eligibleCreditForCurrentCard();
+    pendingCreditPurchases = await eligibleCreditsForCurrentCard();
   } catch {
-    pendingCreditPurchase = null;
+    pendingCreditPurchases = [];
   }
-  creditButton.hidden = !pendingCreditPurchase;
-  creditText.hidden = !pendingCreditPurchase;
-  if (pendingCreditPurchase) {
-    creditText.textContent =
-      `Purchase this card with 1 ${pendingCreditPurchase.creditType} credit from ${pendingCreditPurchase.planTitle}. ${pendingCreditPurchase.availableCredits} credit(s) currently available.`;
+  creditButton.hidden = pendingCreditPurchases.length === 0;
+  creditText.hidden = false;
+  creditField.hidden = pendingCreditPurchases.length === 0;
+  if (pendingCreditPurchases.length) {
+    creditText.textContent = "Choose an available credit to purchase this public link.";
+    creditSelect.replaceChildren(...pendingCreditPurchases.map((plan) => {
+      const option = document.createElement("option");
+      option.value = plan.id;
+      option.textContent = `${plan.planTitle} · ${plan.creditType} · ${plan.availableCredits}/${plan.totalCredits} left · ${plan.daysLeft} days left`;
+      return option;
+    }));
+  } else {
+    creditText.textContent = "No relevant credits available for this card type. Add Credits to continue after the free link.";
   }
   document.getElementById("publicLinkModal").classList.remove("hidden");
 }
 
 function closePublicLinkModal() {
-  pendingCreditPurchase = null;
+  pendingCreditPurchases = [];
   document.getElementById("publicLinkModal").classList.add("hidden");
 }
 
@@ -1211,8 +1230,7 @@ document.querySelectorAll("[data-password-toggle]").forEach((button) => {
 function validPhone(value) {
   const text = String(value || "").trim();
   if (!text) return true;
-  const digits = text.replace(/\D/g, "");
-  return /^\+?[0-9\s-]+$/.test(text) && digits.length >= 10 && digits.length <= 15;
+  return /^[0-9]{10}$/.test(text);
 }
 
 function validPassword(value) {
@@ -1224,7 +1242,7 @@ function syncRegisterButton() {
   const consent = document.getElementById("registerConsent");
   const phone = document.getElementById("registerPhone");
   const password = document.getElementById("registerPassword");
-  phone.setCustomValidity(validPhone(phone.value) ? "" : "Enter a valid phone number with 10 to 15 digits.");
+  phone.setCustomValidity(validPhone(phone.value) ? "" : "Enter exactly 10 digits.");
   password.setCustomValidity(validPassword(password.value) ? "" : "Use at least 8 characters with uppercase, lowercase, and a number.");
   document.getElementById("registerSubmitButton").disabled = !consent.checked || !form.checkValidity();
 }
@@ -1295,7 +1313,11 @@ async function createPublicLink(useCredit = false) {
     }
     const invitation = await api(`/api/invitations/${activeOccasion}/${currentInvitationId}/share`, {
       method: "POST",
-      body: JSON.stringify({ useCredit, templateType: currentTemplateType })
+      body: JSON.stringify({
+        useCredit,
+        templateType: currentTemplateType,
+        purchaseId: useCredit ? document.getElementById("publicLinkCreditSelect").value : ""
+      })
     });
     currentShareStates = invitation.shareStates || currentShareStates;
     applyCurrentTemplateShareState();
@@ -1317,8 +1339,7 @@ async function createPublicLink(useCredit = false) {
 
 elements.shareButton.addEventListener("click", () => {
   if (elements.shareButton.dataset.action === "pay") {
-    history.pushState({}, "", "/plans");
-    renderPlansPage().then(() => showOnly(elements.plansPage));
+    openPublicLinkModal();
     return;
   }
   if (isGuestUser()) {
@@ -1567,6 +1588,8 @@ document.getElementById("resetPasswordForm").addEventListener("submit", async (e
 
 document.getElementById("registerForm").addEventListener("submit", (event) => {
   event.preventDefault();
+  syncRegisterButton();
+  if (!event.currentTarget.reportValidity()) return;
   submitAuth(event.currentTarget, "/api/auth/register");
 });
 

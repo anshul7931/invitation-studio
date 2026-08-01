@@ -21,7 +21,7 @@ async function handleProfileApi(request, response, pathname) {
       return true;
     }
     if (!isValidPhone(phone)) {
-      sendJson(response, 400, { error: "Enter a valid phone number with 10 to 15 digits." });
+      sendJson(response, 400, { error: "Enter exactly 10 digits for phone number." });
       return true;
     }
     const [existing] = await database().execute(

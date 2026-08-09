@@ -39,6 +39,7 @@ const elements = {
   publicBanner: document.getElementById("publicBanner"),
   profileVerifyNotice: document.getElementById("profileVerifyNotice"),
   shareInfo: document.getElementById("shareInfo"),
+  shareInfoText: document.getElementById("shareInfoText"),
   adminButton: document.getElementById("adminButton"),
   aboutPage: document.getElementById("aboutPage"),
   contactPage: document.getElementById("contactPage"),
@@ -68,6 +69,7 @@ let selectedPlanForPayment = null;
 let profilePreviewPreferences = null;
 let profileChangesCommitted = false;
 let pendingCreditPurchases = [];
+let selectedPublicLinkDuration = "free";
 let activeAccountSection = "profile";
 
 const supportedOccasions = ["wedding", "birthday", "engagement", "office", "custom"];
@@ -260,9 +262,10 @@ function resetCurrentCard() {
   currentShareStates = {};
   elements.saveButton.textContent = "Save Card";
   elements.shareButton.disabled = false;
+  elements.shareButton.hidden = false;
   elements.copyShareLinkButton.hidden = true;
   elements.saveStatus.textContent = "";
-  elements.shareInfo.textContent = "";
+  setShareInfo("");
   updateStatusBadge("DRAFT");
   clearInterval(shareTimer);
   pendingTemplateFields = null;
@@ -281,6 +284,14 @@ function updateStatusBadge(status = currentInvitationStatus) {
   const label = currentInvitationStatus.charAt(0) + currentInvitationStatus.slice(1).toLowerCase();
   elements.statusBadge.textContent = label;
   elements.statusBadge.className = `status-badge status-${currentInvitationStatus.toLowerCase()}`;
+}
+
+function setShareInfo(text = "") {
+  if (elements.shareInfoText) {
+    elements.shareInfoText.textContent = text;
+  } else if (elements.shareInfo) {
+    elements.shareInfo.textContent = text;
+  }
 }
 
 function shareStateForCurrentTemplate() {
@@ -690,23 +701,26 @@ async function saveCurrentCard() {
 function updateShareDisplay() {
   clearInterval(shareTimer);
   if (!currentShareUrl || !currentPublicExpiresAt) {
-    elements.shareInfo.textContent = "";
+    setShareInfo("");
     elements.shareButton.textContent = "Generate Public Link";
     elements.shareButton.disabled = false;
+    elements.shareButton.hidden = false;
     elements.copyShareLinkButton.hidden = true;
     delete elements.shareButton.dataset.action;
     updateStatusBadge(currentInvitationStatus);
     return;
   }
   const link = `${location.origin}${currentShareUrl}`;
-  elements.shareButton.textContent = "Public Link Created";
-  elements.shareButton.disabled = true;
+  elements.shareButton.hidden = true;
+  elements.shareButton.disabled = false;
+  delete elements.shareButton.dataset.action;
   elements.copyShareLinkButton.hidden = false;
   elements.copyShareLinkButton.dataset.link = link;
   const tick = () => {
     const remainingMs = new Date(currentPublicExpiresAt).getTime() - Date.now();
     if (remainingMs <= 0) {
-      elements.shareInfo.textContent = `Public link expired: ${link}`;
+      setShareInfo(`Public link expired: ${link}`);
+      elements.shareButton.hidden = false;
       elements.shareButton.textContent = "Pay Now";
       elements.shareButton.disabled = false;
       elements.shareButton.dataset.action = "pay";
@@ -715,7 +729,7 @@ function updateShareDisplay() {
       clearInterval(shareTimer);
       return;
     }
-    elements.shareInfo.textContent = `Public link: ${link} · expires in ${formatRemainingTime(remainingMs)}`;
+    setShareInfo(`Public link: ${link} · expires in ${formatRemainingTime(remainingMs)}`);
   };
   tick();
   shareTimer = setInterval(tick, 1000);
@@ -880,37 +894,70 @@ async function eligibleCreditsForCurrentCard() {
     : ["BASIC", "PREMIUM"].includes(plan.creditType));
 }
 
-async function openPublicLinkModal() {
-  const duration = currentFields().templateType === "premium" ? 5 : 10;
-  const text = document.getElementById("publicLinkDurationText");
-  if (text) text.textContent = `Link creation will be allowed once for ${duration} minutes.`;
-  const confirm = document.getElementById("confirmPublicLinkBtn");
-  if (confirm) confirm.textContent = `Create ${duration} min link`;
-  if (confirm) confirm.hidden = Boolean(shareStateForCurrentTemplate().shareUrl);
-  pendingCreditPurchases = [];
+function publicDurationLabel(periodId) {
+  return {
+    monthly: "Monthly",
+    quarterly: "Quarterly",
+    halfyearly: "Half-Yearly",
+    yearly: "Yearly"
+  }[periodId] || "selected";
+}
+
+function updatePublicLinkCreditOptions() {
   const creditButton = document.getElementById("confirmCreditPublicLinkBtn");
   const creditText = document.getElementById("publicLinkCreditText");
   const creditField = document.getElementById("publicLinkCreditField");
   const creditSelect = document.getElementById("publicLinkCreditSelect");
+  const duration = document.querySelector("input[name='publicLinkDuration']:checked")?.value || "free";
+  selectedPublicLinkDuration = duration;
+  if (duration === "free") {
+    creditField.hidden = true;
+    creditText.hidden = false;
+    creditText.textContent = "Free public link will use the limited trial duration for this card type.";
+    creditButton.disabled = false;
+    return;
+  }
+  const matchingCredits = pendingCreditPurchases.filter((plan) => plan.billingPeriod === duration);
+  creditField.hidden = false;
+  creditText.hidden = false;
+  creditSelect.replaceChildren();
+  if (!matchingCredits.length) {
+    const option = document.createElement("option");
+    option.textContent = `No ${publicDurationLabel(duration)} credits available`;
+    option.disabled = true;
+    option.selected = true;
+    creditSelect.append(option);
+    creditButton.disabled = true;
+    creditText.textContent = `No ${publicDurationLabel(duration)} credits are available for this card.`;
+    return;
+  }
+  creditButton.disabled = false;
+  creditText.textContent = `Choose one ${publicDurationLabel(duration)} credit for this public link.`;
+  creditSelect.replaceChildren(...matchingCredits.map((plan) => {
+    const option = document.createElement("option");
+    option.value = plan.id;
+    option.textContent = `${plan.planTitle} | ${plan.creditType} | ${plan.availableCredits}/${plan.totalCredits} left | ${plan.daysLeft} days`;
+    return option;
+  }));
+}
+
+async function openPublicLinkModal() {
+  const duration = currentFields().templateType === "premium" ? 5 : 10;
+  const text = document.getElementById("publicLinkDurationText");
+  if (text) text.textContent = `Link creation will be allowed once for ${duration} minutes.`;
+  pendingCreditPurchases = [];
   try {
     pendingCreditPurchases = await eligibleCreditsForCurrentCard();
   } catch {
     pendingCreditPurchases = [];
   }
-  creditButton.hidden = pendingCreditPurchases.length === 0;
-  creditText.hidden = false;
-  creditField.hidden = pendingCreditPurchases.length === 0;
-  if (pendingCreditPurchases.length) {
-    creditText.textContent = "Choose an available credit to purchase this public link.";
-    creditSelect.replaceChildren(...pendingCreditPurchases.map((plan) => {
-      const option = document.createElement("option");
-      option.value = plan.id;
-      option.textContent = `${plan.planTitle} · ${plan.creditType} · ${plan.availableCredits}/${plan.totalCredits} left · ${plan.daysLeft} days left`;
-      return option;
-    }));
-  } else {
-    creditText.textContent = "No relevant credits available for this card type. Add Credits to continue after the free link.";
-  }
+  document.getElementById("freeDurationLabel").textContent = `Free ${duration} min link`;
+  const freeRadio = document.querySelector("input[name='publicLinkDuration'][value='free']");
+  freeRadio.disabled = Boolean(shareStateForCurrentTemplate().shareUrl);
+  selectedPublicLinkDuration = freeRadio.disabled ? "monthly" : "free";
+  const selectedRadio = document.querySelector(`input[name='publicLinkDuration'][value='${selectedPublicLinkDuration}']`);
+  if (selectedRadio) selectedRadio.checked = true;
+  updatePublicLinkCreditOptions();
   document.getElementById("publicLinkModal").classList.remove("hidden");
 }
 
@@ -1316,7 +1363,7 @@ async function createPublicLink(useCredit = false) {
       body: JSON.stringify({
         useCredit,
         templateType: currentTemplateType,
-        purchaseId: useCredit ? document.getElementById("publicLinkCreditSelect").value : ""
+        purchaseId: useCredit ? document.getElementById("publicLinkCreditSelect")?.value : ""
       })
     });
     currentShareStates = invitation.shareStates || currentShareStates;
@@ -1361,30 +1408,23 @@ document.getElementById("publicLinkPayNowBtn").addEventListener("click", () => {
   renderPlansPage().then(() => showOnly(elements.plansPage));
 });
 
-document.getElementById("confirmPublicLinkBtn").addEventListener("click", async () => {
+document.getElementById("confirmCreditPublicLinkBtn").addEventListener("click", async () => {
+  const useCredit = (document.querySelector("input[name='publicLinkDuration']:checked")?.value || "free") !== "free";
   closePublicLinkModal();
-  await createPublicLink();
+  await createPublicLink(useCredit);
 });
 
-document.getElementById("confirmCreditPublicLinkBtn").addEventListener("click", async () => {
-  closePublicLinkModal();
-  await createPublicLink(true);
+document.querySelectorAll("input[name='publicLinkDuration']").forEach((radio) => {
+  radio.addEventListener("change", updatePublicLinkCreditOptions);
 });
 
 elements.copyShareLinkButton.addEventListener("click", async () => {
   const link = elements.copyShareLinkButton.dataset.link;
   if (!link) return;
-  const previousText = elements.copyShareLinkButton.textContent;
   try {
     await copyText(link);
-    elements.copyShareLinkButton.textContent = "Copied!";
-    elements.saveStatus.textContent = "Public link copied.";
   } catch {
     elements.saveStatus.textContent = "Unable to copy automatically. Please copy the public link from above.";
-  } finally {
-    window.setTimeout(() => {
-      elements.copyShareLinkButton.textContent = previousText;
-    }, 1400);
   }
 });
 
@@ -1402,9 +1442,7 @@ elements.previewPremiumButton.addEventListener("click", () => {
   renderCurrentTemplatePreview();
 });
 
-document.getElementById("newCardButton").addEventListener("click", () => {
-  confirmBeforeHome();
-});
+document.getElementById("newCardButton")?.addEventListener("click", () => confirmBeforeHome());
 
 document.getElementById("homeButton").addEventListener("click", () => {
   confirmBeforeHome();

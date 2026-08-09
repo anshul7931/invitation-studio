@@ -1441,13 +1441,21 @@
     }
 
     .card-actions {
-      display: flex;
-      align-items: center;
+      display: grid;
       gap: 12px;
-      flex-wrap: wrap;
       justify-content: center;
       width: min(100%, 1080px);
       margin: 0 auto 18px;
+    }
+
+    .preview-toggle-row,
+    .preview-action-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      width: 100%;
     }
 
     .preview-toggle {
@@ -1489,6 +1497,58 @@
       padding: 12px;
       font-size: 1.05rem;
       letter-spacing: 0;
+    }
+
+    .inline-copy-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      margin-left: 8px;
+      color: var(--maroon);
+      background: rgba(255, 250, 240, 0.96);
+      border: 1px solid rgba(199, 154, 67, 0.62);
+      border-radius: 50%;
+      cursor: pointer;
+      vertical-align: middle;
+    }
+
+    .duration-options {
+      display: grid;
+      gap: 10px;
+      margin: 8px 0 10px;
+      padding: 14px;
+      border: 1px solid rgba(199, 154, 67, 0.45);
+      border-radius: 18px;
+      background: rgba(255, 250, 240, 0.62);
+    }
+
+    .duration-options legend {
+      padding: 0 8px;
+      color: var(--maroon);
+      font: 700 0.78rem var(--label-font);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .duration-options label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--maroon-deep);
+      font: 600 0.9rem var(--body-font);
+    }
+
+    .duration-options small {
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    #publicLinkCreditSelect {
+      width: 100%;
+      padding-right: 42px;
+      text-overflow: ellipsis;
     }
 
     .back-button {
@@ -2278,17 +2338,21 @@
 
       .card-actions {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 10px;
         padding: 0 4px;
       }
 
+      .preview-action-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
       .preview-toggle {
-        grid-column: 1 / -1;
         justify-self: center;
       }
 
-      .card-actions .edit-button {
+      .preview-action-row .edit-button {
         width: 100%;
         min-width: 0;
         padding: 12px 10px;
@@ -2298,9 +2362,7 @@
       }
 
       .card-actions .save-status,
-      .card-actions .share-info,
-      .card-actions .status-badge {
-        grid-column: 1 / -1;
+      .card-actions .share-info {
         overflow-wrap: anywhere;
       }
 

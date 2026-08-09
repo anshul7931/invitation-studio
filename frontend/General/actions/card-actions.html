@@ -1,14 +1,15 @@
 <div class="card-actions" id="cardActions" hidden>
-    <div class="preview-toggle" aria-label="Card preview type">
+    <div class="preview-toggle-row">
+      <div class="preview-toggle" aria-label="Card preview type">
       <button class="edit-button" id="previewBasicButton" type="button">Basic</button>
       <button class="edit-button" id="previewPremiumButton" type="button">Premium</button>
+      </div>
     </div>
-    <span class="status-badge status-draft" id="invitationStatusBadge">Draft</span>
+    <div class="preview-action-row">
     <button class="edit-button" id="saveCardButton" type="button">Save Card</button>
     <button class="edit-button" id="shareCardButton" type="button">Generate Public Link</button>
-    <button class="edit-button icon-button" id="copyShareLinkButton" type="button" title="Copy public link" aria-label="Copy public link" hidden>⧉</button>
     <button class="edit-button" id="editButton" type="button">Edit Details</button>
-    <button class="edit-button" id="newCardButton" type="button">Choose Another Occasion</button>
+    </div>
     <p class="save-status" id="saveStatus"></p>
-    <p class="share-info" id="shareInfo"></p>
+    <p class="share-info" id="shareInfo"><span id="shareInfoText"></span><button class="inline-copy-button" id="copyShareLinkButton" type="button" title="Copy public link" aria-label="Copy public link" hidden>⧉</button></p>
   </div>

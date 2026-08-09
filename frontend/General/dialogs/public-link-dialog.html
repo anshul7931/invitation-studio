@@ -2,6 +2,14 @@
     <div class="modal-content">
       <h3 id="publicLinkTitle">Create public link?</h3>
       <p><span id="publicLinkDurationText">Link creation will be allowed once for 10 minutes.</span> For longer duration: <button class="inline-pay-link" id="publicLinkPayNowBtn" type="button">Add Credits</button></p>
+      <fieldset class="duration-options">
+        <legend>Card Duration</legend>
+        <label><input type="radio" name="publicLinkDuration" value="free"> <span id="freeDurationLabel">Free 10 min link</span></label>
+        <label><input type="radio" name="publicLinkDuration" value="monthly"> 1 Month <small>(Needed Monthly Credits)</small></label>
+        <label><input type="radio" name="publicLinkDuration" value="quarterly"> 3 Months <small>(Needed Quarterly Credits)</small></label>
+        <label><input type="radio" name="publicLinkDuration" value="halfyearly"> 6 Months <small>(Needed Half-Yearly Credits)</small></label>
+        <label><input type="radio" name="publicLinkDuration" value="yearly"> 12 Months <small>(Needed Yearly Credits)</small></label>
+      </fieldset>
       <p class="credit-option-text" id="publicLinkCreditText" hidden></p>
       <div class="field" id="publicLinkCreditField" hidden>
         <label for="publicLinkCreditSelect">Available credits</label>
@@ -9,8 +17,7 @@
       </div>
       <div class="modal-actions">
         <button class="text-button" id="cancelPublicLinkBtn" type="button">Cancel</button>
-        <button class="text-button" id="confirmCreditPublicLinkBtn" type="button" hidden>Purchase with credit</button>
-        <button class="text-button danger" id="confirmPublicLinkBtn" type="button">Create 10 min link</button>
+        <button class="text-button" id="confirmCreditPublicLinkBtn" type="button">Purchase</button>
       </div>
     </div>
   </div>

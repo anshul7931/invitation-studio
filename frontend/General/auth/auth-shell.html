@@ -61,29 +61,43 @@
           <p class="auth-message" data-auth-message></p>
           <button class="generate-button" type="submit">Reset password</button>
         </form>
-        <form class="auth-form" id="registerForm" hidden>
+        <form class="auth-form" id="registerForm" hidden novalidate>
           <h2>Create your account</h2>
           <div class="field">
             <label for="registerName">Your name</label>
-            <input id="registerName" name="name" autocomplete="name" required>
+            <input id="registerName" name="name" autocomplete="name" aria-describedby="registerNameError">
+            <small class="field-error" id="registerNameError"></small>
           </div>
           <div class="field">
             <label for="registerEmail">Email address</label>
-            <input type="email" id="registerEmail" name="email" autocomplete="email" required>
+            <input type="email" id="registerEmail" name="email" autocomplete="email" aria-describedby="registerEmailError">
+            <small class="field-error" id="registerEmailError"></small>
           </div>
           <div class="field">
             <label for="registerPhone">Phone number</label>
-            <input type="tel" id="registerPhone" name="phone" autocomplete="tel" placeholder="Optional 10 digit number" pattern="[0-9]{10}" maxlength="10" inputmode="numeric" title="Enter exactly 10 digits.">
+            <input type="tel" id="registerPhone" name="phone" autocomplete="tel" placeholder="10 digit number" maxlength="10" inputmode="numeric" aria-describedby="registerPhoneError">
+            <small class="field-error" id="registerPhoneError"></small>
           </div>
           <div class="field">
             <label for="registerPassword">Password</label>
             <div class="password-field">
-              <input type="password" id="registerPassword" name="password" minlength="8" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}" title="Use at least 8 characters with uppercase, lowercase, and a number." autocomplete="new-password" required>
+              <input type="password" id="registerPassword" name="password" autocomplete="new-password" aria-describedby="registerPasswordError passwordCriteria">
               <button class="password-toggle" type="button" data-password-toggle="registerPassword">Show</button>
             </div>
+            <div class="password-strength" aria-live="polite">
+              <span class="strength-track"><span id="passwordStrengthFill"></span></span>
+              <span id="passwordStrengthLabel">Low</span>
+            </div>
+            <ul class="password-criteria" id="passwordCriteria">
+              <li data-password-rule="length">At least 8 characters</li>
+              <li data-password-rule="upper">At least 1 uppercase letter</li>
+              <li data-password-rule="lower">At least 1 lowercase letter</li>
+              <li data-password-rule="number">At least 1 number</li>
+            </ul>
+            <small class="field-error" id="registerPasswordError"></small>
           </div>
           <label class="consent-check" for="registerConsent">
-            <input type="checkbox" id="registerConsent" name="termsAccepted" required>
+            <input type="checkbox" id="registerConsent" name="termsAccepted">
             <span>
               I have read and agree to the
               <a href="/terms">Terms &amp; Conditions</a>
@@ -92,7 +106,8 @@
             </span>
           </label>
           <p class="auth-message" data-auth-message></p>
-          <button class="generate-button" id="registerSubmitButton" type="submit" disabled>Create account</button>
+          <button class="generate-button" id="registerSubmitButton" type="submit">Create account</button>
+          <p class="auth-message" id="registerTermsError"></p>
         </form>
       </div>
     </div>

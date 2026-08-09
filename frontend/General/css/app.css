@@ -227,6 +227,28 @@
       font-size: 0.95rem;
     }
 
+    .field-error {
+      min-height: 1.2em;
+      color: #b3263c;
+      font: 600 0.82rem/1.35 var(--body-font);
+    }
+
+    .field.has-error input,
+    .field.has-error textarea,
+    .field.has-error select {
+      border-bottom-color: #b3263c;
+      box-shadow: 0 2px 0 rgba(179, 38, 60, 0.38);
+      background: rgba(179, 38, 60, 0.06);
+    }
+
+    .consent-check.has-error {
+      padding: 10px;
+      color: #9b293d;
+      border: 1px solid rgba(179, 38, 60, 0.55);
+      border-radius: 14px;
+      background: rgba(179, 38, 60, 0.06);
+    }
+
     .consent-check {
       display: grid;
       grid-template-columns: auto 1fr;
@@ -272,6 +294,69 @@
       font: 600 0.66rem var(--label-font);
       letter-spacing: 0.06em;
       text-transform: uppercase;
+    }
+
+    .password-strength {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font: 700 0.72rem var(--label-font);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .strength-track {
+      flex: 1;
+      height: 7px;
+      overflow: hidden;
+      background: rgba(155, 106, 32, 0.18);
+      border-radius: 999px;
+    }
+
+    #passwordStrengthFill {
+      display: block;
+      width: 25%;
+      height: 100%;
+      background: #b3263c;
+      border-radius: inherit;
+      transition: width 180ms ease, background 180ms ease;
+    }
+
+    .password-strength[data-strength="medium"] #passwordStrengthFill {
+      width: 65%;
+      background: #c8871a;
+    }
+
+    .password-strength[data-strength="high"] #passwordStrengthFill {
+      width: 100%;
+      background: #23824f;
+    }
+
+    .password-criteria {
+      display: grid;
+      gap: 5px;
+      margin: 2px 0 0;
+      padding: 0;
+      color: var(--muted);
+      list-style: none;
+      font-size: 0.88rem;
+    }
+
+    .password-criteria li::before {
+      content: "○";
+      margin-right: 8px;
+      color: #b3263c;
+      font-weight: 800;
+    }
+
+    .password-criteria li.is-valid {
+      color: #23824f;
+    }
+
+    .password-criteria li.is-valid::before {
+      content: "✓";
+      color: #23824f;
     }
 
     .app-header {

@@ -1284,19 +1284,88 @@ function validPassword(value) {
   return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(String(value || ""));
 }
 
-function syncRegisterButton() {
-  const form = document.getElementById("registerForm");
+function passwordRules(value) {
+  const text = String(value || "");
+  return {
+    length: text.length >= 8,
+    upper: /[A-Z]/.test(text),
+    lower: /[a-z]/.test(text),
+    number: /\d/.test(text)
+  };
+}
+
+function setRegisterFieldError(id, message = "") {
+  const input = document.getElementById(id);
+  const field = input?.closest(".field");
+  const error = document.getElementById(`${id}Error`);
+  field?.classList.toggle("has-error", Boolean(message));
+  if (input) input.setAttribute("aria-invalid", message ? "true" : "false");
+  if (error) error.textContent = message;
+}
+
+function updatePasswordStrength() {
+  const password = document.getElementById("registerPassword").value;
+  const rules = passwordRules(password);
+  Object.entries(rules).forEach(([key, valid]) => {
+    document.querySelector(`[data-password-rule="${key}"]`)?.classList.toggle("is-valid", valid);
+  });
+  const score = Object.values(rules).filter(Boolean).length;
+  const strength = score >= 4 ? "high" : score >= 2 ? "medium" : "low";
+  const wrapper = document.querySelector(".password-strength");
+  wrapper?.setAttribute("data-strength", strength);
+  document.getElementById("passwordStrengthLabel").textContent = strength.charAt(0).toUpperCase() + strength.slice(1);
+}
+
+function missingPasswordCriteria(value) {
+  const rules = passwordRules(value);
+  const missing = [];
+  if (!rules.length) missing.push("at least 8 characters");
+  if (!rules.upper) missing.push("1 uppercase letter");
+  if (!rules.lower) missing.push("1 lowercase letter");
+  if (!rules.number) missing.push("1 number");
+  return missing;
+}
+
+function validEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
+}
+
+function validateRegisterForm(showTermsError = false) {
+  const name = document.getElementById("registerName").value.trim();
+  const email = document.getElementById("registerEmail").value.trim();
+  const phone = document.getElementById("registerPhone").value.trim();
+  const password = document.getElementById("registerPassword").value;
   const consent = document.getElementById("registerConsent");
-  const phone = document.getElementById("registerPhone");
-  const password = document.getElementById("registerPassword");
-  phone.setCustomValidity(validPhone(phone.value) ? "" : "Enter exactly 10 digits.");
-  password.setCustomValidity(validPassword(password.value) ? "" : "Use at least 8 characters with uppercase, lowercase, and a number.");
-  document.getElementById("registerSubmitButton").disabled = !consent.checked || !form.checkValidity();
+  const termsError = document.getElementById("registerTermsError");
+  let valid = true;
+
+  setRegisterFieldError("registerName", name ? "" : "Please enter your name.");
+  setRegisterFieldError("registerEmail", validEmail(email) ? "" : "Please enter a valid email address.");
+  setRegisterFieldError("registerPhone", phone && validPhone(phone) ? "" : "Phone number must be exactly 10 digits.");
+  const missing = missingPasswordCriteria(password);
+  setRegisterFieldError("registerPassword", missing.length ? `Missing: ${missing.join(", ")}.` : "");
+
+  valid = Boolean(name) && validEmail(email) && Boolean(phone) && validPhone(phone) && missing.length === 0 && consent.checked;
+  consent.closest(".consent-check")?.classList.toggle("has-error", showTermsError && !consent.checked);
+  termsError.textContent = showTermsError && !consent.checked ? "Please accept the Terms before Sign Up" : "";
+  updatePasswordStrength();
+  return valid;
+}
+
+function syncRegisterButton() {
+  document.getElementById("registerSubmitButton").disabled = false;
+  updatePasswordStrength();
 }
 
 ["registerName", "registerEmail", "registerPhone", "registerPassword", "registerConsent"].forEach((id) => {
-  document.getElementById(id).addEventListener("input", syncRegisterButton);
-  document.getElementById(id).addEventListener("change", syncRegisterButton);
+  document.getElementById(id).addEventListener("input", () => {
+    if (id === "registerPassword") updatePasswordStrength();
+    const input = document.getElementById(id);
+    if (input?.getAttribute("aria-invalid") === "true") validateRegisterForm(false);
+  });
+  document.getElementById(id).addEventListener("change", () => {
+    if (id === "registerConsent") validateRegisterForm(false);
+  });
 });
 syncRegisterButton();
 
@@ -1626,8 +1695,7 @@ document.getElementById("resetPasswordForm").addEventListener("submit", async (e
 
 document.getElementById("registerForm").addEventListener("submit", (event) => {
   event.preventDefault();
-  syncRegisterButton();
-  if (!event.currentTarget.reportValidity()) return;
+  if (!validateRegisterForm(true)) return;
   submitAuth(event.currentTarget, "/api/auth/register");
 });
 

@@ -896,6 +896,8 @@
       font-weight: 700;
     }
 
+    body.static-view .site-footer,
+    body.static-view .static-page footer,
     body.preauth-static .static-page footer {
       display: none;
     }

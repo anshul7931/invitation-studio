@@ -71,6 +71,7 @@ let profileChangesCommitted = false;
 let pendingCreditPurchases = [];
 let selectedPublicLinkDuration = "free";
 let activeAccountSection = "profile";
+let staticReturnState = null;
 
 const supportedOccasions = ["wedding", "birthday", "engagement", "office", "custom"];
 const publicStaticRoutes = ["about", "contact", "privacy", "terms", "refund", "disclaimer", "acceptable-use"];
@@ -163,6 +164,18 @@ const hideableSections = [
   elements.occasionInvitation
 ].filter(Boolean);
 
+const staticPageByRoute = {
+  about: elements.aboutPage,
+  contact: elements.contactPage,
+  privacy: elements.privacyPage,
+  terms: elements.termsPage,
+  refund: elements.refundPage,
+  disclaimer: elements.disclaimerPage,
+  "acceptable-use": elements.acceptableUsePage
+};
+
+const staticPageSections = Object.values(staticPageByRoute).filter(Boolean);
+
 function localDate(value) {
   const [year, month, day] = value.split("-").map(Number);
   return new Date(year, month - 1, day);
@@ -249,6 +262,7 @@ function formValues(form) {
 
 function showOnly(section) {
   document.body.classList.remove("public-share");
+  document.body.classList.toggle("static-view", staticPageSections.includes(section));
   hideableSections.forEach((element) => element.hidden = element !== section);
   elements.cardActions.hidden = ![elements.weddingInvitation, elements.occasionInvitation].includes(section);
   elements.publicBanner.hidden = true;
@@ -317,6 +331,50 @@ function goHome() {
   showOnly(elements.dashboard);
   loadSavedCards();
   loadPlanSummary();
+}
+
+function visibleSection() {
+  return hideableSections.find((section) => !section.hidden) || null;
+}
+
+function openStaticPage(route) {
+  const page = staticPageByRoute[route];
+  if (!page) return false;
+  staticReturnState = {
+    path: `${location.pathname}${location.search}${location.hash}`,
+    section: visibleSection(),
+    appHeaderHidden: elements.appHeader.hidden,
+    cardActionsHidden: elements.cardActions.hidden,
+    publicBannerHidden: elements.publicBanner.hidden
+  };
+  document.body.classList.toggle("preauth-static", !signedInUser);
+  if (!signedInUser) elements.appHeader.hidden = true;
+  showOnly(page);
+  return true;
+}
+
+function closeStaticPage() {
+  const fallbackPath = signedInUser ? "/" : "/login";
+  const state = staticReturnState;
+  staticReturnState = null;
+  history.replaceState({}, "", state?.path || fallbackPath);
+  document.body.classList.remove("preauth-static", "static-view");
+  if (state?.section && hideableSections.includes(state.section)) {
+    hideableSections.forEach((section) => section.hidden = section !== state.section);
+    elements.appHeader.hidden = state.appHeaderHidden;
+    elements.cardActions.hidden = state.cardActionsHidden;
+    elements.publicBanner.hidden = state.publicBannerHidden;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    return;
+  }
+  if (signedInUser) {
+    showOnly(elements.dashboard);
+    loadSavedCards();
+    loadPlanSummary();
+  } else {
+    elements.appHeader.hidden = true;
+    showOnly(elements.authShell);
+  }
 }
 
 function confirmBeforeHome(action = goHome) {
@@ -1036,39 +1094,9 @@ async function loadRoute() {
     return;
   }
 
-  if (route === "about") {
-    showOnly(elements.aboutPage);
+  if (publicStaticRoutes.includes(route)) {
+    showOnly(staticPageByRoute[route]);
     return;
-  }
-
-  if (route === "contact") {
-      showOnly(elements.contactPage);
-      return;
-  }
-
-  if (route === "privacy") {
-      showOnly(elements.privacyPage);
-      return;
-  }
-
-  if (route === "terms") {
-      showOnly(elements.termsPage);
-      return;
-  }
-
-  if (route === "refund") {
-      showOnly(elements.refundPage);
-      return;
-  }
-
-  if (route === "disclaimer") {
-      showOnly(elements.disclaimerPage);
-      return;
-  }
-
-  if (route === "acceptable-use") {
-      showOnly(elements.acceptableUsePage);
-      return;
   }
 
   if (route === "admin") {
@@ -1226,8 +1254,24 @@ document.querySelectorAll(".static-page").forEach((page) => {
 });
 
 document.addEventListener("click", (event) => {
+  const staticLink = event.target.closest("a[href]");
+  if (staticLink) {
+    const url = new URL(staticLink.href, location.origin);
+    const route = url.pathname.split("/").filter(Boolean)[0];
+    if (url.origin === location.origin && publicStaticRoutes.includes(route)) {
+      event.preventDefault();
+      if (!document.body.classList.contains("static-view")) {
+        openStaticPage(route);
+      }
+      return;
+    }
+  }
   if (event.target.closest("[data-back-dashboard]")) {
     event.preventDefault();
+    if (document.body.classList.contains("static-view")) {
+      closeStaticPage();
+      return;
+    }
     confirmBeforeHome(() => {
     if (window.history.length > 1 && !location.pathname.startsWith("/login")) {
       history.back();
@@ -1247,16 +1291,7 @@ document.addEventListener("click", (event) => {
   }
   if (event.target.closest("[data-close-static]")) {
     event.preventDefault();
-    if (signedInUser) {
-      history.pushState({}, "", "/");
-      showOnly(elements.dashboard);
-      loadSavedCards();
-      loadPlanSummary();
-    } else {
-      history.pushState({}, "", "/login");
-      elements.appHeader.hidden = true;
-      showOnly(elements.authShell);
-    }
+    closeStaticPage();
   }
 });
 

@@ -76,11 +76,22 @@ export function renderOccasionForm(occasion, container) {
     </section>
     ${sections}
     <section class="form-chapter premium-options">
-      <label class="switch-row">
+      <label class="premium-switch">
         <input type="checkbox" data-premium-toggle>
-        <span>Go Premium</span>
+        <span class="premium-slider" aria-hidden="true"></span>
+        <span class="premium-switch-copy">
+          <strong>Go Premium</strong>
+          <small>Unlock photo carousel and live countdown for this invitation.</small>
+        </span>
       </label>
       <div class="premium-fields" hidden>
+        <label class="feature-check">
+          <input type="checkbox" name="addCountdown" value="yes">
+          <span>
+            <strong>Add Countdown</strong>
+            <small>Show a live countdown until the event date and time.</small>
+          </span>
+        </label>
         <div class="field full">
           <label for="occasion-photoLinks">Google Drive photo links <span class="optional-label">Premium · up to 10</span></label>
           <textarea id="occasion-photoLinks" name="photoLinks" placeholder="Paste one public Google Drive image link per line, up to 10"></textarea>

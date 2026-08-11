@@ -7,10 +7,13 @@ const occasions = {
   wedding: {
     required: ["bride", "groom", "weddingDate", "weddingTime", "venue", "address"],
     titleFields: ["bride", "groom"],
-    fingerprintFields: ["bride", "groom", "weddingDate", "weddingTime", "venue", "address"],
+    fingerprintFields: ["bride", "groom", "brideParents", "groomParents", "coupleOrder", "weddingDate", "weddingTime", "venue", "address"],
     defaults: {
       bride: "Aisha Sharma",
       groom: "Rohan Mehta",
+      brideParents: "Mr. & Mrs. Sharma",
+      groomParents: "Mr. & Mrs. Mehta",
+      coupleOrder: "bride-first",
       weddingDate: "2026-12-12",
       weddingTime: "19:00",
       venue: "The Grand Palace",

@@ -72,6 +72,8 @@ let pendingCreditPurchases = [];
 let selectedPublicLinkDuration = "free";
 let activeAccountSection = "profile";
 let staticReturnState = null;
+let staticHistoryMarkerActive = false;
+let occasionCountdownTimer = null;
 
 const supportedOccasions = ["wedding", "birthday", "engagement", "office", "custom"];
 const publicStaticRoutes = ["about", "contact", "privacy", "terms", "refund", "disclaimer", "acceptable-use"];
@@ -347,16 +349,23 @@ function openStaticPage(route) {
     cardActionsHidden: elements.cardActions.hidden,
     publicBannerHidden: elements.publicBanner.hidden
   };
+  history.pushState({ staticOverlay: true }, "", staticReturnState.path);
+  staticHistoryMarkerActive = true;
   document.body.classList.toggle("preauth-static", !signedInUser);
   if (!signedInUser) elements.appHeader.hidden = true;
   showOnly(page);
   return true;
 }
 
-function closeStaticPage() {
+function closeStaticPage({ fromHistory = false } = {}) {
+  if (!fromHistory && staticHistoryMarkerActive && window.history.length > 1) {
+    history.back();
+    return;
+  }
   const fallbackPath = signedInUser ? "/" : "/login";
   const state = staticReturnState;
   staticReturnState = null;
+  staticHistoryMarkerActive = false;
   history.replaceState({}, "", state?.path || fallbackPath);
   document.body.classList.remove("preauth-static", "static-view");
   if (state?.section && hideableSections.includes(state.section)) {
@@ -559,13 +568,70 @@ function photoUrls(values) {
 
 function renderPhotoGallery(container, urls) {
   container.hidden = urls.length === 0;
-  container.replaceChildren(...urls.map((url) => {
+  container.classList.toggle("photo-carousel", urls.length > 1);
+  const track = document.createElement("div");
+  track.className = "photo-carousel-track";
+  track.replaceChildren(...urls.map((url, index) => {
     const img = document.createElement("img");
     img.src = url;
-    img.alt = "Invitation photo";
+    img.alt = `Invitation photo ${index + 1}`;
     img.loading = "lazy";
-    return img;
+    const slide = document.createElement("figure");
+    slide.className = "photo-slide";
+    slide.append(img);
+    return slide;
   }));
+  container.replaceChildren(track);
+}
+
+function eventTarget(date, time) {
+  if (!date) return null;
+  const [year, month, day] = date.split("-").map(Number);
+  const [hours = 0, minutes = 0] = String(time || "00:00").split(":").map(Number);
+  return new Date(year, month - 1, day, hours, minutes);
+}
+
+function countdownParts(target) {
+  const ms = target.getTime() - Date.now();
+  if (ms <= 0) return null;
+  const totalSeconds = Math.floor(ms / 1000);
+  return [
+    ["Days", Math.floor(totalSeconds / 86400)],
+    ["Hours", Math.floor((totalSeconds % 86400) / 3600)],
+    ["Mins", Math.floor((totalSeconds % 3600) / 60)],
+    ["Secs", totalSeconds % 60]
+  ];
+}
+
+function renderEventCountdown(container, values, label = "Counting down to the event") {
+  clearInterval(occasionCountdownTimer);
+  const target = values.templateType === "premium" && values.addCountdown === "yes"
+    ? eventTarget(values.date, values.time)
+    : null;
+  container.hidden = !target;
+  if (!target) {
+    container.replaceChildren();
+    return;
+  }
+  const tick = () => {
+    const parts = countdownParts(target);
+    if (!parts) {
+      container.replaceChildren(Object.assign(document.createElement("p"), { textContent: "The celebration has begun." }));
+      clearInterval(occasionCountdownTimer);
+      return;
+    }
+    container.replaceChildren(
+      Object.assign(document.createElement("p"), { className: "countdown-kicker", textContent: label }),
+      ...parts.map(([partLabel, value]) => {
+        const item = document.createElement("span");
+        item.className = "countdown-item";
+        item.innerHTML = `<strong>${String(value).padStart(2, "0")}</strong><small>${partLabel}</small>`;
+        return item;
+      })
+    );
+  };
+  tick();
+  occasionCountdownTimer = setInterval(tick, 1000);
 }
 
 function renderGenericCard(occasion, values = formValues(elements.occasionForm)) {
@@ -578,6 +644,7 @@ function renderGenericCard(occasion, values = formValues(elements.occasionForm))
   document.getElementById("occasionCardTitle").textContent = cardData.title;
   document.getElementById("occasionCardSubtitle").textContent = cardData.subtitle;
   document.getElementById("occasionCardMessage").textContent = cardData.message;
+  renderEventCountdown(document.getElementById("occasionCountdown"), values, `Counting down to ${cardData.title}`);
   renderPhotoGallery(document.getElementById("occasionPhotoGallery"), photoUrls(values));
   document.getElementById("occasionCardRsvp").textContent =
     cardData.rsvp ? `RSVP · ${cardData.rsvp}` : "";
@@ -670,8 +737,25 @@ function renderWeddingMotif() {
 
 function fillForm(form, values) {
   Object.entries(values || {}).forEach(([name, value]) => {
-    if (form.elements[name]) form.elements[name].value = value;
+    const element = form.elements[name];
+    if (!element) return;
+    if (element instanceof RadioNodeList) {
+      element.value = value;
+      return;
+    }
+    if (element.type === "checkbox") {
+      element.checked = ["yes", "true", "on", "1", true].includes(value);
+      return;
+    }
+    element.value = value;
   });
+  const shouldShowPremium = values?.templateType === "premium" || String(values?.photoLinks || "").trim() || values?.addCountdown === "yes";
+  const toggle = form.querySelector("[data-premium-toggle]");
+  const fields = form.querySelector(".premium-fields");
+  if (toggle && fields) {
+    toggle.checked = shouldShowPremium;
+    fields.hidden = !shouldShowPremium;
+  }
 }
 
 async function openOccasion(occasionId, updateUrl = true) {
@@ -1783,6 +1867,10 @@ document.getElementById("confirmDeleteBtn").addEventListener("click", async () =
 });
 
 window.addEventListener("popstate", () => {
+  if (document.body.classList.contains("static-view") || staticReturnState) {
+    closeStaticPage({ fromHistory: true });
+    return;
+  }
   const route = location.pathname.split("/").filter(Boolean)[0];
   if (signedInUser || location.pathname.startsWith("/share/") || publicStaticRoutes.includes(route)) loadRoute();
 });

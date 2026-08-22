@@ -11,16 +11,52 @@ const coupleSources = {
 
 let weddingCountdownTimer = null;
 
-function driveImageUrl(link) {
-  const text = String(link || "").trim();
-  const id = text.match(/\/d\/([^/]+)/)?.[1] || text.match(/[?&]id=([^&]+)/)?.[1];
-  return id ? `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w1200` : text;
+function cleanDriveLink(link) {
+  const text = String(link || "").trim().replace(/\\([&_=])/g, "$1");
+  return text.match(/\((https?:\/\/[^)]+)\)/)?.[1] || text.replace(/^<|>$/g, "");
+}
+
+function driveImageCandidates(link) {
+  const text = cleanDriveLink(link);
+  if (!text) return [];
+  let url;
+  try {
+    url = new URL(text);
+  } catch {
+    return [text];
+  }
+  const host = url.hostname.replace(/^www\./, "");
+  const id = url.searchParams.get("id") ||
+    url.pathname.match(/\/file\/d\/([^/]+)/)?.[1] ||
+    url.pathname.match(/\/d\/([^/]+)/)?.[1];
+  if (!id || !/(^|\.)googleusercontent\.com$|(^|\.)drive\.google\.com$/.test(host)) return [text];
+  const resourceKey = url.searchParams.get("resourcekey");
+  const query = `id=${encodeURIComponent(id)}${resourceKey ? `&resourcekey=${encodeURIComponent(resourceKey)}` : ""}`;
+  return Array.from(new Set([
+    `https://drive.google.com/thumbnail?${query}&sz=w2000`,
+    `https://lh3.googleusercontent.com/d/${encodeURIComponent(id)}${resourceKey ? `?resourcekey=${encodeURIComponent(resourceKey)}` : ""}`,
+    `https://drive.google.com/uc?export=view&${query}`,
+    `https://drive.google.com/uc?${query}&export=view`,
+    text
+  ]));
+}
+
+function applyImageFallbacks(img, link) {
+  const candidates = driveImageCandidates(link);
+  img.src = candidates[0] || "";
+  img.dataset.fallbacks = JSON.stringify(candidates.slice(1));
+  img.addEventListener("error", () => {
+    const fallbacks = JSON.parse(img.dataset.fallbacks || "[]");
+    const next = fallbacks.shift();
+    img.dataset.fallbacks = JSON.stringify(fallbacks);
+    if (next) img.src = next;
+  });
 }
 
 function renderPhotoGallery(values) {
   const gallery = document.getElementById("weddingPhotoGallery");
   const urls = values.templateType === "premium"
-    ? String(values.photoLinks || "").split(/\n|,/).map(driveImageUrl).filter(Boolean).slice(0, 10)
+    ? String(values.photoLinks || "").split(/\n|,/).map((link) => link.trim()).filter(Boolean).slice(0, 10)
     : [];
   gallery.hidden = urls.length === 0;
   gallery.classList.toggle("photo-carousel", urls.length > 1);
@@ -28,7 +64,7 @@ function renderPhotoGallery(values) {
   track.className = "photo-carousel-track";
   track.replaceChildren(...urls.map((url, index) => {
     const img = document.createElement("img");
-    img.src = url;
+    applyImageFallbacks(img, url);
     img.alt = `Wedding photo ${index + 1}`;
     img.loading = "lazy";
     const slide = document.createElement("figure");
@@ -48,8 +84,7 @@ function eventTarget(date, time) {
 
 function countdownParts(target) {
   const ms = target.getTime() - Date.now();
-  if (ms <= 0) return null;
-  const totalSeconds = Math.floor(ms / 1000);
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
   return [
     ["Days", Math.floor(totalSeconds / 86400)],
     ["Hours", Math.floor((totalSeconds % 86400) / 3600)],
@@ -69,11 +104,6 @@ function renderCountdown(container, values) {
   }
   const tick = () => {
     const parts = countdownParts(target);
-    if (!parts) {
-      container.replaceChildren(Object.assign(document.createElement("p"), { textContent: "The celebration has begun." }));
-      clearInterval(weddingCountdownTimer);
-      return;
-    }
     container.replaceChildren(
       Object.assign(document.createElement("p"), { className: "countdown-kicker", textContent: "Counting down to the wedding" }),
       ...parts.map(([label, value]) => {
@@ -83,6 +113,7 @@ function renderCountdown(container, values) {
         return item;
       })
     );
+    if (target.getTime() <= Date.now()) clearInterval(weddingCountdownTimer);
   };
   tick();
   weddingCountdownTimer = setInterval(tick, 1000);
@@ -108,7 +139,12 @@ function setOptionalEvent(form, prefix, title, helpers) {
 }
 
 export function renderWedding(form, helpers) {
-  const value = (name) => form.elements[name].value.trim();
+  const value = (name) => {
+    const element = form.elements[name];
+    if (!element) return "";
+    if (element.type === "checkbox") return element.checked ? element.value : "";
+    return element.value.trim();
+  };
   const bride = value("bride");
   const groom = value("groom");
   const brideParents = value("brideParents");
@@ -138,20 +174,21 @@ export function renderWedding(form, helpers) {
   inlineCouple.hidden = useReferenceCouple;
   refCouple.hidden = !useReferenceCouple;
   if (coupleSources[coupleChoice]) refCouple.src = coupleSources[coupleChoice];
-  document.getElementById("brideName").textContent = firstName(bride);
-  document.getElementById("groomName").textContent = firstName(groom);
-  document.getElementById("brideFullName").textContent = bride;
-  document.getElementById("groomFullName").textContent = groom;
-  document.getElementById("brideParentsText").textContent = brideParents || "the bride's family";
-  document.getElementById("groomParentsText").textContent = groomParents || "the groom's family";
-  const parentDetails = document.getElementById("parentDetails");
-  const brideParentCard = document.getElementById("brideParentCard");
-  const groomParentCard = document.getElementById("groomParentCard");
-  parentDetails.replaceChildren(...(
-    value("coupleOrder") === "groom-first"
-      ? [groomParentCard, brideParentCard]
-      : [brideParentCard, groomParentCard]
-  ));
+  const brideDetails = {
+    name: bride,
+    parentLine: `(D/o. ${brideParents || "the bride's family"})`
+  };
+  const groomDetails = {
+    name: groom,
+    parentLine: `(S/o. ${groomParents || "the groom's family"})`
+  };
+  const orderedCouple = value("coupleOrder") === "groom-first"
+    ? [groomDetails, brideDetails]
+    : [brideDetails, groomDetails];
+  document.getElementById("firstCoupleName").textContent = orderedCouple[0].name;
+  document.getElementById("firstParentLine").textContent = orderedCouple[0].parentLine;
+  document.getElementById("secondCoupleName").textContent = orderedCouple[1].name;
+  document.getElementById("secondParentLine").textContent = orderedCouple[1].parentLine;
   document.getElementById("blessingText").textContent = value("message");
   document.getElementById("monogram").textContent = `${initial(bride)}&${initial(groom)}`;
   document.getElementById("weddingDay").textContent = helpers.weekday(date);

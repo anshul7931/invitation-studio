@@ -150,7 +150,18 @@ async function handlePublicApi(request, response, pathname) {
       LIMIT 1`,
       [user.id, shareMatch[1], templateType, fingerprint, shareMatch[2]]
     );
-    const needsPaidCredit = Boolean(body.useCredit || existingLink?.public_generated_at || duplicates.length);
+    const requestedPaidLink = body.useCredit === true;
+    const blockedFreeLink = Boolean(existingLink?.public_generated_at || duplicates.length);
+    if (blockedFreeLink && !requestedPaidLink) {
+      sendJson(response, existingLink?.public_generated_at ? 402 : 409, {
+        error: existingLink?.public_generated_at
+          ? "A public link was already generated for this card. Please continue through payment."
+          : "The same details were previously made public and you need to buy credits now",
+        paymentUrl: config.payment.placeholderPath
+      });
+      return true;
+    }
+    const needsPaidCredit = requestedPaidLink;
     let paidPurchase = null;
     if (needsPaidCredit) {
       paidPurchase = await consumeCredit({ userId: user.id, invitation, templateType, purchaseId: String(body.purchaseId || "") });
@@ -158,7 +169,7 @@ async function handlePublicApi(request, response, pathname) {
         sendJson(response, existingLink?.public_generated_at ? 402 : 409, {
           error: existingLink?.public_generated_at
             ? "A public link was already generated for this card. Please continue through payment."
-            : "The same details were previously made public and you need to pay now",
+            : "The same details were previously made public and you need to buy credits now",
           paymentUrl: config.payment.placeholderPath
         });
         return true;

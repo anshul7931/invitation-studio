@@ -1289,6 +1289,43 @@
       line-height: 1.55;
     }
 
+    .field-control-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .field-control-row input,
+    .field-control-row textarea {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .optional-clear-button {
+      flex: 0 0 auto;
+      min-height: 36px;
+      margin-bottom: 7px;
+      padding: 7px 12px;
+      color: var(--gold-deep);
+      background: rgba(255, 250, 240, 0.82);
+      border: 1px solid rgba(199, 154, 67, 0.46);
+      border-radius: 999px;
+      font: 700 0.72rem var(--label-font);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+    }
+
+    .optional-clear-button:hover,
+    .optional-clear-button:focus-visible {
+      background: rgba(239, 208, 138, 0.22);
+      border-color: var(--gold);
+      transform: translateY(-1px);
+      outline: none;
+    }
+
     .field input:focus,
     .field textarea:focus,
     .field select:focus {
@@ -2198,68 +2235,47 @@
       display: grid;
       align-items: center;
       justify-content: center;
-      gap: 0;
+      gap: 8px;
       width: 100%;
       margin: 0 auto;
       color: var(--maroon);
       font-family: var(--display-font);
-      font-size: clamp(3.6rem, 9vw, 7rem);
       font-weight: 400;
       line-height: 1.14;
       text-shadow: 0 2px 0 #fff, 0 4px 16px rgba(100, 22, 42, 0.11);
       overflow-wrap: anywhere;
     }
 
-    .names > span {
-      display: block;
+    .name-block {
+      display: grid;
+      justify-items: center;
       min-width: 0;
       max-width: 100%;
     }
 
+    .couple-name {
+      display: block;
+      font-size: clamp(2.9rem, 8vw, 5.8rem);
+      line-height: 1.02;
+    }
+
+    .parent-line {
+      display: block;
+      max-width: min(92vw, 680px);
+      margin-top: 4px;
+      color: var(--muted);
+      font-family: var(--body-font);
+      font-size: clamp(1rem, 2.2vw, 1.28rem);
+      font-weight: 600;
+      line-height: 1.45;
+      text-shadow: none;
+    }
+
     .ampersand {
       display: block;
-      margin: -0.08em 0;
+      margin: -0.1em 0 -0.02em;
       color: var(--gold);
-      font-size: 0.68em;
-    }
-
-    .parent-details {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
-      max-width: 720px;
-      margin: 20px auto 12px;
-    }
-
-    .parent-card {
-      padding: 16px 18px;
-      background: rgba(255, 250, 240, 0.74);
-      border: 1px solid rgba(199, 154, 67, 0.52);
-      border-radius: 22px;
-      box-shadow: 0 12px 28px rgba(96, 22, 41, 0.08);
-    }
-
-    .parent-label {
-      margin: 0 0 6px;
-      color: var(--gold);
-      font: 700 0.68rem var(--label-font);
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-    }
-
-    .parent-card h2 {
-      margin: 0 0 4px;
-      color: var(--maroon);
-      font-family: var(--body-font);
-      font-size: clamp(1.26rem, 3vw, 1.75rem);
-      line-height: 1.18;
-    }
-
-    .parent-card p {
-      margin: 0;
-      color: var(--muted);
-      font-size: clamp(0.96rem, 2vw, 1.08rem);
-      line-height: 1.5;
+      font-size: clamp(2.2rem, 6vw, 4.4rem);
     }
 
     .blessing {
@@ -2565,6 +2581,17 @@
         grid-template-columns: 1fr;
       }
 
+      .field-control-row {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .optional-clear-button {
+        align-self: flex-end;
+        margin-bottom: 0;
+      }
+
       .field.full {
         grid-column: auto;
       }
@@ -2729,23 +2756,19 @@
       }
 
       .names {
-        flex-direction: column;
-        gap: 0;
-        font-size: clamp(3.15rem, 16vw, 4.2rem);
-        line-height: 1.18;
+        gap: 6px;
       }
 
-      .names span {
-        display: block;
+      .couple-name {
+        font-size: clamp(2.6rem, 13vw, 3.7rem);
+      }
+
+      .parent-line {
+        font-size: 0.95rem;
       }
 
       .names .ampersand {
-        margin: -0.08em 0;
-      }
-
-      .parent-details {
-        grid-template-columns: 1fr;
-        gap: 10px;
+        margin: -0.12em 0 -0.04em;
       }
 
       .premium-switch {

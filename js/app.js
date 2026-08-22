@@ -143,6 +143,40 @@ function initGenericMotifPreview() {
   initPreviewSelect("occasion-cardIcon", {});
 }
 
+function isClearableOptionalControl(control) {
+  if (!control || control.required || control.dataset.clearReady) return false;
+  if (!control.closest(".details-form")) return false;
+  const tag = control.tagName.toLowerCase();
+  const type = String(control.type || "").toLowerCase();
+  return tag === "textarea" || (
+    tag === "input" &&
+    !["hidden", "radio", "checkbox", "button", "submit", "reset"].includes(type)
+  );
+}
+
+function enhanceOptionalClearButtons(root = document) {
+  root.querySelectorAll("input, textarea").forEach((control) => {
+    if (!isClearableOptionalControl(control)) return;
+    control.dataset.clearReady = "true";
+    const row = document.createElement("div");
+    row.className = "field-control-row";
+    control.before(row);
+    row.append(control);
+    const clearButton = document.createElement("button");
+    clearButton.type = "button";
+    clearButton.className = "optional-clear-button";
+    clearButton.textContent = "Clear";
+    clearButton.setAttribute("aria-label", `Clear ${control.name || "optional field"}`);
+    clearButton.addEventListener("click", () => {
+      control.value = "";
+      control.dispatchEvent(new Event("input", { bubbles: true }));
+      control.dispatchEvent(new Event("change", { bubbles: true }));
+      control.focus();
+    });
+    row.append(clearButton);
+  });
+}
+
 const hideableSections = [
   elements.authShell,
   elements.dashboard,
@@ -555,15 +589,51 @@ function openPayment(plan, price, period) {
   showOnly(elements.paymentPage);
 }
 
-function driveImageUrl(link) {
-  const text = String(link || "").trim();
-  const id = text.match(/\/d\/([^/]+)/)?.[1] || text.match(/[?&]id=([^&]+)/)?.[1];
-  return id ? `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w1200` : text;
+function cleanDriveLink(link) {
+  const text = String(link || "").trim().replace(/\\([&_=])/g, "$1");
+  return text.match(/\((https?:\/\/[^)]+)\)/)?.[1] || text.replace(/^<|>$/g, "");
+}
+
+function driveImageCandidates(link) {
+  const text = cleanDriveLink(link);
+  if (!text) return [];
+  let url;
+  try {
+    url = new URL(text);
+  } catch {
+    return [text];
+  }
+  const host = url.hostname.replace(/^www\./, "");
+  const id = url.searchParams.get("id") ||
+    url.pathname.match(/\/file\/d\/([^/]+)/)?.[1] ||
+    url.pathname.match(/\/d\/([^/]+)/)?.[1];
+  if (!id || !/(^|\.)googleusercontent\.com$|(^|\.)drive\.google\.com$/.test(host)) return [text];
+  const resourceKey = url.searchParams.get("resourcekey");
+  const query = `id=${encodeURIComponent(id)}${resourceKey ? `&resourcekey=${encodeURIComponent(resourceKey)}` : ""}`;
+  return Array.from(new Set([
+    `https://drive.google.com/thumbnail?${query}&sz=w2000`,
+    `https://lh3.googleusercontent.com/d/${encodeURIComponent(id)}${resourceKey ? `?resourcekey=${encodeURIComponent(resourceKey)}` : ""}`,
+    `https://drive.google.com/uc?export=view&${query}`,
+    `https://drive.google.com/uc?${query}&export=view`,
+    text
+  ]));
+}
+
+function applyImageFallbacks(img, link) {
+  const candidates = driveImageCandidates(link);
+  img.src = candidates[0] || "";
+  img.dataset.fallbacks = JSON.stringify(candidates.slice(1));
+  img.addEventListener("error", () => {
+    const fallbacks = JSON.parse(img.dataset.fallbacks || "[]");
+    const next = fallbacks.shift();
+    img.dataset.fallbacks = JSON.stringify(fallbacks);
+    if (next) img.src = next;
+  });
 }
 
 function photoUrls(values) {
   if (values.templateType !== "premium") return [];
-  return String(values.photoLinks || "").split(/\n|,/).map(driveImageUrl).filter(Boolean).slice(0, 10);
+  return String(values.photoLinks || "").split(/\n|,/).map((link) => link.trim()).filter(Boolean).slice(0, 10);
 }
 
 function renderPhotoGallery(container, urls) {
@@ -573,7 +643,7 @@ function renderPhotoGallery(container, urls) {
   track.className = "photo-carousel-track";
   track.replaceChildren(...urls.map((url, index) => {
     const img = document.createElement("img");
-    img.src = url;
+    applyImageFallbacks(img, url);
     img.alt = `Invitation photo ${index + 1}`;
     img.loading = "lazy";
     const slide = document.createElement("figure");
@@ -593,8 +663,7 @@ function eventTarget(date, time) {
 
 function countdownParts(target) {
   const ms = target.getTime() - Date.now();
-  if (ms <= 0) return null;
-  const totalSeconds = Math.floor(ms / 1000);
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
   return [
     ["Days", Math.floor(totalSeconds / 86400)],
     ["Hours", Math.floor((totalSeconds % 86400) / 3600)],
@@ -615,11 +684,6 @@ function renderEventCountdown(container, values, label = "Counting down to the e
   }
   const tick = () => {
     const parts = countdownParts(target);
-    if (!parts) {
-      container.replaceChildren(Object.assign(document.createElement("p"), { textContent: "The celebration has begun." }));
-      clearInterval(occasionCountdownTimer);
-      return;
-    }
     container.replaceChildren(
       Object.assign(document.createElement("p"), { className: "countdown-kicker", textContent: label }),
       ...parts.map(([partLabel, value]) => {
@@ -629,6 +693,7 @@ function renderEventCountdown(container, values, label = "Counting down to the e
         return item;
       })
     );
+    if (target.getTime() <= Date.now()) clearInterval(occasionCountdownTimer);
   };
   tick();
   occasionCountdownTimer = setInterval(tick, 1000);
@@ -766,6 +831,7 @@ async function openOccasion(occasionId, updateUrl = true) {
 
   if (occasionId === "wedding") {
     elements.weddingInvitation.dataset.theme = elements.weddingForm.elements.theme.value;
+    enhanceOptionalClearButtons(elements.weddingForm);
     showOnly(elements.weddingBuilder);
     return;
   }
@@ -777,6 +843,7 @@ async function openOccasion(occasionId, updateUrl = true) {
   document.getElementById("occasionFormKicker").textContent =
     `Create your ${occasion.name.toLowerCase()} card`;
   renderOccasionForm(occasion, elements.occasionFields);
+  enhanceOptionalClearButtons(elements.occasionForm);
   initGenericMotifPreview();
   showOnly(elements.occasionBuilder);
 }
@@ -798,6 +865,7 @@ async function renderInvitationFromData(invitation, readOnly = false) {
     const occasion = await getHydratedOccasion(invitation.occasion);
     activeOccasionConfig = occasion;
     renderOccasionForm(occasion, elements.occasionFields);
+    enhanceOptionalClearButtons(elements.occasionForm);
     fillForm(elements.occasionForm, invitation.fields);
     initGenericMotifPreview();
     renderGenericCard(occasion, invitation.fields);
@@ -1489,6 +1557,7 @@ function syncRegisterButton() {
 syncRegisterButton();
 
 initWeddingSvgPreviews();
+enhanceOptionalClearButtons(elements.weddingForm);
 
 elements.weddingForm.addEventListener("submit", (event) => {
   event.preventDefault();

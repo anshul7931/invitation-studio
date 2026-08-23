@@ -652,6 +652,32 @@ function renderPhotoGallery(container, urls) {
     return slide;
   }));
   container.replaceChildren(track);
+  setupPhotoCarousel(track);
+}
+
+function setupPhotoCarousel(track) {
+  const slides = [...track.querySelectorAll(".photo-slide")];
+
+  if (!slides.length) return;
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        entry.target.classList.toggle(
+          "is-active",
+          entry.isIntersecting
+        );
+      });
+    },
+    {
+      root: track,
+      threshold: 0.65
+    }
+  );
+
+  slides.forEach((slide) => observer.observe(slide));
+
+  slides[0].classList.add("is-active");
 }
 
 function eventTarget(date, time) {

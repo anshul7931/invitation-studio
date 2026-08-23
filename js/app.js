@@ -1105,8 +1105,25 @@ async function loadPlanSummary() {
     const profileTransactions = document.getElementById("profileTransactions");
     if (profileTransactions) {
       profileTransactions.innerHTML = transactions.length
-        ? transactions.map((tx) => `<p><strong>${tx.type === "PURCHASE" ? "Plan purchased" : "Credit used"}</strong><br>${tx.note || tx.planTitle || tx.invitationTitle} ${tx.amount ? `· ${formatCurrency(tx.amount)}` : ""}</p>`).join("")
-        : "<p>No transactions yet.</p>";
+        ? transactions.map((tx) => `
+            <tr>
+              <td>${new Date(tx.createdAt).toLocaleDateString("en-IN")}</td>
+              <td>
+                <strong>
+                  ${tx.type === "PURCHASE" ? "Plan purchased" : "Credit used"}
+                </strong>
+              </td>
+              <td>${tx.note || tx.planTitle || tx.invitationTitle || "—"}</td>
+              <td>${tx.amount ? formatCurrency(tx.amount) : "—"}</td>
+            </tr>
+          `).join("")
+        : `
+            <tr>
+              <td colspan="4" class="transaction-empty">
+                No transactions yet.
+              </td>
+            </tr>
+          `;
     }
   } catch (error) {
     if (elements.purchasedPlans) {

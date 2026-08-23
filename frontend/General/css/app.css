@@ -619,7 +619,7 @@
     }
 
     .profile-dialog {
-      width: min(calc(100% - 28px), 520px);
+      width: min(calc(100% - 28px), 900px);
       max-height: calc(100dvh - 32px);
       padding: 0;
       color: var(--ink);
@@ -1041,6 +1041,44 @@
 
     .mini-ledger p {
       margin: 0;
+    }
+
+    .transaction-table-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid rgba(199, 154, 67, 0.28);
+      border-radius: 12px;
+    }
+
+    .transaction-table {
+      width: 100%;
+      min-width: 650px;
+      border-collapse: collapse;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .transaction-table th,
+    .transaction-table td {
+      padding: 11px 12px;
+      text-align: left;
+      border-bottom: 1px solid rgba(199, 154, 67, 0.16);
+    }
+
+    .transaction-table th {
+      color: var(--maroon);
+      font-weight: 700;
+      background: rgba(199, 154, 67, 0.08);
+      white-space: nowrap;
+    }
+
+    .transaction-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .transaction-empty {
+      text-align: center !important;
+      padding: 22px !important;
     }
 
     .admin-grid {
@@ -2638,6 +2676,17 @@
 
     .invitation [fill="#f2d8d1"] {
       fill: var(--blush);
+    }
+
+    @media (max-width: 600px) {
+      .transaction-table {
+        min-width: 560px;
+      }
+
+      .transaction-table th,
+      .transaction-table td {
+        padding: 11px 12px;
+      }
     }
 
     @media (max-width: 720px) {

@@ -1265,17 +1265,20 @@ async function loadRoute() {
   if (route === "payment") {
     history.replaceState({}, "", "/payments");
     resetPaymentPage();
+    elements.appHeader.hidden = !signedInUser;
     showOnly(elements.paymentPage);
     return;
   }
 
   if (route === "payments") {
     resetPaymentPage();
+    elements.appHeader.hidden = !signedInUser;
     showOnly(elements.paymentPage);
     return;
   }
 
   if (route === "plans") {
+    elements.appHeader.hidden = !signedInUser;
     await renderPlansPage();
     showOnly(elements.plansPage);
     return;
@@ -1994,14 +1997,40 @@ applyFontTheme("default");
     location.pathname === "/reset-password" ||
     publicStaticRoutes.includes(bootRoute)
   ) {
-    if (publicStaticRoutes.includes(bootRoute)) {
+    if (
+      location.pathname === "/payment" ||
+      location.pathname === "/payments" ||
+      location.pathname === "/plans"
+    ) {
+      try {
+        const { user } = await api("/api/auth/me");
+        signedInUser = user;
+
+        if (signedInUser) {
+          applyUserPreferences();
+          elements.appHeader.hidden = false;
+          document.getElementById("userName").textContent =
+            `Hello, ${signedInUser.name}`;
+          elements.adminButton.hidden = signedInUser.role !== "ADMIN";
+          document.getElementById("accountButton").hidden = isGuestUser();
+          document.getElementById("logoutButton").textContent =
+            isGuestUser() ? "Exit Guest" : "Sign out";
+        } else {
+          elements.appHeader.hidden = true;
+        }
+      } catch {
+        signedInUser = null;
+        elements.appHeader.hidden = true;
+      }
+    } else if (publicStaticRoutes.includes(bootRoute)) {
       try {
         const { user } = await api("/api/auth/me");
         signedInUser = user;
         elements.appHeader.hidden = !signedInUser;
         if (signedInUser) {
           applyUserPreferences();
-          document.getElementById("userName").textContent = `Hello, ${signedInUser.name}`;
+          document.getElementById("userName").textContent =
+            `Hello, ${signedInUser.name}`;
           elements.adminButton.hidden = signedInUser.role !== "ADMIN";
         }
       } catch {
@@ -2011,6 +2040,7 @@ applyFontTheme("default");
     } else {
       elements.appHeader.hidden = true;
     }
+
     await loadRoute();
     return;
   }

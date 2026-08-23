@@ -909,10 +909,19 @@ async function renderInvitationFromData(invitation, readOnly = false) {
 }
 
 function currentFields() {
-  const fields = formValues(activeOccasion === "wedding" ? elements.weddingForm : elements.occasionForm);
+  const form = activeOccasion === "wedding"
+    ? elements.weddingForm
+    : elements.occasionForm;
+
+  const fields = formValues(form);
+
+  const countdown = form.elements.addCountdown;
+  fields.addCountdown = countdown?.checked ? "yes" : "no";
+
   fields.templateType = pendingTemplateFields?.templateType ||
     currentTemplateType ||
     (String(fields.photoLinks || "").trim() ? "premium" : fields.templateType || "basic");
+
   return fields;
 }
 

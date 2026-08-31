@@ -7,10 +7,10 @@ export const engagement = {
   defaultTheme: "emerald",
   defaultIcon: "rings",
   icons: [
-    ["coupleRef", "Reference couple SVG"],
+    ["coupleRef", "Traditional couple"],
     ["rings", "Engagement rings"],
-    ["ringsRef", "Reference rings SVG"],
-    ["couple", "Couple silhouette"],
+    ["ringsRef", "Diamond rings"],
+    ["couple", "Modern couple"],
     ["lotus", "Lotus bloom"],
     ["diya", "Auspicious diya"],
     ["envelope", "Invitation seal"]

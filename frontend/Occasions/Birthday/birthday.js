@@ -7,8 +7,8 @@ export const birthday = {
   defaultTheme: "plum",
   defaultIcon: "cakeRef",
   icons: [
-    ["cakeRef", "Reference cake SVG"],
-    ["cake", "Celebration cake"],
+    ["cakeRef", "Classic birthday cake"],
+    ["cake", "Golden cake"],
     ["diya", "Festive diya"],
     ["lotus", "Lotus bloom"],
     ["envelope", "Invitation seal"]

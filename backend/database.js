@@ -66,7 +66,7 @@ async function initializeDatabase() {
       public_expires_at DATETIME NULL,
       public_generated_at DATETIME NULL,
       public_fingerprint CHAR(64) NULL,
-      status ENUM('DRAFT', 'PUBLISHED', 'EXPIRED', 'PAID') NOT NULL DEFAULT 'DRAFT',
+      status ENUM('DRAFT', 'SAVED', 'PUBLISHED', 'EXPIRED', 'PAID') NOT NULL DEFAULT 'DRAFT',
       occasion ENUM('wedding', 'birthday', 'engagement', 'office', 'custom') NOT NULL,
       title VARCHAR(255) NOT NULL,
       fields JSON NOT NULL,
@@ -96,7 +96,8 @@ async function initializeDatabase() {
   await ensureColumn("invitations", "public_expires_at", "ALTER TABLE invitations ADD COLUMN public_expires_at DATETIME NULL AFTER public_token");
   await ensureColumn("invitations", "public_generated_at", "ALTER TABLE invitations ADD COLUMN public_generated_at DATETIME NULL AFTER public_expires_at");
   await ensureColumn("invitations", "public_fingerprint", "ALTER TABLE invitations ADD COLUMN public_fingerprint CHAR(64) NULL AFTER public_generated_at");
-  await ensureColumn("invitations", "status", "ALTER TABLE invitations ADD COLUMN status ENUM('DRAFT', 'PUBLISHED', 'EXPIRED', 'PAID') NOT NULL DEFAULT 'DRAFT' AFTER public_fingerprint");
+  await ensureColumn("invitations", "status", "ALTER TABLE invitations ADD COLUMN status ENUM('DRAFT', 'SAVED', 'PUBLISHED', 'EXPIRED', 'PAID') NOT NULL DEFAULT 'DRAFT' AFTER public_fingerprint");
+  await pool.query("ALTER TABLE invitations MODIFY status ENUM('DRAFT', 'SAVED', 'PUBLISHED', 'EXPIRED', 'PAID') NOT NULL DEFAULT 'DRAFT'");
   await pool.query("ALTER TABLE invitations MODIFY occasion ENUM('wedding', 'birthday', 'engagement', 'office', 'custom') NOT NULL");
 
   await pool.query(`
@@ -184,6 +185,7 @@ async function initializeDatabase() {
       public_expires_at DATETIME NULL,
       public_generated_at DATETIME NULL,
       public_fingerprint CHAR(64) NULL,
+      purchase_id CHAR(36) NULL,
       status ENUM('PUBLISHED', 'EXPIRED', 'PAID') NOT NULL DEFAULT 'PUBLISHED',
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -191,14 +193,26 @@ async function initializeDatabase() {
         FOREIGN KEY (invitation_id) REFERENCES invitations(id) ON DELETE CASCADE,
       CONSTRAINT fk_public_links_user
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      CONSTRAINT fk_public_links_purchase
+        FOREIGN KEY (purchase_id) REFERENCES plan_purchases(id) ON DELETE SET NULL,
       UNIQUE KEY uq_public_links_invitation_template (invitation_id, template_type),
       INDEX idx_public_links_token (public_token),
       INDEX idx_public_links_duplicate (user_id, template_type, public_fingerprint, public_generated_at)
     )
   `);
+  await ensureColumn("invitation_public_links", "purchase_id", "ALTER TABLE invitation_public_links ADD COLUMN purchase_id CHAR(36) NULL AFTER public_fingerprint");
 
   await pool.query("DELETE FROM sessions WHERE expires_at <= NOW()");
   await pool.query("DELETE FROM email_tokens WHERE expires_at <= NOW() OR used_at IS NOT NULL");
+  await pool.query(`
+    DELETE i FROM invitations i
+    WHERE i.status = 'EXPIRED'
+      AND EXISTS (
+        SELECT 1 FROM invitation_public_links l
+        WHERE l.invitation_id = i.id
+          AND l.public_expires_at <= DATE_SUB(NOW(), INTERVAL 365 DAY)
+      )
+  `);
   return pool;
 }
 

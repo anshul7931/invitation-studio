@@ -8,15 +8,111 @@ const { requireUser } = require("../middleware/auth-guards");
 const { readJson, sendJson } = require("../utils/http");
 const { invitationDto, invitationTitle } = require("../utils/invitation-utils");
 
+function effectiveLinkStatus(link) {
+  if (link.public_expires_at && new Date(link.public_expires_at).getTime() <= Date.now()) return "EXPIRED";
+  return link.status;
+}
+
+function linkDto(link) {
+  const expiredAt = link.public_expires_at ? new Date(link.public_expires_at) : null;
+  return {
+    shareUrl: link.public_token ? `/share/${link.public_token}` : null,
+    publicExpiresAt: expiredAt ? expiredAt.toISOString() : null,
+    publicGeneratedAt: link.public_generated_at ? new Date(link.public_generated_at).toISOString() : null,
+    status: effectiveLinkStatus(link),
+    templateType: link.template_type,
+    planTitle: link.plan_title || "",
+    creditType: link.credit_type || "",
+    billingPeriod: link.billing_period || "",
+    daysUntilPermanentDelete: expiredAt && expiredAt.getTime() <= Date.now()
+      ? Math.max(0, 365 - Math.floor((Date.now() - expiredAt.getTime()) / 86400000))
+      : null
+  };
+}
+
+async function maintainInvitationLifecycle(userId) {
+  await database().execute(
+    "UPDATE invitation_public_links SET status = 'EXPIRED' WHERE user_id = ? AND status IN ('PUBLISHED', 'PAID') AND public_expires_at <= NOW()",
+    [userId]
+  );
+  await database().execute(
+    `UPDATE invitations i
+     SET i.status = 'EXPIRED'
+     WHERE i.user_id = ? AND i.status IN ('PUBLISHED', 'PAID')
+       AND EXISTS (SELECT 1 FROM invitation_public_links l WHERE l.invitation_id = i.id AND l.status = 'EXPIRED')
+       AND NOT EXISTS (SELECT 1 FROM invitation_public_links l WHERE l.invitation_id = i.id AND l.public_expires_at > NOW())`,
+    [userId]
+  );
+  await database().execute(
+    `DELETE i FROM invitations i
+     WHERE i.user_id = ? AND i.status = 'EXPIRED'
+       AND EXISTS (
+         SELECT 1 FROM invitation_public_links l
+         WHERE l.invitation_id = i.id
+           AND l.public_expires_at <= DATE_SUB(NOW(), INTERVAL 365 DAY)
+       )`,
+    [userId]
+  );
+}
+
+async function attachShareSummaries(invitations) {
+  if (!invitations.length) return invitations;
+  const ids = invitations.map((invitation) => invitation.id);
+  const [links] = await database().query(
+    `SELECT l.*, p.plan_title, p.credit_type, p.billing_period
+     FROM invitation_public_links l
+     LEFT JOIN plan_purchases p ON p.id = l.purchase_id
+     WHERE l.invitation_id IN (?)
+     ORDER BY l.public_expires_at DESC`,
+    [ids]
+  );
+  const byInvitation = new Map();
+  links.forEach((link) => {
+    if (!byInvitation.has(link.invitation_id)) byInvitation.set(link.invitation_id, []);
+    byInvitation.get(link.invitation_id).push(link);
+  });
+  return invitations.map((invitation) => {
+    const relatedLinks = byInvitation.get(invitation.id) || [];
+    const linkDtos = relatedLinks.map(linkDto);
+    invitation.shareStates = Object.fromEntries(linkDtos.map((link) => [link.templateType, link]));
+    const activePaid = linkDtos.find((link) => link.status === "PAID");
+    const activePublished = linkDtos.find((link) => link.status === "PUBLISHED");
+    const expired = linkDtos.find((link) => link.status === "EXPIRED");
+    if (invitation.status === "PAID" && activePaid) {
+      Object.assign(invitation, {
+        paidPlanTitle: activePaid.planTitle || `${activePaid.creditType || "Paid"} plan`,
+        paidCreditType: activePaid.creditType,
+        paidBillingPeriod: activePaid.billingPeriod,
+        publicExpiresAt: activePaid.publicExpiresAt,
+        status: "PAID"
+      });
+    } else if (["PUBLISHED", "PAID", "EXPIRED"].includes(invitation.status) && expired && !activePaid && !activePublished) {
+      Object.assign(invitation, {
+        status: "EXPIRED",
+        publicExpiresAt: expired.publicExpiresAt,
+        daysUntilPermanentDelete: expired.daysUntilPermanentDelete
+      });
+    } else if (invitation.status === "PUBLISHED" && activePublished) {
+      Object.assign(invitation, {
+        publicExpiresAt: activePublished.publicExpiresAt,
+        status: "PUBLISHED"
+      });
+    }
+    return invitation;
+  });
+}
+
 async function handleInvitationApi(request, response, pathname) {
   if (request.method === "GET" && pathname === "/api/invitations") {
     const user = await requireUser(request, response);
     if (!user) return true;
+    await maintainInvitationLifecycle(user.id);
     const [rows] = await database().execute(
-      "SELECT * FROM invitations WHERE user_id = ? ORDER BY updated_at DESC",
+      "SELECT * FROM invitations WHERE user_id = ? ORDER BY created_at DESC",
       [user.id]
     );
-    sendJson(response, 200, { invitations: rows.map(invitationDto) });
+    const invitations = await attachShareSummaries(rows.map(invitationDto));
+    sendJson(response, 200, { invitations });
     return true;
   }
 
@@ -30,7 +126,10 @@ async function handleInvitationApi(request, response, pathname) {
       sendJson(response, 404, { error: "Unknown occasion" });
       return true;
     }
-    const fields = { ...config.defaults, ...(await readJson(request)) };
+    const body = await readJson(request);
+    const isDraft = body.__draft === true;
+    delete body.__draft;
+    const fields = { ...config.defaults, ...body };
     const missing = config.required.filter((name) => !String(fields[name] || "").trim());
     if (missing.length) {
       sendJson(response, 400, { error: "Missing required fields", fields: missing });
@@ -38,8 +137,8 @@ async function handleInvitationApi(request, response, pathname) {
     }
     const id = crypto.randomUUID();
     await database().execute(
-      "INSERT INTO invitations (id, user_id, share_token, occasion, title, fields) VALUES (?, ?, ?, ?, ?, ?)",
-      [id, user.id, crypto.randomUUID(), occasion, invitationTitle(occasion, fields), JSON.stringify(fields)]
+      "INSERT INTO invitations (id, user_id, share_token, occasion, title, fields, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [id, user.id, crypto.randomUUID(), occasion, invitationTitle(occasion, fields), JSON.stringify(fields), isDraft ? "DRAFT" : "SAVED"]
     );
     const [rows] = await database().execute(
       "SELECT * FROM invitations WHERE id = ? AND user_id = ?",
@@ -78,7 +177,7 @@ async function handleInvitationApi(request, response, pathname) {
         return true;
       }
       await database().execute(
-        "UPDATE invitations SET title = ?, fields = ? WHERE id = ? AND user_id = ?",
+        "UPDATE invitations SET title = ?, fields = ?, status = 'SAVED' WHERE id = ? AND user_id = ?",
         [invitationTitle(itemMatch[1], fields), JSON.stringify(fields), itemMatch[2], user.id]
       );
       const [updated] = await database().execute("SELECT * FROM invitations WHERE id = ?", [itemMatch[2]]);

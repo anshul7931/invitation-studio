@@ -26,6 +26,11 @@ const elements = {
   savedCards: document.getElementById("savedCards"),
   savedEmpty: document.getElementById("savedEmpty"),
   savedLoading: document.getElementById("savedLoading"),
+  purchasedInvitations: document.getElementById("purchasedInvitations"),
+  purchasedInvitationsEmpty: document.getElementById("purchasedInvitationsEmpty"),
+  expiredInvitations: document.getElementById("expiredInvitations"),
+  expiredInvitationsEmpty: document.getElementById("expiredInvitationsEmpty"),
+  invitationSort: document.getElementById("invitationSort"),
   purchasedPlans: document.getElementById("purchasedPlans"),
   plansEmpty: document.getElementById("plansEmpty"),
   plansLoading: document.getElementById("plansLoading"),
@@ -175,6 +180,26 @@ function enhanceOptionalClearButtons(root = document) {
     });
     row.append(clearButton);
   });
+}
+
+async function createDraftForCurrentOccasion() {
+  if (!signedInUser || isGuestUser() || currentInvitationId) return;
+  try {
+    const form = activeOccasion === "wedding" ? elements.weddingForm : elements.occasionForm;
+    const fields = formValues(form);
+    fields.addCountdown = form.elements.addCountdown?.checked ? "yes" : "no";
+    fields.templateType = fields.templateType || "basic";
+    const invitation = await api(`/api/invitations/${activeOccasion}`, {
+      method: "POST",
+      body: JSON.stringify({ ...fields, __draft: true })
+    });
+    currentInvitationId = invitation.id;
+    currentInvitationStatus = "DRAFT";
+    currentShareStates = invitation.shareStates || {};
+    elements.saveButton.textContent = "Save Card";
+  } catch {
+    currentInvitationId = null;
+  }
 }
 
 const hideableSections = [
@@ -849,7 +874,7 @@ function fillForm(form, values) {
   }
 }
 
-async function openOccasion(occasionId, updateUrl = true) {
+async function openOccasion(occasionId, updateUrl = true, createDraft = true) {
   activeOccasion = occasionId;
   activeOccasionConfig = null;
   resetCurrentCard();
@@ -858,6 +883,7 @@ async function openOccasion(occasionId, updateUrl = true) {
   if (occasionId === "wedding") {
     elements.weddingInvitation.dataset.theme = elements.weddingForm.elements.theme.value;
     enhanceOptionalClearButtons(elements.weddingForm);
+    if (createDraft) await createDraftForCurrentOccasion();
     showOnly(elements.weddingBuilder);
     return;
   }
@@ -871,6 +897,7 @@ async function openOccasion(occasionId, updateUrl = true) {
   renderOccasionForm(occasion, elements.occasionFields);
   enhanceOptionalClearButtons(elements.occasionForm);
   initGenericMotifPreview();
+  if (createDraft) await createDraftForCurrentOccasion();
   showOnly(elements.occasionBuilder);
 }
 
@@ -935,6 +962,7 @@ async function saveCurrentCard() {
   });
   currentInvitationId = invitation.id;
   currentShareStates = invitation.shareStates || currentShareStates;
+  currentInvitationStatus = invitation.status || "SAVED";
   currentTemplateType = invitation.fields?.templateType || currentFields().templateType || "basic";
   pendingTemplateFields = invitation.fields || { ...currentFields(), templateType: currentTemplateType };
   elements.saveButton.textContent = "Update Card";
@@ -1010,10 +1038,14 @@ async function copyText(text) {
 async function loadSavedCards() {
   if (!signedInUser) return;
   elements.savedCards.replaceChildren();
+  elements.purchasedInvitations?.replaceChildren();
+  elements.expiredInvitations?.replaceChildren();
   if (isGuestUser()) {
     elements.savedLoading.hidden = true;
     elements.savedEmpty.hidden = false;
     elements.savedEmpty.textContent = "Guest cards are not saved and will reset after refresh.";
+    if (elements.purchasedInvitationsEmpty) elements.purchasedInvitationsEmpty.hidden = false;
+    if (elements.expiredInvitationsEmpty) elements.expiredInvitationsEmpty.hidden = false;
     return;
   }
   elements.savedEmpty.hidden = true;
@@ -1021,8 +1053,42 @@ async function loadSavedCards() {
   try {
     const { invitations } = await api("/api/invitations");
     elements.savedLoading.hidden = true;
-    elements.savedEmpty.hidden = invitations.length > 0;
-    invitations.forEach((invitation) => {
+    const sorted = sortDashboardInvitations(invitations);
+    const saved = sorted.filter((invitation) => !["PAID", "EXPIRED"].includes(invitation.status));
+    const purchased = sorted.filter((invitation) => invitation.status === "PAID");
+    const expired = sorted.filter((invitation) => invitation.status === "EXPIRED");
+    elements.savedEmpty.hidden = saved.length > 0;
+    if (elements.purchasedInvitationsEmpty) elements.purchasedInvitationsEmpty.hidden = purchased.length > 0;
+    if (elements.expiredInvitationsEmpty) elements.expiredInvitationsEmpty.hidden = expired.length > 0;
+    saved.forEach((invitation) => elements.savedCards.append(savedInvitationCard(invitation)));
+    purchased.forEach((invitation) => elements.purchasedInvitations?.append(savedInvitationCard(invitation)));
+    expired.forEach((invitation) => elements.expiredInvitations?.append(savedInvitationCard(invitation)));
+  } catch (error) {
+    elements.savedLoading.hidden = true;
+    elements.savedEmpty.hidden = false;
+    elements.savedEmpty.textContent = error.message;
+  }
+}
+
+function sortDashboardInvitations(invitations) {
+  const sortMode = elements.invitationSort?.value || "created-desc";
+  const statusOrder = { DRAFT: 1, SAVED: 2, PUBLISHED: 3, PAID: 4, EXPIRED: 5 };
+  return [...invitations].sort((a, b) => {
+    if (sortMode === "status") {
+      return (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99) ||
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }
+    const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    return sortMode === "created-asc" ? diff : -diff;
+  });
+}
+
+function statusLabel(status) {
+  return status === "SAVED" ? "Saved" : String(status || "DRAFT").charAt(0) +
+    String(status || "DRAFT").slice(1).toLowerCase();
+}
+
+function savedInvitationCard(invitation) {
       const card = document.createElement("article");
       card.className = "saved-card";
       const type = document.createElement("span");
@@ -1030,14 +1096,16 @@ async function loadSavedCards() {
       type.textContent = invitation.occasion;
       const status = document.createElement("span");
       status.className = `status-badge status-${String(invitation.status || "DRAFT").toLowerCase()}`;
-      status.textContent = String(invitation.status || "DRAFT").charAt(0) +
-        String(invitation.status || "DRAFT").slice(1).toLowerCase();
+      status.textContent = statusLabel(invitation.status);
       const title = document.createElement("h3");
       title.textContent = invitation.title;
       const time = document.createElement("time");
-      time.textContent = `Updated ${new Intl.DateTimeFormat("en-IN", {
+      time.textContent = `Created ${new Intl.DateTimeFormat("en-IN", {
         day: "numeric", month: "short", year: "numeric"
-      }).format(new Date(invitation.updatedAt))}`;
+      }).format(new Date(invitation.createdAt))}`;
+      const note = document.createElement("p");
+      note.className = "saved-card-note";
+      note.textContent = dashboardInvitationNote(invitation);
       const actions = document.createElement("div");
       actions.className = "saved-actions";
 
@@ -1060,14 +1128,24 @@ async function loadSavedCards() {
       const meta = document.createElement("div");
       meta.className = "saved-card-meta";
       meta.append(type, status);
-      card.append(meta, title, time, actions);
-      elements.savedCards.append(card);
-    });
-  } catch (error) {
-    elements.savedLoading.hidden = true;
-    elements.savedEmpty.hidden = false;
-    elements.savedEmpty.textContent = error.message;
+      card.append(meta, title, time);
+      if (note.textContent) card.append(note);
+      card.append(actions);
+      return card;
+}
+
+function dashboardInvitationNote(invitation) {
+  if (invitation.status === "PAID") {
+    const type = invitation.paidCreditType ? `${invitation.paidCreditType} ` : "";
+    return `${type}${invitation.paidPlanTitle || "Paid plan"} · expires in ${formatRemainingTime(new Date(invitation.publicExpiresAt).getTime() - Date.now())}`;
   }
+  if (invitation.status === "EXPIRED") {
+    return `Public link expired · permanently deletes in ${invitation.daysUntilPermanentDelete ?? 365} day${invitation.daysUntilPermanentDelete === 1 ? "" : "s"}`;
+  }
+  if (invitation.status === "PUBLISHED" && invitation.publicExpiresAt) {
+    return `Free public link expires in ${formatRemainingTime(new Date(invitation.publicExpiresAt).getTime() - Date.now())}`;
+  }
+  return "";
 }
 
 async function loadPlanSummary() {
@@ -1341,8 +1419,8 @@ async function loadRoute() {
     return;
   }
 
-  await openOccasion(route, false);
   const invitationId = new URLSearchParams(location.search).get("id");
+  await openOccasion(route, false, !invitationId);
   if (!invitationId) return;
   const invitation = await api(`/api/invitations/${route}/${invitationId}`);
   await renderInvitationFromData(invitation, false);
@@ -1392,8 +1470,12 @@ function cleanLogoutUi() {
   elements.copyShareLinkButton.hidden = true;
   elements.savedCards.replaceChildren();
   if (elements.purchasedPlans) elements.purchasedPlans.replaceChildren();
+  elements.purchasedInvitations?.replaceChildren();
+  elements.expiredInvitations?.replaceChildren();
   elements.savedEmpty.textContent = "You have not saved an invitation yet.";
   elements.savedEmpty.hidden = false;
+  if (elements.purchasedInvitationsEmpty) elements.purchasedInvitationsEmpty.hidden = false;
+  if (elements.expiredInvitationsEmpty) elements.expiredInvitationsEmpty.hidden = false;
   elements.savedLoading.hidden = true;
   if (elements.plansEmpty) elements.plansEmpty.hidden = false;
   if (elements.plansLoading) elements.plansLoading.hidden = true;
@@ -1755,6 +1837,8 @@ elements.previewPremiumButton.addEventListener("click", () => {
 });
 
 document.getElementById("newCardButton")?.addEventListener("click", () => confirmBeforeHome());
+
+elements.invitationSort?.addEventListener("change", loadSavedCards);
 
 document.getElementById("homeButton").addEventListener("click", () => {
   confirmBeforeHome();

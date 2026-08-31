@@ -15,6 +15,11 @@ function templateTypeFromFields(fields, requestedTemplate) {
   return fields.templateType === "premium" || String(fields.photoLinks || "").trim() ? "premium" : "basic";
 }
 
+function publicLinkStatus(link) {
+  if (link.public_expires_at && new Date(link.public_expires_at).getTime() <= Date.now()) return "EXPIRED";
+  return link.status;
+}
+
 async function consumeCredit({ userId, invitation, templateType, purchaseId = "" }) {
   const allowedTypes = templateType === "premium" ? ["PREMIUM"] : ["BASIC", "PREMIUM"];
   if (purchaseId) {
@@ -86,7 +91,7 @@ async function handlePublicApi(request, response, pathname) {
       shareStates: Object.fromEntries(links.map((link) => [link.template_type, {
         shareUrl: link.public_token ? `/share/${link.public_token}` : null,
         publicExpiresAt: link.public_expires_at ? new Date(link.public_expires_at).toISOString() : null,
-        status: link.status
+        status: publicLinkStatus(link)
       }]))
     });
     return true;
@@ -180,11 +185,12 @@ async function handlePublicApi(request, response, pathname) {
     if (paidPurchase) {
       await database().execute(
         `INSERT INTO invitation_public_links
-         (id, invitation_id, user_id, template_type, public_token, public_expires_at, public_generated_at, public_fingerprint, status)
-         VALUES (?, ?, ?, ?, ?, ?, NOW(), ?, 'PAID')
+         (id, invitation_id, user_id, template_type, public_token, public_expires_at, public_generated_at, public_fingerprint, purchase_id, status)
+         VALUES (?, ?, ?, ?, ?, ?, NOW(), ?, ?, 'PAID')
          ON DUPLICATE KEY UPDATE public_token = VALUES(public_token), public_expires_at = VALUES(public_expires_at),
-           public_generated_at = COALESCE(public_generated_at, NOW()), public_fingerprint = VALUES(public_fingerprint), status = 'PAID'`,
-        [linkId, shareMatch[2], user.id, templateType, publicToken, new Date(Date.now() + periods[paidPurchase.billing_period].days * 86400000), fingerprint]
+           public_generated_at = COALESCE(public_generated_at, NOW()), public_fingerprint = VALUES(public_fingerprint),
+           purchase_id = VALUES(purchase_id), status = 'PAID'`,
+        [linkId, shareMatch[2], user.id, templateType, publicToken, new Date(Date.now() + periods[paidPurchase.billing_period].days * 86400000), fingerprint, paidPurchase.id]
       );
       await database().execute("UPDATE invitations SET status = 'PAID' WHERE id = ? AND user_id = ?", [shareMatch[2], user.id]);
     } else {
@@ -204,7 +210,7 @@ async function handlePublicApi(request, response, pathname) {
     dto.shareStates = Object.fromEntries(links.map((link) => [link.template_type, {
       shareUrl: link.public_token ? `/share/${link.public_token}` : null,
       publicExpiresAt: link.public_expires_at ? new Date(link.public_expires_at).toISOString() : null,
-      status: link.status
+      status: publicLinkStatus(link)
     }]));
     dto.shareUrl = dto.shareStates[templateType]?.shareUrl || null;
     dto.publicExpiresAt = dto.shareStates[templateType]?.publicExpiresAt || null;

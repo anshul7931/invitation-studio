@@ -9,9 +9,9 @@ export const custom = {
   icons: [
     ["lotus", "Lotus bloom"],
     ["diya", "Auspicious diya"],
-    ["rings", "Rings"],
-    ["couple", "Couple silhouette"],
-    ["cake", "Celebration cake"],
+    ["rings", "Celebration rings"],
+    ["couple", "Modern couple"],
+    ["cake", "Golden cake"],
     ["envelope", "Invitation seal"]
   ],
   themes: [

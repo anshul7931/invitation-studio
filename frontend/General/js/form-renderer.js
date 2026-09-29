@@ -92,9 +92,13 @@ export function renderOccasionForm(occasion, container) {
             <small>Show a live countdown until the event date and time.</small>
           </span>
         </label>
-        <div class="field full">
-          <label for="occasion-photoLinks">Google Drive photo links <span class="optional-label">Premium · up to 10</span></label>
-          <textarea id="occasion-photoLinks" name="photoLinks" placeholder="Paste one public Google Drive image link per line, up to 10"></textarea>
+        <div class="field full photo-links-field">
+          <label>Invitation photos <span class="optional-label">Premium · up to 10</span></label>
+          <div class="photo-link-editor" data-photo-link-editor>
+            <input type="hidden" name="photoLinks">
+            <div class="photo-link-rows" data-photo-link-rows></div>
+            <button class="secondary-button photo-add-button" type="button" data-add-photo-link>Add one more link</button>
+          </div>
         </div>
       </div>
     </section>

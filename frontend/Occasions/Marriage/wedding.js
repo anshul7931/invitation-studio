@@ -1,3 +1,5 @@
+import { applyPhotoImageFallbacks, parsePhotoLinks } from "../../General/js/photo-links.js";
+
 const firstName = (name) => name.trim().split(/\s+/)[0] || "";
 const initial = (name) => firstName(name).charAt(0).toUpperCase();
 
@@ -11,52 +13,10 @@ const coupleSources = {
 
 let weddingCountdownTimer = null;
 
-function cleanDriveLink(link) {
-  const text = String(link || "").trim().replace(/\\([&_=])/g, "$1");
-  return text.match(/\((https?:\/\/[^)]+)\)/)?.[1] || text.replace(/^<|>$/g, "");
-}
-
-function driveImageCandidates(link) {
-  const text = cleanDriveLink(link);
-  if (!text) return [];
-  let url;
-  try {
-    url = new URL(text);
-  } catch {
-    return [text];
-  }
-  const host = url.hostname.replace(/^www\./, "");
-  const id = url.searchParams.get("id") ||
-    url.pathname.match(/\/file\/d\/([^/]+)/)?.[1] ||
-    url.pathname.match(/\/d\/([^/]+)/)?.[1];
-  if (!id || !/(^|\.)googleusercontent\.com$|(^|\.)drive\.google\.com$/.test(host)) return [text];
-  const resourceKey = url.searchParams.get("resourcekey");
-  const query = `id=${encodeURIComponent(id)}${resourceKey ? `&resourcekey=${encodeURIComponent(resourceKey)}` : ""}`;
-  return Array.from(new Set([
-    `https://drive.google.com/thumbnail?${query}&sz=w2000`,
-    `https://lh3.googleusercontent.com/d/${encodeURIComponent(id)}${resourceKey ? `?resourcekey=${encodeURIComponent(resourceKey)}` : ""}`,
-    `https://drive.google.com/uc?export=view&${query}`,
-    `https://drive.google.com/uc?${query}&export=view`,
-    text
-  ]));
-}
-
-function applyImageFallbacks(img, link) {
-  const candidates = driveImageCandidates(link);
-  img.src = candidates[0] || "";
-  img.dataset.fallbacks = JSON.stringify(candidates.slice(1));
-  img.addEventListener("error", () => {
-    const fallbacks = JSON.parse(img.dataset.fallbacks || "[]");
-    const next = fallbacks.shift();
-    img.dataset.fallbacks = JSON.stringify(fallbacks);
-    if (next) img.src = next;
-  });
-}
-
 function renderPhotoGallery(values) {
   const gallery = document.getElementById("weddingPhotoGallery");
   const urls = values.templateType === "premium"
-    ? String(values.photoLinks || "").split(/\n|,/).map((link) => link.trim()).filter(Boolean).slice(0, 10)
+    ? parsePhotoLinks(values.photoLinks)
     : [];
   gallery.hidden = urls.length === 0;
   gallery.classList.toggle("photo-carousel", urls.length > 1);
@@ -64,7 +24,7 @@ function renderPhotoGallery(values) {
   track.className = "photo-carousel-track";
   track.replaceChildren(...urls.map((url, index) => {
     const img = document.createElement("img");
-    applyImageFallbacks(img, url);
+    applyPhotoImageFallbacks(img, url);
     img.alt = `Wedding photo ${index + 1}`;
     img.loading = "lazy";
     const slide = document.createElement("figure");

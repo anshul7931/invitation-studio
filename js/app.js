@@ -1,6 +1,7 @@
 import { getOccasion } from "./occasions/registry.js";
 import { renderWedding } from "./occasions/wedding.js";
 import { renderOccasionForm } from "./ui/form-renderer.js";
+import { applyPhotoImageFallbacks, initPhotoLinkEditor, parsePhotoLinks, setPhotoLinkEditorValue } from "../frontend/General/js/photo-links.js";
 
 /**
  * Main browser controller for routing, authentication state, card persistence,
@@ -614,51 +615,9 @@ function openPayment(plan, price, period) {
   showOnly(elements.paymentPage);
 }
 
-function cleanDriveLink(link) {
-  const text = String(link || "").trim().replace(/\\([&_=])/g, "$1");
-  return text.match(/\((https?:\/\/[^)]+)\)/)?.[1] || text.replace(/^<|>$/g, "");
-}
-
-function driveImageCandidates(link) {
-  const text = cleanDriveLink(link);
-  if (!text) return [];
-  let url;
-  try {
-    url = new URL(text);
-  } catch {
-    return [text];
-  }
-  const host = url.hostname.replace(/^www\./, "");
-  const id = url.searchParams.get("id") ||
-    url.pathname.match(/\/file\/d\/([^/]+)/)?.[1] ||
-    url.pathname.match(/\/d\/([^/]+)/)?.[1];
-  if (!id || !/(^|\.)googleusercontent\.com$|(^|\.)drive\.google\.com$/.test(host)) return [text];
-  const resourceKey = url.searchParams.get("resourcekey");
-  const query = `id=${encodeURIComponent(id)}${resourceKey ? `&resourcekey=${encodeURIComponent(resourceKey)}` : ""}`;
-  return Array.from(new Set([
-    `https://drive.google.com/thumbnail?${query}&sz=w2000`,
-    `https://lh3.googleusercontent.com/d/${encodeURIComponent(id)}${resourceKey ? `?resourcekey=${encodeURIComponent(resourceKey)}` : ""}`,
-    `https://drive.google.com/uc?export=view&${query}`,
-    `https://drive.google.com/uc?${query}&export=view`,
-    text
-  ]));
-}
-
-function applyImageFallbacks(img, link) {
-  const candidates = driveImageCandidates(link);
-  img.src = candidates[0] || "";
-  img.dataset.fallbacks = JSON.stringify(candidates.slice(1));
-  img.addEventListener("error", () => {
-    const fallbacks = JSON.parse(img.dataset.fallbacks || "[]");
-    const next = fallbacks.shift();
-    img.dataset.fallbacks = JSON.stringify(fallbacks);
-    if (next) img.src = next;
-  });
-}
-
 function photoUrls(values) {
   if (values.templateType !== "premium") return [];
-  return String(values.photoLinks || "").split(/\n|,/).map((link) => link.trim()).filter(Boolean).slice(0, 10);
+  return parsePhotoLinks(values.photoLinks);
 }
 
 function renderPhotoGallery(container, urls) {
@@ -668,7 +627,7 @@ function renderPhotoGallery(container, urls) {
   track.className = "photo-carousel-track";
   track.replaceChildren(...urls.map((url, index) => {
     const img = document.createElement("img");
-    applyImageFallbacks(img, url);
+    applyPhotoImageFallbacks(img, url);
     img.alt = `Invitation photo ${index + 1}`;
     img.loading = "lazy";
     const slide = document.createElement("figure");
@@ -852,6 +811,7 @@ function renderWeddingMotif() {
 }
 
 function fillForm(form, values) {
+  initPhotoLinkEditor(form, values?.photoLinks || "");
   Object.entries(values || {}).forEach(([name, value]) => {
     const element = form.elements[name];
     if (!element) return;
@@ -865,6 +825,7 @@ function fillForm(form, values) {
     }
     element.value = value;
   });
+  setPhotoLinkEditorValue(form, values?.photoLinks || "");
   const shouldShowPremium = values?.templateType === "premium" || String(values?.photoLinks || "").trim() || values?.addCountdown === "yes";
   const toggle = form.querySelector("[data-premium-toggle]");
   const fields = form.querySelector(".premium-fields");
@@ -881,6 +842,7 @@ async function openOccasion(occasionId, updateUrl = true, createDraft = true) {
   if (updateUrl) history.pushState({}, "", `/${occasionId}`);
 
   if (occasionId === "wedding") {
+    initPhotoLinkEditor(elements.weddingForm);
     elements.weddingInvitation.dataset.theme = elements.weddingForm.elements.theme.value;
     enhanceOptionalClearButtons(elements.weddingForm);
     if (createDraft) await createDraftForCurrentOccasion();

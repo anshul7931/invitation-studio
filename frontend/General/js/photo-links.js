@@ -100,6 +100,7 @@ export function initPhotoLinkEditor(form, value = "") {
     const controls = document.createElement("div");
     controls.className = "photo-link-controls";
     const previewButton = makeButton("photo-preview-button", "Preview image", "◉ Preview");
+    const clearButton = makeButton("photo-clear-button", `Clear Image Link ${rows.children.length + 1}`, "Clear");
     const removeButton = makeButton("photo-remove-button", "Remove image link", "Remove");
     const preview = document.createElement("div");
     preview.className = "photo-link-preview";
@@ -132,6 +133,11 @@ export function initPhotoLinkEditor(form, value = "") {
       preview.hidden = true;
       image.removeAttribute("src");
     });
+    clearButton.addEventListener("click", () => {
+      input.value = "";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.focus();
+    });
     removeButton.addEventListener("click", () => {
       if (rows.children.length === 1) input.value = "";
       else row.remove();
@@ -139,9 +145,10 @@ export function initPhotoLinkEditor(form, value = "") {
       [...rows.querySelectorAll(".photo-link-row")].forEach((photoRow, index) => {
         photoRow.querySelector(".photo-link-label").textContent = `Image Link ${index + 1}`;
         photoRow.querySelector("[data-photo-link]").setAttribute("aria-label", `Image Link ${index + 1}`);
+        photoRow.querySelector(".photo-clear-button").setAttribute("aria-label", `Clear Image Link ${index + 1}`);
       });
     });
-    controls.append(previewButton, removeButton);
+    controls.append(previewButton, clearButton, removeButton);
     row.append(label, input, controls, preview);
     rows.append(row);
   };

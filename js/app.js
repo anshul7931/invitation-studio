@@ -10,6 +10,7 @@ import { applyPhotoImageFallbacks, initPhotoLinkEditor, parsePhotoLinks, setPhot
 const elements = {
   authShell: document.getElementById("authShell"),
   appHeader: document.getElementById("appHeader"),
+  appFooter: document.getElementById("appFooter"),
   dashboard: document.getElementById("dashboard"),
   adminDashboard: document.getElementById("adminDashboard"),
   monitoringPage: document.getElementById("monitoringPage"),
@@ -17,7 +18,6 @@ const elements = {
   paymentPage: document.getElementById("paymentPage"),
   weddingBuilder: document.getElementById("builder"),
   occasionBuilder: document.getElementById("occasionBuilder"),
-  templateChoice: document.getElementById("templateChoice"),
   weddingInvitation: document.getElementById("invitation"),
   occasionInvitation: document.getElementById("occasionInvitation"),
   weddingForm: document.getElementById("invitationForm"),
@@ -224,7 +224,6 @@ const hideableSections = [
 
   elements.weddingBuilder,
   elements.occasionBuilder,
-  elements.templateChoice,
   elements.weddingInvitation,
   elements.occasionInvitation
 ].filter(Boolean);
@@ -328,6 +327,7 @@ function formValues(form) {
 function showOnly(section) {
   document.body.classList.remove("public-share");
   document.body.classList.toggle("static-view", staticPageSections.includes(section));
+  if (elements.appFooter) elements.appFooter.hidden = !signedInUser || staticPageSections.includes(section);
   hideableSections.forEach((element) => element.hidden = element !== section);
   elements.cardActions.hidden = ![elements.weddingInvitation, elements.occasionInvitation].includes(section);
   elements.publicBanner.hidden = true;
@@ -387,7 +387,7 @@ function applyCurrentTemplateShareState() {
 }
 
 function hasActiveCardWork() {
-  return [elements.weddingBuilder, elements.occasionBuilder, elements.templateChoice, elements.weddingInvitation, elements.occasionInvitation]
+  return [elements.weddingBuilder, elements.occasionBuilder, elements.weddingInvitation, elements.occasionInvitation]
     .some((section) => section && !section.hidden);
 }
 
@@ -410,6 +410,7 @@ function openStaticPage(route) {
     path: `${location.pathname}${location.search}${location.hash}`,
     section: visibleSection(),
     appHeaderHidden: elements.appHeader.hidden,
+    appFooterHidden: elements.appFooter?.hidden ?? true,
     cardActionsHidden: elements.cardActions.hidden,
     publicBannerHidden: elements.publicBanner.hidden
   };
@@ -437,6 +438,7 @@ function closeStaticPage({ fromHistory = false } = {}) {
     elements.appHeader.hidden = state.appHeaderHidden;
     elements.cardActions.hidden = state.cardActionsHidden;
     elements.publicBanner.hidden = state.publicBannerHidden;
+    if (elements.appFooter) elements.appFooter.hidden = state.appFooterHidden;
     window.scrollTo({ top: 0, behavior: "smooth" });
     return;
   }
@@ -464,7 +466,7 @@ function applyWorkspaceMode(mode) {
 }
 
 function applyAppTheme(theme) {
-  document.body.dataset.theme = theme || "maroon";
+  document.body.dataset.theme = theme || "royal-blue";
 }
 
 function applyFontTheme(font) {
@@ -477,7 +479,7 @@ function preferenceKey() {
 
 function currentPreferences() {
   return {
-    theme: document.body.dataset.theme || "maroon",
+    theme: document.body.dataset.theme || "royal-blue",
     mode: document.body.dataset.mode || "light",
     font: document.body.dataset.font || "default"
   };
@@ -491,13 +493,13 @@ function saveUserPreferences() {
 function applyUserPreferences() {
   const key = preferenceKey();
   const prefs = key ? JSON.parse(localStorage.getItem(key) || "{}") : {};
-  applyAppTheme(prefs.theme || "maroon");
+  applyAppTheme(prefs.theme || "royal-blue");
   applyWorkspaceMode(prefs.mode || "light");
   applyFontTheme(prefs.font || "default");
 }
 
 function setProfilePreferenceFields(preferences = currentPreferences()) {
-  document.getElementById("profileAppTheme").value = preferences.theme || "maroon";
+  document.getElementById("profileAppTheme").value = preferences.theme || "royal-blue";
   document.getElementById("profileModeTheme").value = preferences.mode || "light";
   document.getElementById("profileFontTheme").value = preferences.font || "default";
 }
@@ -763,15 +765,15 @@ function updateSaveButtonLabel() {
   elements.saveButton.textContent = currentSavedVariants.has(currentTemplateType) ? "Update Card" : "Save Card";
 }
 
-function showTemplateChoice(fields) {
-  pendingTemplateFields = fields;
-  showOnly(elements.templateChoice);
-}
-
-function openSelectedTemplate(templateType) {
-  if (!pendingTemplateFields) return;
-  pendingTemplateFields = { ...pendingTemplateFields, templateType };
-  setFormTemplateType(templateType);
+function openGeneratedCard(form) {
+  const fields = formValues(form);
+  const toggle = form.querySelector("[data-premium-toggle]");
+  const hasPremiumFeatures = Boolean(
+    toggle?.checked || String(fields.photoLinks || "").trim() || fields.addCountdown === "yes"
+  );
+  currentTemplateType = hasPremiumFeatures ? "premium" : "basic";
+  pendingTemplateFields = { ...fields, templateType: currentTemplateType };
+  setFormTemplateType(currentTemplateType);
   updateStatusBadge(currentInvitationId ? currentInvitationStatus : "DRAFT");
   if (activeOccasion === "wedding") {
     renderWedding(elements.weddingForm, helpers);
@@ -779,9 +781,9 @@ function openSelectedTemplate(templateType) {
   } else {
     renderGenericCard(activeOccasionConfig || getOccasion(activeOccasion), pendingTemplateFields);
   }
-  elements.previewBasicButton?.classList.toggle("is-active", templateType === "basic");
-  elements.previewPremiumButton?.classList.toggle("is-active", templateType === "premium");
-  elements.saveStatus.textContent = `${templateType === "premium" ? "Premium" : "Basic"} card selected. Save it to your account.`;
+  elements.previewBasicButton?.classList.toggle("is-active", currentTemplateType === "basic");
+  elements.previewPremiumButton?.classList.toggle("is-active", currentTemplateType === "premium");
+  elements.saveStatus.textContent = `${currentTemplateType === "premium" ? "Premium" : "Basic"} card selected. Save it to your account.`;
   showOnly(selectedInvitation());
 }
 
@@ -1097,14 +1099,13 @@ function savedInvitationCard(invitation) {
       const title = document.createElement("h3");
       title.textContent = invitation.title;
       const time = document.createElement("time");
-      time.textContent = `Created ${new Intl.DateTimeFormat("en-IN", {
+      const createdAt = new Date(invitation.createdAt);
+      const updatedAt = new Date(invitation.updatedAt || invitation.createdAt);
+      const wasUpdated = Number.isFinite(updatedAt.getTime()) && Number.isFinite(createdAt.getTime())
+        && updatedAt.getTime() - createdAt.getTime() > 60_000;
+      time.textContent = `${wasUpdated ? "Updated" : "Created"} ${new Intl.DateTimeFormat("en-IN", {
         day: "numeric", month: "short", year: "numeric"
-      }).format(new Date(invitation.createdAt))}`;
-      const updatedTime = document.createElement("time");
-      updatedTime.className = "saved-card-updated";
-      updatedTime.textContent = `Updated ${new Intl.DateTimeFormat("en-IN", {
-        day: "numeric", month: "short", year: "numeric"
-      }).format(new Date(invitation.updatedAt || invitation.createdAt))}`;
+      }).format(wasUpdated ? updatedAt : createdAt)}`;
       const note = document.createElement("p");
       note.className = "saved-card-note";
       note.textContent = dashboardInvitationNote(invitation);
@@ -1130,7 +1131,7 @@ function savedInvitationCard(invitation) {
       const meta = document.createElement("div");
       meta.className = "saved-card-meta";
       meta.append(type, variants, status);
-      card.append(meta, title, time, updatedTime);
+      card.append(meta, title, time);
       if (note.textContent) card.append(note);
       card.append(actions);
       return card;
@@ -1347,6 +1348,7 @@ async function loadRoute() {
       const invitation = await api(`/api/public/${parts[1]}`);
       await renderInvitationFromData(invitation, true);
       document.body.classList.add("public-share");
+      if (elements.appFooter) elements.appFooter.hidden = true;
     } catch (error) {
       elements.appHeader.hidden = true;
       showOnly(elements.paymentPage);
@@ -1462,7 +1464,7 @@ function enforceAdminVisibility() {
 function cleanLogoutUi() {
   resetCurrentCard();
   signedInUser = null;
-  applyAppTheme("maroon");
+  applyAppTheme("royal-blue");
   applyWorkspaceMode("light");
   applyFontTheme("default");
   elements.appHeader.hidden = true;
@@ -1754,21 +1756,13 @@ elements.weddingForm.addEventListener("submit", (event) => {
   event.preventDefault();
   if (!elements.weddingForm.reportValidity()) return;
   activeOccasion = "wedding";
-  showTemplateChoice(formValues(elements.weddingForm));
+  openGeneratedCard(elements.weddingForm);
 });
 
 elements.occasionForm.addEventListener("submit", (event) => {
   event.preventDefault();
   if (!elements.occasionForm.reportValidity()) return;
-  showTemplateChoice(formValues(elements.occasionForm));
-});
-
-document.querySelectorAll("[data-open-template]").forEach((button) => {
-  button.addEventListener("click", () => openSelectedTemplate(button.dataset.openTemplate));
-});
-
-document.getElementById("backToDetailsButton")?.addEventListener("click", () => {
-  showOnly(selectedBuilder());
+  openGeneratedCard(elements.occasionForm);
 });
 
 document.addEventListener("change", (event) => {
@@ -2139,7 +2133,7 @@ window.addEventListener("popstate", () => {
   if (signedInUser || location.pathname.startsWith("/share/") || publicStaticRoutes.includes(route)) loadRoute();
 });
 
-applyAppTheme("maroon");
+applyAppTheme("royal-blue");
 applyWorkspaceMode("light");
 applyFontTheme("default");
 

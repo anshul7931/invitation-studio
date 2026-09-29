@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#5d1020">
+  <meta name="theme-color" content="#173f73">
   <title>Invitation Atelier</title>
   <link rel="icon" type="image/svg+xml" href="./frontend/General/svgs/favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&amp;family=Cormorant+Garamond:wght@400;500;600;700&amp;family=EB+Garamond:wght@400;500;600&amp;family=Great+Vibes&amp;family=Lora:wght@400;500;600&amp;family=Montserrat:wght@400;500;600&amp;family=Parisienne&amp;family=Playfair+Display:wght@500;600&amp;display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./frontend/General/css/app.css">
 </head>
-<body data-theme="maroon">
+<body data-theme="royal-blue" data-mode="light" data-font="default">
   <!-- @include frontend/General/dialogs/delete-dialog.html -->
 
   <!-- @include frontend/General/dialogs/signout-dialog.html -->
@@ -45,11 +45,22 @@
 
   <!-- @include frontend/General/actions/card-actions.html -->
 
-  <!-- @include frontend/General/templates/template-choice.html -->
-
   <!-- @include frontend/General/cards/generic-occasion-card.html -->
 
   <!-- @include frontend/Occasions/Marriage/wedding-card.html -->
+
+  <footer class="site-footer app-footer" id="appFooter" hidden>
+    <nav class="footer-links" aria-label="Legal links">
+      <a href="/about">About</a><span aria-hidden="true">•</span>
+      <a href="/contact">Contact Us</a><span aria-hidden="true">•</span>
+      <a href="/privacy">Privacy Policy</a><span aria-hidden="true">•</span>
+      <a href="/terms">Terms &amp; Conditions</a><span aria-hidden="true">•</span>
+      <a href="/refund">Refund Policy</a><span aria-hidden="true">•</span>
+      <a href="/disclaimer">Disclaimer</a><span aria-hidden="true">•</span>
+      <a href="/acceptable-use">Acceptable Use Policy</a>
+    </nav>
+    <p class="copyright">© 2026 Invitation Studio. All Rights Reserved.</p>
+  </footer>
 
   <script type="module" src="./js/app.js"></script>
 </body>

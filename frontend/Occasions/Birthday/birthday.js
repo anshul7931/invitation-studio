@@ -1,3 +1,5 @@
+import { occasionSvgMap, occasionSvgOptions } from "../../General/js/svg-registry.js";
+
 export const birthday = {
   id: "birthday",
   name: "Birthday",
@@ -5,14 +7,8 @@ export const birthday = {
   intro: "A graceful celebration centred on the guest of honour and their milestone.",
   kicker: "A beautiful year to celebrate",
   defaultTheme: "plum",
-  defaultIcon: "cakeRef",
-  icons: [
-    ["cakeRef", "Classic birthday cake"],
-    ["cake", "Golden cake"],
-    ["diya", "Festive diya"],
-    ["lotus", "Lotus bloom"],
-    ["envelope", "Invitation seal"]
-  ],
+  defaultIcon: occasionSvgMap.birthday.default,
+  icons: occasionSvgOptions("birthday"),
   themes: [
     ["plum", "Plum & Gold"],
     ["midnight", "Midnight Blue & Gold"],

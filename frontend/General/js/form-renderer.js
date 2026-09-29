@@ -26,7 +26,7 @@ export function renderOccasionForm(occasion, container) {
     .map(([value, label]) => `<option value="${value}">${label}</option>`)
     .join("");
   const iconOptions = (occasion.icons || [])
-    .map(([value, label]) => `<option value="${value}">${label}</option>`)
+    .map(([value, label]) => `<option value="${value}" ${value === occasion.defaultIcon ? "selected" : ""}>${label}</option>`)
     .join("");
 
   const sections = occasion.sections.map((section, index) => {

@@ -4,11 +4,14 @@ const firstName = (name) => name.trim().split(/\s+/)[0] || "";
 const initial = (name) => firstName(name).charAt(0).toUpperCase();
 
 const ganeshaSources = {
-  "ganesha-icon": "/frontend/General/svgs/ganesha-icon-111519-512.svg"
+  "ganesha-icon": "/frontend/General/svgs/ganesha-icon-111519-512.svg",
+  ganesh: "/frontend/General/svgs/ganesh.svg"
 };
 
 const coupleSources = {
-  "couple-ref": "/frontend/General/svgs/wedding-couple-svgrepo-com.svg"
+  "couple-ref": "/frontend/General/svgs/wedding-couple-svgrepo-com.svg",
+  "couple-royal": "/frontend/General/svgs/royal-wedding-couple.svg",
+  "couple-emerald": "/frontend/General/svgs/ivory-emerald-couple.svg"
 };
 
 let weddingCountdownTimer = null;

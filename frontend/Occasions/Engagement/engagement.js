@@ -1,3 +1,5 @@
+import { occasionSvgMap, occasionSvgOptions } from "../../General/js/svg-registry.js";
+
 export const engagement = {
   id: "engagement",
   name: "Engagement",
@@ -5,16 +7,8 @@ export const engagement = {
   intro: "A romantic announcement devoted to the couple and their new beginning.",
   kicker: "Together with their families",
   defaultTheme: "emerald",
-  defaultIcon: "rings",
-  icons: [
-    ["coupleRef", "Traditional couple"],
-    ["rings", "Engagement rings"],
-    ["ringsRef", "Diamond rings"],
-    ["couple", "Modern couple"],
-    ["lotus", "Lotus bloom"],
-    ["diya", "Auspicious diya"],
-    ["envelope", "Invitation seal"]
-  ],
+  defaultIcon: occasionSvgMap.engagement.default,
+  icons: occasionSvgOptions("engagement"),
   themes: [
     ["emerald", "Emerald & Gold"],
     ["rose", "Rose & Antique Gold"],

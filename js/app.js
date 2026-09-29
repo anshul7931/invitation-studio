@@ -2,6 +2,7 @@ import { getOccasion } from "./occasions/registry.js";
 import { renderWedding } from "./occasions/wedding.js";
 import { renderOccasionForm } from "./ui/form-renderer.js";
 import { applyPhotoImageFallbacks, initPhotoLinkEditor, parsePhotoLinks, setPhotoLinkEditorValue } from "../frontend/General/js/photo-links.js";
+import { occasionSvgMap, occasionSvgOptions, svgMarkup, weddingIllustrations } from "../frontend/General/js/svg-registry.js";
 
 /**
  * Main browser controller for routing, authentication state, card persistence,
@@ -99,24 +100,6 @@ function isGuestUser() {
   return signedInUser?.guest === true;
 }
 
-const visualMotifs = {
-  cakeRef: `<img class="motif-img" src="/frontend/General/svgs/cake-svgrepo-com.svg" alt="">`,
-  cake: `<svg viewBox="0 0 72 72"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><path d="M14 54H58V64H14Z"/><path d="M20 37H52V54H20Z"/><path d="M27 23H45V37H27Z"/><path d="M36 6Q28 16 36 23Q44 16 36 6Z" fill="var(--occasion-accent)"/><path d="M20 45Q28 39 36 45T52 45"/></g></svg>`,
-  ringsRef: `<img class="motif-img" src="/frontend/General/svgs/wedding-rings-wedding-svgrepo-com.svg" alt="">`,
-  rings: `<svg viewBox="0 0 72 72"><g fill="none" stroke="currentColor" stroke-width="3"><circle cx="28" cy="43" r="18"/><circle cx="44" cy="43" r="18"/><path d="M37 18L45 8L53 18L45 28Z" fill="var(--occasion-accent)"/></g></svg>`,
-  officeTower: `<svg viewBox="0 0 72 72"><g fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 63H61M18 63V21H54V63M27 29H33M40 29H46M27 39H33M40 39H46M27 49H33M40 49H46"/><path d="M29 21V11H43V21" stroke="var(--occasion-accent)"/></g></svg>`,
-  envelope: `<svg viewBox="0 0 72 72"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><rect x="13" y="22" width="46" height="32" rx="6"/><path d="M16 27L36 42L56 27M17 50L31 39M55 50L41 39"/><circle cx="36" cy="42" r="4" fill="var(--occasion-accent)"/><path d="M55 13V19M52 16H58M18 12L21 17L26 19L21 21L18 26L15 21L10 19L15 17Z"/></g></svg>`,
-  lotus: `<svg viewBox="0 0 72 72"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><path d="M36 51C23 51 15 44 11 35C22 34 31 39 36 51Z"/><path d="M36 51C49 51 57 44 61 35C50 34 41 39 36 51Z"/><path d="M36 50C27 39 28 25 36 14C44 25 45 39 36 50Z" fill="var(--occasion-accent)"/><path d="M17 58H55"/></g></svg>`,
-  diya: `<svg viewBox="0 0 72 72"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><path d="M14 43Q36 61 58 43Q47 55 25 55Q17 51 14 43Z"/><path d="M36 13Q25 27 36 36Q47 27 36 13Z" fill="var(--occasion-accent)"/><path d="M24 43H48M20 59H52"/></g></svg>`,
-  coupleRef: `<img class="motif-img" src="/frontend/General/svgs/wedding-couple-svgrepo-com.svg" alt="">`,
-  couple: `<svg viewBox="0 0 72 72"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="27" cy="22" r="7"/><circle cx="45" cy="22" r="7"/><path d="M20 58Q22 36 27 30Q32 36 34 58ZM38 58Q40 36 45 30Q50 36 52 58Z"/><path d="M22 16L27 10L32 16M40 15L45 9L50 15" fill="var(--occasion-accent)"/></g></svg>`
-};
-
-const weddingPreviewMotifs = {
-  inlineGanesha: `<svg viewBox="0 0 72 72"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 23Q36 12 48 23Q53 34 43 43"/><path d="M25 25Q14 21 11 34Q10 46 25 45M47 25Q58 21 61 34Q62 46 47 45"/><path d="M32 35Q31 49 41 49Q49 49 46 41"/><path d="M25 57Q36 49 47 57"/><path d="M28 18L32 9L36 16L40 9L44 18" fill="var(--gold-light)"/></g></svg>`,
-  ganeshaRef: `<img class="motif-img" src="/frontend/General/svgs/ganesha-icon-111519-512.svg" alt="">`
-};
-
 function initPreviewSelect(selectId, previews) {
   const select = document.getElementById(selectId);
   if (!select || select.dataset.previewReady) return;
@@ -129,7 +112,7 @@ function initPreviewSelect(selectId, previews) {
     button.type = "button";
     button.className = "svg-preview-option";
     button.dataset.value = option.value;
-    button.innerHTML = `<span class="svg-preview-art">${previews[option.value] || visualMotifs[option.value] || ""}</span><span>${option.textContent}</span>`;
+    button.innerHTML = `<span class="svg-preview-art">${previews[option.value] || svgMarkup(option.value)}</span><span>${option.textContent}</span>`;
     button.addEventListener("click", () => {
       select.value = option.value;
       select.dispatchEvent(new Event("change", { bubbles: true }));
@@ -144,18 +127,25 @@ function initPreviewSelect(selectId, previews) {
 }
 
 function initWeddingSvgPreviews() {
-  initPreviewSelect("weddingIconInput", {});
-  initPreviewSelect("ganeshaVariantInput", {
-    inline: weddingPreviewMotifs.inlineGanesha,
-    "ganesha-icon": weddingPreviewMotifs.ganeshaRef
-  });
-  initPreviewSelect("coupleVariantInput", {
-    inline: visualMotifs.couple,
-    "couple-ref": visualMotifs.coupleRef
-  });
+  populateSvgSelect("weddingIconInput", occasionSvgOptions("wedding"), occasionSvgMap.wedding.default);
+  populateSvgSelect("ganeshaVariantInput", weddingIllustrations.ganesha.options.map(({ value, label }) => [value, label]), weddingIllustrations.ganesha.default);
+  populateSvgSelect("coupleVariantInput", weddingIllustrations.couple.options.map(({ value, label }) => [value, label]), weddingIllustrations.couple.default);
+  initPreviewSelect("weddingIconInput", Object.fromEntries(occasionSvgMap.wedding.options.map((key) => [key, svgMarkup(key)])));
+  initPreviewSelect("ganeshaVariantInput", Object.fromEntries(weddingIllustrations.ganesha.options.map((option) => [option.value, option.markup])));
+  initPreviewSelect("coupleVariantInput", Object.fromEntries(weddingIllustrations.couple.options.map((option) => [option.value, option.markup])));
+}
+
+function populateSvgSelect(selectId, options, defaultValue) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+  const currentValue = select.value;
+  select.replaceChildren(...options.map(([value, label]) => new Option(label, value)));
+  select.value = options.some(([value]) => value === currentValue) ? currentValue : defaultValue;
 }
 
 function initGenericMotifPreview() {
+  const config = activeOccasionConfig || getOccasion(activeOccasion);
+  populateSvgSelect("occasion-cardIcon", occasionSvgOptions(config.id), occasionSvgMap[config.id]?.default || "envelope");
   initPreviewSelect("occasion-cardIcon", {});
 }
 
@@ -727,7 +717,7 @@ function renderGenericCard(occasion, values = formValues(elements.occasionForm))
   elements.occasionInvitation.dataset.occasion = occasion.id;
   elements.occasionInvitation.dataset.palette = values.palette || occasion.defaultTheme;
   document.getElementById("occasionMark").innerHTML =
-    visualMotifs[values.cardIcon || occasion.defaultIcon || "envelope"] || visualMotifs.envelope;
+    svgMarkup(values.cardIcon || occasion.defaultIcon || "envelope");
   document.getElementById("occasionCardKicker").textContent = occasion.kicker;
   document.getElementById("occasionCardTitle").textContent = cardData.title;
   document.getElementById("occasionCardSubtitle").textContent = cardData.subtitle;
@@ -825,7 +815,7 @@ async function refreshShareStates() {
 
 function renderWeddingMotif() {
   const key = elements.weddingForm.elements.cardIcon?.value || "rings";
-  document.getElementById("weddingMotif").innerHTML = visualMotifs[key] || visualMotifs.rings;
+  document.getElementById("weddingMotif").innerHTML = svgMarkup(key);
 }
 
 function fillForm(form, values) {

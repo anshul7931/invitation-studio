@@ -139,7 +139,9 @@ The current app-level email limits default to 10 sends per second and 100 sends 
 
 SVGs in `frontend/General/svgs/` that were imported from free-use sources now include the non-visual attribute `data-invitation-studio-tweak="tiny-root-metadata-shift"` on the root SVG element. This records the tiny customization pass without changing visible artwork. New app-owned SVGs such as the favicon and card motifs are original inline/vector assets.
 
-Card creation also exposes SVG customization controls using the reference assets in `frontend/General/svgs/`: wedding cards can switch between the inline Ganesha and the uploaded Ganesha SVGs, switch the couple illustration to the uploaded couple SVG, and change the monogram motif; birthday cards can use the uploaded cake SVG; engagement cards can use the uploaded couple/rings SVGs or the app-owned motifs.
+Card creation also exposes SVG customization controls using the reference assets in `frontend/General/svgs/`: wedding cards can switch between the inline Ganesha and the uploaded Ganesha SVGs, choose from couple illustrations, and change the monogram motif; birthday cards can use the uploaded cake SVG; engagement cards can use the couple/rings SVGs or app-owned motifs. Two original, detailed couple illustrations are included: `royal-wedding-couple.svg` (maroon and gold) and `ivory-emerald-couple.svg` (emerald and ivory). They are newly authored vector artwork, not edits or copies of the reference couple asset.
+
+All motif markup, labels, per-occasion choices, and defaults are mapped in `frontend/General/js/svg-registry.js`. Add an SVG there, then include its key in the relevant occasion's `occasionSvgMap` options. New original inline motifs added: birthday candle, ribboned gift, celebration bouquet, flute glasses, sacred kalash, welcoming cradle, event calendar, and housewarming home.
 
 ## Postman authentication
 

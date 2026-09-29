@@ -1,3 +1,5 @@
+import { occasionSvgMap, occasionSvgOptions } from "../../General/js/svg-registry.js";
+
 export const custom = {
   id: "custom",
   name: "Custom Event",
@@ -5,15 +7,8 @@ export const custom = {
   intro: "Create a flexible invitation for Roka, baby shower, first-month ceremony, family gatherings, or any other celebration.",
   kicker: "You are warmly invited",
   defaultTheme: "champagne",
-  defaultIcon: "lotus",
-  icons: [
-    ["lotus", "Lotus bloom"],
-    ["diya", "Auspicious diya"],
-    ["rings", "Celebration rings"],
-    ["couple", "Modern couple"],
-    ["cake", "Golden cake"],
-    ["envelope", "Invitation seal"]
-  ],
+  defaultIcon: occasionSvgMap.custom.default,
+  icons: occasionSvgOptions("custom"),
   themes: [
     ["champagne", "Champagne & Ivory"],
     ["rose", "Rose & Gold"],

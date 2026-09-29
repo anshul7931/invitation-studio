@@ -26,6 +26,7 @@ frontend/
 │   ├── UserDashboard/user-dashboard.html
 │   └── AdminDashboard/admin-dashboard.html
 ├── General/
+│   ├── js/svg-registry.js   # Central motif SVGs, per-occasion options, and defaults
 │   ├── css/
 │   │   ├── design-tokens.css
 │   │   └── glyphs.css
@@ -54,6 +55,10 @@ Edit:
 
 - `frontend/Occasions/Birthday/birthday.js`
 - `backend/occasion-schema.js` → `birthday` only when changing API defaults/required fields/fingerprint fields.
+
+### Motif SVGs
+
+`frontend/General/js/svg-registry.js` is the single mapping for SVG markup, human-readable labels, occasion choices/defaults, and Wedding Ganesha/couple artwork. Add a motif there and list its key in `occasionSvgMap`; the create-card preview and generated-card art both use that registry.
 
 ### Wedding / Marriage card only
 

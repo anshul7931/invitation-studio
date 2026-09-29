@@ -519,6 +519,11 @@
       border-radius: 999px;
     }
 
+    .saved-heading .dashboard-sort {
+      flex: 0 0 auto;
+      margin: 0;
+    }
+
     .dashboard-sort label {
       color: var(--gold-deep);
       font: 700 0.68rem var(--label-font);
@@ -551,9 +556,30 @@
 
     .saved-card-meta {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
       gap: 10px;
+    }
+
+    .saved-card-variant {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 5px 9px;
+      color: var(--maroon);
+      background: rgba(199, 154, 67, 0.12);
+      border: 1px solid rgba(199, 154, 67, 0.48);
+      border-radius: 999px;
+      font: 700 0.62rem var(--label-font);
+      letter-spacing: 0.04em;
+    }
+
+    .saved-card-updated {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.9rem;
     }
 
     .status-badge {

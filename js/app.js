@@ -31,7 +31,7 @@ const elements = {
   purchasedInvitationsEmpty: document.getElementById("purchasedInvitationsEmpty"),
   expiredInvitations: document.getElementById("expiredInvitations"),
   expiredInvitationsEmpty: document.getElementById("expiredInvitationsEmpty"),
-  invitationSort: document.getElementById("invitationSort"),
+  invitationSorts: [...document.querySelectorAll("[data-invitation-sort]")],
   purchasedPlans: document.getElementById("purchasedPlans"),
   plansEmpty: document.getElementById("plansEmpty"),
   plansLoading: document.getElementById("plansLoading"),
@@ -69,6 +69,8 @@ let pendingTemplateFields = null;
 let currentTemplateType = "basic";
 let currentInvitationStatus = "DRAFT";
 let currentShareStates = {};
+let currentSavedVariants = new Set();
+let dashboardInvitations = [];
 let planCatalog = null;
 let selectedBillingPeriod = "monthly";
 let selectedPlanForPayment = null;
@@ -336,6 +338,7 @@ function resetCurrentCard() {
   currentShareUrl = null;
   currentPublicExpiresAt = null;
   currentShareStates = {};
+  currentSavedVariants = new Set();
   elements.saveButton.textContent = "Save Card";
   elements.shareButton.disabled = false;
   elements.shareButton.hidden = false;
@@ -752,6 +755,11 @@ function setFormTemplateType(templateType) {
   const form = activeOccasion === "wedding" ? elements.weddingForm : elements.occasionForm;
   currentTemplateType = templateType || "basic";
   if (form.elements.templateType) form.elements.templateType.value = currentTemplateType;
+  updateSaveButtonLabel();
+}
+
+function updateSaveButtonLabel() {
+  elements.saveButton.textContent = currentSavedVariants.has(currentTemplateType) ? "Update Card" : "Save Card";
 }
 
 function showTemplateChoice(fields) {
@@ -868,8 +876,16 @@ async function renderInvitationFromData(invitation, readOnly = false) {
   currentInvitationId = readOnly ? null : invitation.id;
   currentShareStates = invitation.shareStates || {};
   currentTemplateType = invitation.fields?.templateType || (String(invitation.fields?.photoLinks || "").trim() ? "premium" : "basic");
+  const storedVariants = Array.isArray(invitation.fields?.savedVariants) ? invitation.fields.savedVariants : [];
+  currentSavedVariants = new Set([
+    ...storedVariants,
+    ...Object.keys(currentShareStates),
+    ...(!storedVariants.length && !["DRAFT", ""].includes(invitation.status) ? [currentTemplateType] : [])
+  ]);
   pendingTemplateFields = invitation.fields || null;
-  elements.saveButton.textContent = currentInvitationId ? "Update Card" : "Save Card";
+  updateSaveButtonLabel();
+  elements.previewBasicButton?.classList.toggle("is-active", currentTemplateType === "basic");
+  elements.previewPremiumButton?.classList.toggle("is-active", currentTemplateType === "premium");
 
   if (invitation.occasion === "wedding") {
     fillForm(elements.weddingForm, invitation.fields);
@@ -915,19 +931,22 @@ function currentFields() {
 }
 
 async function saveCurrentCard() {
+  const fields = currentFields();
+  fields.savedVariants = [...new Set([...currentSavedVariants, currentTemplateType])];
   const url = currentInvitationId
     ? `/api/invitations/${activeOccasion}/${currentInvitationId}`
     : `/api/invitations/${activeOccasion}`;
   const invitation = await api(url, {
     method: currentInvitationId ? "PUT" : "POST",
-    body: JSON.stringify(currentFields())
+    body: JSON.stringify(fields)
   });
   currentInvitationId = invitation.id;
   currentShareStates = invitation.shareStates || currentShareStates;
   currentInvitationStatus = invitation.status || "SAVED";
+  currentSavedVariants = new Set(invitation.fields?.savedVariants || fields.savedVariants);
   currentTemplateType = invitation.fields?.templateType || currentFields().templateType || "basic";
   pendingTemplateFields = invitation.fields || { ...currentFields(), templateType: currentTemplateType };
-  elements.saveButton.textContent = "Update Card";
+  updateSaveButtonLabel();
   history.replaceState({}, "", invitation.url);
   await refreshShareStates();
   return invitation;
@@ -1015,16 +1034,8 @@ async function loadSavedCards() {
   try {
     const { invitations } = await api("/api/invitations");
     elements.savedLoading.hidden = true;
-    const sorted = sortDashboardInvitations(invitations);
-    const saved = sorted.filter((invitation) => !["PAID", "EXPIRED"].includes(invitation.status));
-    const purchased = sorted.filter((invitation) => invitation.status === "PAID");
-    const expired = sorted.filter((invitation) => invitation.status === "EXPIRED");
-    elements.savedEmpty.hidden = saved.length > 0;
-    if (elements.purchasedInvitationsEmpty) elements.purchasedInvitationsEmpty.hidden = purchased.length > 0;
-    if (elements.expiredInvitationsEmpty) elements.expiredInvitationsEmpty.hidden = expired.length > 0;
-    saved.forEach((invitation) => elements.savedCards.append(savedInvitationCard(invitation)));
-    purchased.forEach((invitation) => elements.purchasedInvitations?.append(savedInvitationCard(invitation)));
-    expired.forEach((invitation) => elements.expiredInvitations?.append(savedInvitationCard(invitation)));
+    dashboardInvitations = invitations;
+    renderDashboardInvitations();
   } catch (error) {
     elements.savedLoading.hidden = true;
     elements.savedEmpty.hidden = false;
@@ -1032,16 +1043,33 @@ async function loadSavedCards() {
   }
 }
 
-function sortDashboardInvitations(invitations) {
-  const sortMode = elements.invitationSort?.value || "created-desc";
+function renderDashboardInvitations() {
+    elements.savedCards.replaceChildren();
+    elements.purchasedInvitations?.replaceChildren();
+    elements.expiredInvitations?.replaceChildren();
+    const saved = sortDashboardInvitations(dashboardInvitations.filter((invitation) => !["PAID", "EXPIRED"].includes(invitation.status)), document.getElementById("savedInvitationSort")?.value);
+    const purchased = sortDashboardInvitations(dashboardInvitations.filter((invitation) => invitation.status === "PAID"), document.getElementById("purchasedInvitationSort")?.value);
+    const expired = sortDashboardInvitations(dashboardInvitations.filter((invitation) => invitation.status === "EXPIRED"), document.getElementById("expiredInvitationSort")?.value);
+    elements.savedEmpty.hidden = saved.length > 0;
+    if (elements.purchasedInvitationsEmpty) elements.purchasedInvitationsEmpty.hidden = purchased.length > 0;
+    if (elements.expiredInvitationsEmpty) elements.expiredInvitationsEmpty.hidden = expired.length > 0;
+    saved.forEach((invitation) => elements.savedCards.append(savedInvitationCard(invitation)));
+    purchased.forEach((invitation) => elements.purchasedInvitations?.append(savedInvitationCard(invitation)));
+    expired.forEach((invitation) => elements.expiredInvitations?.append(savedInvitationCard(invitation)));
+}
+
+function sortDashboardInvitations(invitations, sortMode = "created-desc") {
   const statusOrder = { DRAFT: 1, SAVED: 2, PUBLISHED: 3, PAID: 4, EXPIRED: 5 };
   return [...invitations].sort((a, b) => {
     if (sortMode === "status") {
       return (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99) ||
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     }
-    const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-    return sortMode === "created-asc" ? diff : -diff;
+    const updated = sortMode.startsWith("updated");
+    const aDate = new Date(updated ? a.updatedAt || a.createdAt : a.createdAt).getTime();
+    const bDate = new Date(updated ? b.updatedAt || b.createdAt : b.createdAt).getTime();
+    const diff = aDate - bDate;
+    return sortMode.endsWith("asc") ? diff : -diff;
   });
 }
 
@@ -1059,12 +1087,23 @@ function savedInvitationCard(invitation) {
       const status = document.createElement("span");
       status.className = `status-badge status-${String(invitation.status || "DRAFT").toLowerCase()}`;
       status.textContent = statusLabel(invitation.status);
+      const variants = document.createElement("span");
+      variants.className = "saved-card-variant";
+      const savedVariants = Array.isArray(invitation.fields?.savedVariants) && invitation.fields.savedVariants.length
+        ? invitation.fields.savedVariants
+        : [invitation.fields?.templateType || (String(invitation.fields?.photoLinks || "").trim() ? "premium" : "basic")];
+      variants.textContent = [...new Set(savedVariants)].map((type) => type === "premium" ? "Premium" : "Basic").join(" + ");
       const title = document.createElement("h3");
       title.textContent = invitation.title;
       const time = document.createElement("time");
       time.textContent = `Created ${new Intl.DateTimeFormat("en-IN", {
         day: "numeric", month: "short", year: "numeric"
       }).format(new Date(invitation.createdAt))}`;
+      const updatedTime = document.createElement("time");
+      updatedTime.className = "saved-card-updated";
+      updatedTime.textContent = `Updated ${new Intl.DateTimeFormat("en-IN", {
+        day: "numeric", month: "short", year: "numeric"
+      }).format(new Date(invitation.updatedAt || invitation.createdAt))}`;
       const note = document.createElement("p");
       note.className = "saved-card-note";
       note.textContent = dashboardInvitationNote(invitation);
@@ -1089,8 +1128,8 @@ function savedInvitationCard(invitation) {
       actions.append(open, remove);
       const meta = document.createElement("div");
       meta.className = "saved-card-meta";
-      meta.append(type, status);
-      card.append(meta, title, time);
+      meta.append(type, variants, status);
+      card.append(meta, title, time, updatedTime);
       if (note.textContent) card.append(note);
       card.append(actions);
       return card;
@@ -1800,7 +1839,7 @@ elements.previewPremiumButton.addEventListener("click", () => {
 
 document.getElementById("newCardButton")?.addEventListener("click", () => confirmBeforeHome());
 
-elements.invitationSort?.addEventListener("change", loadSavedCards);
+elements.invitationSorts.forEach((sort) => sort.addEventListener("change", renderDashboardInvitations));
 
 document.getElementById("homeButton").addEventListener("click", () => {
   confirmBeforeHome();

@@ -34,40 +34,53 @@
         <span><h2>Custom Event</h2><p>Roka, baby shower, first-month ceremony, family rituals, or any other event.</p></span>
       </button>
     </div>
-    <div class="dashboard-sort">
-      <label for="invitationSort">Sort invitations</label>
-      <select id="invitationSort">
-        <option value="created-desc">Creation date · newest first</option>
-        <option value="created-asc">Creation date · oldest first</option>
-        <option value="status">Status</option>
-      </select>
-    </div>
-    <section class="saved-section">
+    <section class="saved-section" data-invitation-section="saved">
       <div class="saved-heading">
         <div>
           <h2>Your saved invitations</h2>
           <p>Draft, saved, and active free invitations stay here for editing.</p>
+        </div>
+        <div class="dashboard-sort">
+          <label for="savedInvitationSort">Sort saved</label>
+          <select id="savedInvitationSort" data-invitation-sort>
+            <option value="created-desc">Created · newest</option><option value="created-asc">Created · oldest</option>
+            <option value="updated-desc">Updated · newest</option><option value="updated-asc">Updated · oldest</option><option value="status">Status</option>
+          </select>
         </div>
       </div>
       <div class="saved-grid" id="savedCards"></div>
       <p class="loading-state" id="savedLoading" hidden>Loading your invitations…</p>
       <p class="empty-state" id="savedEmpty">You have not saved an invitation yet.</p>
     </section>
-    <section class="saved-section">
+    <section class="saved-section" data-invitation-section="purchased">
       <div class="saved-heading">
         <div>
           <h2>Your purchased invitations</h2>
           <p>Paid invitations with active public links and plan validity.</p>
         </div>
+        <div class="dashboard-sort">
+          <label for="purchasedInvitationSort">Sort purchased</label>
+          <select id="purchasedInvitationSort" data-invitation-sort>
+            <option value="created-desc">Created · newest</option><option value="created-asc">Created · oldest</option>
+            <option value="updated-desc">Updated · newest</option><option value="updated-asc">Updated · oldest</option><option value="status">Status</option>
+          </select>
+        </div>
       </div>
       <div class="saved-grid" id="purchasedInvitations"></div>
       <p class="empty-state" id="purchasedInvitationsEmpty">You have not purchased an invitation yet.</p>
     </section>
-    <section class="saved-section">
+    <section class="saved-section" data-invitation-section="expired">
       <div class="saved-heading">
         <div>
           <h2>Your expired invitations</h2>
           <p>Expired public links can be edited and saved again.</p>
+        </div>
+        <div class="dashboard-sort">
+          <label for="expiredInvitationSort">Sort expired</label>
+          <select id="expiredInvitationSort" data-invitation-sort>
+            <option value="created-desc">Created · newest</option><option value="created-asc">Created · oldest</option>
+            <option value="updated-desc">Updated · newest</option><option value="updated-asc">Updated · oldest</option><option value="status">Status</option>
+          </select>
         </div>
       </div>
       <div class="saved-grid" id="expiredInvitations"></div>

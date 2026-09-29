@@ -6,7 +6,7 @@ const { database } = require("../database");
 const { occasions } = require("../occasion-schema");
 const { requireUser } = require("../middleware/auth-guards");
 const { readJson, sendJson } = require("../utils/http");
-const { invitationDto, invitationTitle } = require("../utils/invitation-utils");
+const { invitationDto, invitationTitle, publicLinkUrl } = require("../utils/invitation-utils");
 
 function effectiveLinkStatus(link) {
   if (link.public_expires_at && new Date(link.public_expires_at).getTime() <= Date.now()) return "EXPIRED";
@@ -16,7 +16,7 @@ function effectiveLinkStatus(link) {
 function linkDto(link) {
   const expiredAt = link.public_expires_at ? new Date(link.public_expires_at) : null;
   return {
-    shareUrl: link.public_token ? `/share/${link.public_token}` : null,
+    shareUrl: publicLinkUrl(link),
     publicExpiresAt: expiredAt ? expiredAt.toISOString() : null,
     publicGeneratedAt: link.public_generated_at ? new Date(link.public_generated_at).toISOString() : null,
     status: effectiveLinkStatus(link),

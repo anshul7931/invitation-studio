@@ -100,6 +100,11 @@ export function renderOccasionForm(occasion, container) {
             <button class="secondary-button photo-add-button" type="button" data-add-photo-link>Add one more link</button>
           </div>
         </div>
+        <div class="field full">
+          <label for="occasion-publicHashtag">Custom invitation link <span class="optional-label">Premium</span></label>
+          <input id="occasion-publicHashtag" name="publicHashtag" type="text" maxlength="80" placeholder="e.g. Team-Celebration">
+          <small class="field-hint">The link ends in /1/your-name. Reused names automatically get /2/, /3/, and so on.</small>
+        </div>
       </div>
     </section>
   `;

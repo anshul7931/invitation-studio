@@ -86,6 +86,7 @@ let occasionCountdownTimer = null;
 
 const supportedOccasions = ["wedding", "birthday", "engagement", "office", "custom"];
 const publicStaticRoutes = ["about", "contact", "privacy", "terms", "refund", "disclaimer", "acceptable-use"];
+const isCustomPublicPath = (pathname) => /^\/\d+\/[a-z0-9-]+$/i.test(pathname);
 const occasionSchemaCache = new Map();
 
 function isGuestUser() {
@@ -769,7 +770,7 @@ function openGeneratedCard(form) {
   const fields = formValues(form);
   const toggle = form.querySelector("[data-premium-toggle]");
   const hasPremiumFeatures = Boolean(
-    toggle?.checked || String(fields.photoLinks || "").trim() || fields.addCountdown === "yes"
+    toggle?.checked || String(fields.photoLinks || "").trim() || fields.addCountdown === "yes" || String(fields.publicHashtag || "").trim()
   );
   currentTemplateType = hasPremiumFeatures ? "premium" : "basic";
   pendingTemplateFields = { ...fields, templateType: currentTemplateType };
@@ -837,7 +838,7 @@ function fillForm(form, values) {
     element.value = value;
   });
   setPhotoLinkEditorValue(form, values?.photoLinks || "");
-  const shouldShowPremium = values?.templateType === "premium" || String(values?.photoLinks || "").trim() || values?.addCountdown === "yes";
+  const shouldShowPremium = values?.templateType === "premium" || String(values?.photoLinks || "").trim() || values?.addCountdown === "yes" || String(values?.publicHashtag || "").trim();
   const toggle = form.querySelector("[data-premium-toggle]");
   const fields = form.querySelector(".premium-fields");
   if (toggle && fields) {
@@ -878,7 +879,8 @@ async function renderInvitationFromData(invitation, readOnly = false) {
   activeOccasion = invitation.occasion;
   currentInvitationId = readOnly ? null : invitation.id;
   currentShareStates = invitation.shareStates || {};
-  currentTemplateType = invitation.fields?.templateType || (String(invitation.fields?.photoLinks || "").trim() ? "premium" : "basic");
+  currentTemplateType = invitation.fields?.templateType === "premium" || String(invitation.fields?.photoLinks || "").trim() || invitation.fields?.addCountdown === "yes" || String(invitation.fields?.publicHashtag || "").trim()
+    ? "premium" : "basic";
   const storedVariants = Array.isArray(invitation.fields?.savedVariants) ? invitation.fields.savedVariants : [];
   currentSavedVariants = new Set([
     ...storedVariants,
@@ -1343,9 +1345,12 @@ async function loadRoute() {
     return;
   }
 
-  if (route === "share" && parts[1]) {
+  if ((route === "share" && parts[1]) || (/^\d+$/.test(route || "") && parts[1])) {
     try {
-      const invitation = await api(`/api/public/${parts[1]}`);
+      const publicApiPath = route === "share"
+        ? `/api/public/${parts[1]}`
+        : `/api/public-path/${parts[0]}/${encodeURIComponent(parts[1])}`;
+      const invitation = await api(publicApiPath);
       await renderInvitationFromData(invitation, true);
       document.body.classList.add("public-share");
       if (elements.appFooter) elements.appFooter.hidden = true;
@@ -1805,6 +1810,7 @@ async function createPublicLink(useCredit = false) {
       body: JSON.stringify({
         useCredit,
         templateType: currentTemplateType,
+        publicHashtag: currentFields().publicHashtag || "",
         purchaseId: useCredit ? document.getElementById("publicLinkCreditSelect")?.value : ""
       })
     });
@@ -2130,7 +2136,7 @@ window.addEventListener("popstate", () => {
     return;
   }
   const route = location.pathname.split("/").filter(Boolean)[0];
-  if (signedInUser || location.pathname.startsWith("/share/") || publicStaticRoutes.includes(route)) loadRoute();
+  if (signedInUser || location.pathname.startsWith("/share/") || isCustomPublicPath(location.pathname) || publicStaticRoutes.includes(route)) loadRoute();
 });
 
 applyAppTheme("royal-blue");
@@ -2141,6 +2147,7 @@ applyFontTheme("default");
   const bootRoute = location.pathname.replace(/^\/+/, "");
   if (
     location.pathname.startsWith("/share/") ||
+    isCustomPublicPath(location.pathname) ||
     location.pathname === "/payment" ||
     location.pathname === "/payments" ||
     location.pathname === "/plans" ||

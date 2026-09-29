@@ -49,6 +49,10 @@ async function start() {
         serveHtmlTemplate(response, path.join(appRoot, "index.html"));
         return;
       }
+      if (request.method === "GET" && /^\/\d+\/[a-z0-9-]+$/i.test(pathname)) {
+        serveHtmlTemplate(response, path.join(appRoot, "index.html"));
+        return;
+      }
       if (request.method === "GET") {
         const filePath = path.normalize(path.join(appRoot, pathname));
         if (filePath.startsWith(appRoot)) {

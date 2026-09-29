@@ -17,7 +17,7 @@ function invitationTitle(occasion, fields) {
 function invitationDto(row) {
   const fields = typeof row.fields === "string" ? JSON.parse(row.fields) : row.fields;
   let publicExpiresAt = row.public_expires_at ? new Date(row.public_expires_at) : null;
-  const isPremium = fields.templateType === "premium" || String(fields.photoLinks || "").trim().length > 0;
+  const isPremium = fields.templateType === "premium" || String(fields.photoLinks || "").trim().length > 0 || Boolean(String(fields.publicHashtag || "").trim());
   if (row.status !== "PAID" && isPremium && row.public_generated_at) {
     publicExpiresAt = new Date(new Date(row.public_generated_at).getTime() + 5 * 60 * 1000);
   } else if (publicExpiresAt && row.public_generated_at && config.app.publicShareMinutes !== 10) {
@@ -34,13 +34,17 @@ function invitationDto(row) {
     title: row.title,
     fields,
     url: `/${row.occasion}?id=${row.id}`,
-    shareUrl: row.public_token ? `/share/${row.public_token}` : null,
+    shareUrl: publicLinkUrl(row),
     publicExpiresAt: publicExpiresAt ? publicExpiresAt.toISOString() : null,
     publicGeneratedAt: row.public_generated_at ? new Date(row.public_generated_at).toISOString() : null,
     status,
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString()
   };
+}
+
+function publicLinkUrl(link) {
+  return link?.public_path ? `/${link.public_path}` : link?.public_token ? `/share/${link.public_token}` : null;
 }
 
 function userDto(row) {
@@ -70,6 +74,7 @@ module.exports = {
   fingerprintFor,
   invitationDto,
   invitationTitle,
+  publicLinkUrl,
   tokenHash,
   userDto
 };

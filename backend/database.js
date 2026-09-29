@@ -182,6 +182,7 @@ async function initializeDatabase() {
       user_id CHAR(36) NOT NULL,
       template_type ENUM('basic', 'premium') NOT NULL,
       public_token CHAR(36) NULL UNIQUE,
+      public_path VARCHAR(200) NULL UNIQUE,
       public_expires_at DATETIME NULL,
       public_generated_at DATETIME NULL,
       public_fingerprint CHAR(64) NULL,
@@ -201,6 +202,7 @@ async function initializeDatabase() {
     )
   `);
   await ensureColumn("invitation_public_links", "purchase_id", "ALTER TABLE invitation_public_links ADD COLUMN purchase_id CHAR(36) NULL AFTER public_fingerprint");
+  await ensureColumn("invitation_public_links", "public_path", "ALTER TABLE invitation_public_links ADD COLUMN public_path VARCHAR(200) NULL UNIQUE AFTER public_token");
 
   await pool.query("DELETE FROM sessions WHERE expires_at <= NOW()");
   await pool.query("DELETE FROM email_tokens WHERE expires_at <= NOW() OR used_at IS NOT NULL");

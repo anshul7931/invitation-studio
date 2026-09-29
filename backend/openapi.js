@@ -249,7 +249,8 @@ function createOpenApi(host, port) {
             type: "object",
             properties: {
               templateType: { type: "string", enum: ["basic", "premium"] },
-              useCredit: { type: "boolean", default: false }
+              useCredit: { type: "boolean", default: false },
+              publicHashtag: { type: "string", maxLength: 80, description: "Premium public-link slug; duplicate slugs receive the next numeric prefix." }
             }
           }),
           responses: {
@@ -286,6 +287,17 @@ function createOpenApi(host, port) {
             200: { description: "Read-only invitation" },
             404: { description: "Not found or expired" }
           }
+        }
+      },
+      "/api/public-path/{sequence}/{hashtag}": {
+        get: {
+          tags: ["Public Invitations"],
+          summary: "Read a custom premium invitation link",
+          parameters: [
+            { name: "sequence", in: "path", required: true, schema: { type: "integer", minimum: 1 } },
+            { name: "hashtag", in: "path", required: true, schema: { type: "string" } }
+          ],
+          responses: { 200: { description: "Shared invitation" }, 404: { description: "Expired or unknown link" } }
         }
       },
       "/api/plans": {

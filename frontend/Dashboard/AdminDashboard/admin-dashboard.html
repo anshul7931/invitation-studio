@@ -9,12 +9,35 @@
     <div class="admin-grid">
       <article class="admin-card">
         <h2>Users</h2>
+        <div class="admin-list-controls"><input id="adminUsersSearch" type="search" placeholder="Search name, email, phone" aria-label="Search users"><button type="button" data-admin-search="users">Search</button></div>
         <ul id="adminUsers"></ul>
+        <div class="admin-pagination"><button type="button" data-admin-page="users" data-delta="-1">Previous</button><span id="adminUsersPage"></span><button type="button" data-admin-page="users" data-delta="1">Next</button></div>
       </article>
       <article class="admin-card">
         <h2>Cards</h2>
+        <div class="admin-list-controls"><input id="adminCardsSearch" type="search" placeholder="Search title, occasion, owner" aria-label="Search cards"><button type="button" data-admin-search="cards">Search</button></div>
         <ul id="adminInvitations"></ul>
+        <div class="admin-pagination"><button type="button" data-admin-page="cards" data-delta="-1">Previous</button><span id="adminCardsPage"></span><button type="button" data-admin-page="cards" data-delta="1">Next</button></div>
       </article>
+      <article class="admin-card full">
+        <h2>Notifications</h2>
+        <p class="builder-intro">Server errors, newest first.</p>
+        <button class="generate-button" type="button" id="openNotificationsButton">View Notifications <span id="adminNotificationCount"></span></button>
+        <div id="adminNotificationsPanel" hidden>
+          <ul id="adminNotifications" class="admin-notifications"></ul>
+          <article id="adminNotificationDetails" class="admin-notification-details" hidden></article>
+        </div>
+      </article>
+      <article class="admin-card full">
+        <h2>Contact Us Feedback</h2>
+        <p class="builder-intro">Customer questions, feedback, and requests submitted through Contact Us.</p>
+        <button class="generate-button" type="button" id="openFeedbackButton">View Feedback <span id="adminFeedbackCount"></span></button>
+        <div id="adminFeedbackPanel" hidden>
+          <ul id="adminFeedback" class="admin-notifications"></ul>
+          <article id="adminFeedbackDetails" class="admin-notification-details" hidden></article>
+        </div>
+      </article>
+      <p id="adminActionStatus" class="save-status" role="status" aria-live="polite"></p>
       <article class="admin-card full">
         <h2>API docs</h2>
         <p class="builder-intro">Swagger is available from the admin dashboard.</p></br>

@@ -135,6 +135,23 @@ async function initializeDatabase() {
   `);
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS contact_submissions (
+      id CHAR(36) PRIMARY KEY,
+      user_id CHAR(36) NULL,
+      name VARCHAR(120) NOT NULL,
+      email VARCHAR(255) NOT NULL,
+      phone VARCHAR(40) NULL,
+      category VARCHAR(80) NOT NULL,
+      subject VARCHAR(160) NOT NULL,
+      message TEXT NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT fk_contact_submission_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+      INDEX idx_contact_submissions_created (created_at),
+      INDEX idx_contact_submissions_user (user_id, created_at)
+    )
+  `);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS plan_purchases (
       id CHAR(36) PRIMARY KEY,
       user_id CHAR(36) NOT NULL,

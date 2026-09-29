@@ -83,6 +83,12 @@ let staticReturnState = null;
 let guestAuthAction = null;
 let staticHistoryMarkerActive = false;
 let occasionCountdownTimer = null;
+const adminListState = {
+  users: { page: 1, q: "", total: 0 },
+  cards: { page: 1, q: "", total: 0 }
+};
+let adminNotificationRecords = [];
+let adminFeedbackRecords = [];
 
 const supportedOccasions = ["wedding", "birthday", "engagement", "office", "custom"];
 const publicStaticRoutes = ["about", "contact", "privacy", "terms", "refund", "disclaimer", "acceptable-use"];
@@ -1436,20 +1442,98 @@ async function loadRoute() {
 }
 
 async function loadAdminDashboard() {
-  const [statsData, usersData, invitationsData] = await Promise.all([
-    api("/api/admin/stats"),
-    api("/api/admin/users"),
-    api("/api/admin/invitations")
-  ]);
+  const statsData = await api("/api/admin/stats");
   document.getElementById("adminStats").innerHTML = Object.entries(statsData.stats)
     .map(([label, value]) => `<div class="admin-stat"><span>${label}</span><strong>${value}</strong></div>`)
     .join("");
-  document.getElementById("adminUsers").innerHTML = usersData.users
-    .map((user) => `<li>${user.name} · ${user.email}${user.phone ? ` · ${user.phone}` : ""} · ${user.role} · ${user.invitationCount} cards</li>`)
-    .join("");
-  document.getElementById("adminInvitations").innerHTML = invitationsData.invitations
-    .map((card) => `<li>${card.title} · ${card.occasion} · ${card.owner.name} (${card.owner.email})</li>`)
-    .join("");
+  await Promise.all([loadAdminList("users"), loadAdminList("cards")]);
+  try {
+    const [{ notifications }, { feedback }] = await Promise.all([
+      api("/api/admin/notifications"), api("/api/admin/feedback")
+    ]);
+    document.getElementById("adminNotificationCount").textContent = `(${notifications.length})`;
+    document.getElementById("adminFeedbackCount").textContent = `(${feedback.length})`;
+  } catch { /* The notification panel reports its own load failures when opened. */ }
+}
+
+function escapeAdminText(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[character]);
+}
+
+async function loadAdminList(kind) {
+  const state = adminListState[kind];
+  const params = new URLSearchParams({ page: state.page, pageSize: 10, q: state.q });
+  const isUsers = kind === "users";
+  const data = await api(`/api/admin/${isUsers ? "users" : "invitations"}?${params}`);
+  state.total = data.total;
+  if (isUsers) {
+    document.getElementById("adminUsers").innerHTML = data.users.map((user) =>
+      `<li class="admin-list-row"><span><strong>${escapeAdminText(user.name)}</strong><br>${escapeAdminText(user.email)}${user.phone ? ` · ${escapeAdminText(user.phone)}` : ""}<br><small>${escapeAdminText(user.role)} · ${user.invitationCount} cards · ${new Date(user.createdAt).toLocaleDateString("en-IN")}</small></span><button type="button" data-admin-reset-id="${escapeAdminText(user.id)}">Send password reset</button></li>`
+    ).join("") || "<li>No matching users.</li>";
+  } else {
+    document.getElementById("adminInvitations").innerHTML = data.invitations.map((card) =>
+      `<li class="admin-list-row"><span><strong>${escapeAdminText(card.title)}</strong><br>${escapeAdminText(card.occasion)} · ${escapeAdminText(card.owner.name)} (${escapeAdminText(card.owner.email)})<br><small>Updated ${new Date(card.updatedAt).toLocaleString("en-IN")}</small></span></li>`
+    ).join("") || "<li>No matching cards.</li>";
+  }
+  const pageLabel = document.getElementById(isUsers ? "adminUsersPage" : "adminCardsPage");
+  const maxPage = Math.max(1, Math.ceil(state.total / 10));
+  pageLabel.textContent = `Page ${state.page} of ${maxPage} · ${state.total} total`;
+  document.querySelectorAll(`[data-admin-page="${kind}"]`).forEach((button) => {
+    button.disabled = button.dataset.delta === "-1" ? state.page <= 1 : state.page >= maxPage;
+  });
+}
+
+async function loadAdminNotifications() {
+  const { notifications } = await api("/api/admin/notifications");
+  adminNotificationRecords = notifications;
+  document.getElementById("adminNotificationCount").textContent = `(${notifications.length})`;
+  const list = document.getElementById("adminNotifications");
+  list.replaceChildren();
+  notifications.forEach((record) => {
+    const item = document.createElement("li");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "admin-notification-item";
+    button.dataset.notificationId = record.id;
+    button.textContent = `${record.type} · ${record.user?.name || "Unknown"}${record.user?.email ? ` (${record.user.email})` : ""} · ${new Date(record.createdAt).toLocaleString("en-IN")} · ${record.summary}`;
+    item.append(button);
+    list.append(item);
+  });
+  if (!notifications.length) list.innerHTML = "<li>No error notifications.</li>";
+}
+
+async function loadAdminFeedback() {
+  const { feedback } = await api("/api/admin/feedback");
+  adminFeedbackRecords = feedback;
+  document.getElementById("adminFeedbackCount").textContent = `(${feedback.length})`;
+  const list = document.getElementById("adminFeedback");
+  list.replaceChildren();
+  feedback.forEach((record) => {
+    const item = document.createElement("li");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "admin-notification-item";
+    button.dataset.feedbackId = record.id;
+    button.textContent = `${record.user.name} (${record.user.email}) · ${new Date(record.createdAt).toLocaleString("en-IN")} · ${record.summary}`;
+    item.append(button);
+    list.append(item);
+  });
+  if (!feedback.length) list.innerHTML = "<li>No Contact Us feedback has been submitted.</li>";
+}
+
+function showAdminNotification(record) {
+  const panel = document.getElementById("adminNotificationDetails");
+  panel.replaceChildren();
+  const title = document.createElement("h3");
+  title.textContent = `${record.type}: ${record.summary}`;
+  const byline = document.createElement("p");
+  byline.textContent = `${record.user?.name || "Unknown user"}${record.user?.email ? ` · ${record.user.email}` : ""} · ${new Date(record.createdAt).toLocaleString("en-IN")}`;
+  const details = document.createElement("pre");
+  details.textContent = Object.entries(record.details || {}).filter(([, value]) => value).map(([key, value]) => `${key}: ${value}`).join("\n");
+  panel.append(title, byline, details);
+  panel.hidden = false;
 }
 
 async function loadMonitoringPage() {
@@ -1918,6 +2002,97 @@ document.getElementById("adminButton").addEventListener("click", async () => {
 document.getElementById("openMonitoringButton").addEventListener("click", async () => {
   history.pushState({}, "", "/monitoring");
   await loadRoute();
+});
+
+document.querySelectorAll("[data-admin-search]").forEach((button) => {
+  button.addEventListener("click", async () => {
+    const kind = button.dataset.adminSearch;
+    adminListState[kind].q = document.getElementById(kind === "users" ? "adminUsersSearch" : "adminCardsSearch").value.trim();
+    adminListState[kind].page = 1;
+    await loadAdminList(kind);
+  });
+});
+
+document.querySelectorAll("[data-admin-page]").forEach((button) => {
+  button.addEventListener("click", async () => {
+    const state = adminListState[button.dataset.adminPage];
+    state.page = Math.max(1, state.page + Number(button.dataset.delta));
+    await loadAdminList(button.dataset.adminPage);
+  });
+});
+
+document.getElementById("adminUsersSearch")?.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") document.querySelector('[data-admin-search="users"]').click();
+});
+document.getElementById("adminCardsSearch")?.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") document.querySelector('[data-admin-search="cards"]').click();
+});
+
+document.getElementById("openNotificationsButton")?.addEventListener("click", async () => {
+  const panel = document.getElementById("adminNotificationsPanel");
+  panel.hidden = !panel.hidden;
+  if (panel.hidden) return;
+  try { await loadAdminNotifications(); }
+  catch (error) { document.getElementById("adminNotifications").textContent = error.message; }
+});
+
+document.getElementById("adminNotifications")?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-notification-id]");
+  const record = adminNotificationRecords.find((item) => item.id === button?.dataset.notificationId);
+  if (record) showAdminNotification(record);
+});
+
+document.getElementById("openFeedbackButton")?.addEventListener("click", async () => {
+  const panel = document.getElementById("adminFeedbackPanel");
+  panel.hidden = !panel.hidden;
+  if (panel.hidden) return;
+  try { await loadAdminFeedback(); }
+  catch (error) { document.getElementById("adminFeedback").textContent = error.message; }
+});
+
+document.getElementById("adminFeedback")?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-feedback-id]");
+  const record = adminFeedbackRecords.find((item) => item.id === button?.dataset.feedbackId);
+  if (record) {
+    const panel = document.getElementById("adminFeedbackDetails");
+    panel.replaceChildren();
+    const title = document.createElement("h3");
+    title.textContent = `Feedback: ${record.summary}`;
+    const byline = document.createElement("p");
+    byline.textContent = `${record.user.name} · ${record.user.email} · ${new Date(record.createdAt).toLocaleString("en-IN")}`;
+    const details = document.createElement("pre");
+    details.textContent = Object.entries(record.details).map(([key, value]) => `${key}: ${value}`).join("\n");
+    panel.append(title, byline, details);
+    panel.hidden = false;
+  }
+});
+
+document.getElementById("adminUsers")?.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-admin-reset-id]");
+  if (!button) return;
+  button.disabled = true;
+  try {
+    const result = await api(`/api/admin/users/${button.dataset.adminResetId}/reset-password`, { method: "POST" });
+    document.getElementById("adminActionStatus").textContent = result.message;
+  } catch (error) {
+    document.getElementById("adminActionStatus").textContent = error.message;
+  } finally { button.disabled = false; }
+});
+
+document.getElementById("contactForm")?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const status = document.getElementById("contactStatus");
+  const submit = form.querySelector('[type="submit"]');
+  status.textContent = "Sending…";
+  submit.disabled = true;
+  try {
+    const result = await api("/api/contact", { method: "POST", body: JSON.stringify(formValues(form)) });
+    status.textContent = result.message;
+    form.reset();
+  } catch (error) {
+    status.textContent = error.message;
+  } finally { submit.disabled = false; }
 });
 
 document.getElementById("monitoringBackButton").addEventListener("click", async () => {

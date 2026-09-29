@@ -1541,6 +1541,29 @@
       line-height: 1.8;
     }
 
+    .admin-list-controls, .admin-pagination { display: flex; align-items: center; gap: 8px; margin: 12px 0; }
+    .admin-list-controls input { flex: 1; min-width: 0; padding: 10px 12px; color: var(--ui-text); background: var(--ui-input); border: 1px solid var(--ui-border); border-radius: 10px; }
+    .admin-list-controls button, .admin-pagination button, .admin-list-row button {
+      padding: 9px 12px; color: var(--ui-accent-strong); background: var(--ui-accent-soft); border: 1px solid var(--ui-border); border-radius: 10px; cursor: pointer;
+    }
+    .admin-list-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--ui-border); }
+    .admin-list-row > span { min-width: 0; overflow-wrap: anywhere; }
+    .admin-list-row small { color: var(--ui-muted); }
+    .admin-list-row button { flex: 0 0 auto; font-size: .75rem; }
+    .admin-pagination { justify-content: space-between; color: var(--ui-muted); font-size: .86rem; }
+    .admin-notifications { display: grid; gap: 7px; max-height: 420px; overflow: auto; padding: 0 !important; list-style: none; }
+    .admin-notification-item { width: 100%; padding: 12px; color: var(--ui-text); background: var(--ui-surface); border: 1px solid var(--ui-border); border-radius: 12px; text-align: left; cursor: pointer; }
+    .admin-notification-details { margin-top: 14px; padding: 16px; color: var(--ui-text); background: var(--ui-surface); border: 1px solid var(--ui-border); border-radius: 14px; }
+    .admin-notification-details pre { white-space: pre-wrap; overflow-wrap: anywhere; font: .86rem/1.55 var(--label-font); }
+    .contact-form { max-width: 760px; margin: 28px auto 0; padding: clamp(18px, 4vw, 30px); background: var(--ui-surface-alt); border: 1px solid var(--ui-border); border-radius: 20px; }
+    .contact-form .generate-button { margin-top: 18px; }
+    .contact-status { min-height: 1.5em; color: var(--ui-accent-strong); }
+
+    body[data-mode="dark"] .admin-list-controls button,
+    body[data-mode="dark"] .admin-pagination button,
+    body[data-mode="dark"] .admin-list-row button { color: var(--ui-text); }
+    body[data-mode="dark"] .contact-status { color: var(--ui-dark-accent); }
+
     .admin-stats {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -3803,6 +3826,10 @@
       .saved-card-meta { gap: 6px; }
       .saved-actions button { flex: 1; }
       .site-footer { padding-inline: 8px; }
+      .admin-list-row { align-items: flex-start; flex-direction: column; }
+      .admin-list-controls { align-items: stretch; flex-direction: column; }
+      .admin-list-controls button { min-height: 40px; }
+      .admin-pagination { flex-wrap: wrap; }
     }
 
     .copyright {

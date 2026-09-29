@@ -349,6 +349,11 @@ function createOpenApi(host, port) {
           tags: ["Admin"],
           summary: "List all users",
           security: [{ cookieAuth: [] }],
+          parameters: [
+            { name: "q", in: "query", schema: { type: "string" } },
+            { name: "page", in: "query", schema: { type: "integer", minimum: 1 } },
+            { name: "pageSize", in: "query", schema: { type: "integer", minimum: 5, maximum: 50 } }
+          ],
           responses: { 200: { description: "Users" }, 403: { description: "Admin required" } }
         }
       },
@@ -362,7 +367,9 @@ function createOpenApi(host, port) {
             in: "query",
             required: false,
             schema: { type: "string", format: "uuid" }
-          }],
+          }, { name: "q", in: "query", schema: { type: "string" } },
+          { name: "page", in: "query", schema: { type: "integer", minimum: 1 } },
+          { name: "pageSize", in: "query", schema: { type: "integer", minimum: 5, maximum: 50 } }],
           responses: { 200: { description: "Invitations" }, 403: { description: "Admin required" } }
         }
       },
@@ -373,6 +380,22 @@ function createOpenApi(host, port) {
           security: [{ cookieAuth: [] }],
           responses: { 200: { description: "Recent issue logs" }, 403: { description: "Admin required" } }
         }
+      },
+      "/api/admin/users/{id}/reset-password": {
+        post: {
+          tags: ["Admin"], summary: "Send a password-reset email for a user", security: [{ cookieAuth: [] }],
+          parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }],
+          responses: { 200: { description: "Reset email requested" }, 403: { description: "Admin required" }, 404: { description: "User not found" } }
+        }
+      },
+      "/api/admin/notifications": {
+        get: { tags: ["Admin"], summary: "List user-attributed server errors", security: [{ cookieAuth: [] }], responses: { 200: { description: "Notifications" }, 403: { description: "Admin required" } } }
+      },
+      "/api/admin/feedback": {
+        get: { tags: ["Admin"], summary: "List Contact Us feedback submissions", security: [{ cookieAuth: [] }], responses: { 200: { description: "Feedback submissions" }, 403: { description: "Admin required" } } }
+      },
+      "/api/contact": {
+        post: { tags: ["Support"], summary: "Submit customer feedback", requestBody: body({ type: "object", required: ["name", "email", "subject", "message"], properties: { name: { type: "string" }, email: { type: "string", format: "email" }, phone: { type: "string" }, category: { type: "string" }, subject: { type: "string" }, message: { type: "string" } } }), responses: { 201: { description: "Feedback received" }, 400: { description: "Invalid submission" } } }
       }
     },
     components: {

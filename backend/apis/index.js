@@ -9,9 +9,11 @@ const { handleOccasionApi } = require("./occasion-api");
 const { handlePlansApi } = require("./plans-api");
 const { handleProfileApi } = require("./profile-api");
 const { handlePublicApi } = require("./public-api");
+const { handleSupportApi } = require("./support-api");
 
 const apiHandlers = [
   handleAuthApi,
+  handleSupportApi,
   handleProfileApi,
   handleAdminApi,
   handlePlansApi,

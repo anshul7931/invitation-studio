@@ -11,6 +11,7 @@ const { handleApi } = require("./apis");
 const { requireAdmin } = require("./middleware/auth-guards");
 const { appRoot, sendJson, serveFile, serveHtmlTemplate } = require("./utils/http");
 const { recordIssue } = require("./utils/monitoring");
+const { currentUser } = require("./auth");
 const { swaggerPage } = require("./utils/swagger-page");
 
 const pageRoutes = new Set(config.routing.pageRoutes);
@@ -62,11 +63,14 @@ async function start() {
       }
       sendJson(response, 404, { error: "Not found" });
     } catch (error) {
+      let user = null;
+      try { user = await currentUser(request); } catch { /* Keep the original server error as the priority. */ }
       recordIssue({
         level: "ERROR",
         message: error.message,
         path: request.url,
-        stack: error.stack
+        stack: error.stack,
+        user
       });
       console.error(error);
       sendJson(response, 500, { error: "Unexpected server error" });

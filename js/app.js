@@ -80,6 +80,7 @@ let pendingCreditPurchases = [];
 let selectedPublicLinkDuration = "free";
 let activeAccountSection = "profile";
 let staticReturnState = null;
+let guestAuthAction = null;
 let staticHistoryMarkerActive = false;
 let occasionCountdownTimer = null;
 
@@ -1497,6 +1498,34 @@ function setAuthMode(mode) {
   document.querySelectorAll("[data-auth-message]").forEach((message) => message.textContent = "");
 }
 
+function openGuestAuthOverlay(action) {
+  guestAuthAction = action;
+  const shell = elements.authShell;
+  shell.hidden = false;
+  shell.classList.add("guest-auth-overlay");
+  shell.setAttribute("role", "dialog");
+  shell.setAttribute("aria-modal", "true");
+  document.body.classList.add("modal-open");
+  document.getElementById("guestAuthCloseButton").hidden = false;
+  document.getElementById("guestAuthNotice").textContent =
+    "Sign in or create an account to continue. Your invitation details will be saved with your account.";
+  document.getElementById("guestAuthNotice").hidden = false;
+  document.getElementById("guestLoginButton").hidden = true;
+  setAuthMode("login");
+}
+
+function closeGuestAuthOverlay() {
+  guestAuthAction = null;
+  elements.authShell.hidden = true;
+  elements.authShell.classList.remove("guest-auth-overlay");
+  elements.authShell.removeAttribute("role");
+  elements.authShell.removeAttribute("aria-modal");
+  document.body.classList.remove("modal-open");
+  document.getElementById("guestAuthCloseButton").hidden = true;
+  document.getElementById("guestAuthNotice").hidden = true;
+  document.getElementById("guestLoginButton").hidden = false;
+}
+
 async function submitAuth(form, endpoint) {
   const message = form.querySelector("[data-auth-message]");
   message.textContent = "";
@@ -1510,8 +1539,17 @@ async function submitAuth(form, endpoint) {
 }
 
 async function enterApplication() {
+  const resumeGuestAction = guestAuthAction;
+  guestAuthAction = null;
   applyUserPreferences();
   elements.authShell.hidden = true;
+  elements.authShell.classList.remove("guest-auth-overlay");
+  elements.authShell.removeAttribute("role");
+  elements.authShell.removeAttribute("aria-modal");
+  document.body.classList.remove("modal-open");
+  document.getElementById("guestAuthCloseButton").hidden = true;
+  document.getElementById("guestAuthNotice").hidden = true;
+  document.getElementById("guestLoginButton").hidden = false;
   elements.appHeader.hidden = false;
   document.getElementById("userName").textContent = `Hello, ${signedInUser.name}`;
   elements.adminButton.hidden = signedInUser.role !== "ADMIN";
@@ -1526,6 +1564,21 @@ async function enterApplication() {
   document.getElementById("profilePhone").value = signedInUser.phone || "";
   setProfilePreferenceFields();
   updateProfileVerifyNotice();
+  if (resumeGuestAction) {
+    try {
+      const invitation = await saveCurrentCard();
+      elements.saveStatus.textContent = "Your guest invitation has been saved to your account.";
+      if (resumeGuestAction === "share") await openPublicLinkModal();
+      else {
+        currentShareStates = invitation.shareStates || currentShareStates;
+        applyCurrentTemplateShareState();
+      }
+      await loadPlanSummary();
+    } catch (error) {
+      elements.saveStatus.textContent = error.message;
+    }
+    return;
+  }
   await loadRoute();
 }
 
@@ -1728,7 +1781,7 @@ document.addEventListener("change", (event) => {
 
 elements.saveButton.addEventListener("click", async () => {
   if (isGuestUser()) {
-    elements.saveStatus.textContent = "Please sign in to save this card.";
+    openGuestAuthOverlay("save");
     return;
   }
   elements.saveButton.disabled = true;
@@ -1785,7 +1838,7 @@ elements.shareButton.addEventListener("click", () => {
     return;
   }
   if (isGuestUser()) {
-    elements.saveStatus.textContent = "Please sign in to create a public link.";
+    openGuestAuthOverlay("share");
     return;
   }
   if (!currentInvitationId) {
@@ -1978,6 +2031,8 @@ document.getElementById("loginForm").addEventListener("submit", (event) => {
   event.preventDefault();
   submitAuth(event.currentTarget, "/api/auth/login");
 });
+
+document.getElementById("guestAuthCloseButton").addEventListener("click", closeGuestAuthOverlay);
 
 document.getElementById("guestLoginButton").addEventListener("click", async () => {
   signedInUser = { name: "Guest", role: "GUEST", emailVerified: true, guest: true };

@@ -769,6 +769,10 @@
       text-align: center;
     }
 
+    .save-status:empty {
+      display: none;
+    }
+
     .share-info {
       width: min(100%, 780px);
       margin: 0 auto;
@@ -3752,6 +3756,92 @@
       font: inherit;
       font-weight: 700;
       text-decoration: underline;
+    }
+
+    body[data-mode="dark"] .modal-content .duration-options {
+      gap: 7px;
+      padding: 16px;
+      color: var(--ui-text);
+      background: #171922;
+      border-color: rgba(212, 173, 104, 0.55);
+    }
+
+    body[data-mode="dark"] .modal-content .duration-options legend {
+      color: var(--ui-dark-accent);
+    }
+
+    body[data-mode="dark"] .modal-content .duration-options label {
+      min-height: 42px;
+      padding: 8px 10px;
+      color: #f4eef1;
+      background: #20222d;
+      border: 1px solid #393b48;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    body[data-mode="dark"] .modal-content .duration-options label:hover {
+      background: #292b37;
+      border-color: var(--ui-dark-accent);
+    }
+
+    body[data-mode="dark"] .modal-content .duration-options label:has(input:checked) {
+      background: color-mix(in srgb, var(--ui-dark-accent) 13%, #20222d);
+      border-color: var(--ui-dark-accent);
+    }
+
+    body[data-mode="dark"] .modal-content .duration-options input[type="radio"] {
+      flex: 0 0 auto;
+      width: 18px;
+      height: 18px;
+      margin: 0 3px 0 0;
+      accent-color: var(--ui-dark-accent);
+    }
+
+    body[data-mode="dark"] .modal-content .duration-options label small {
+      color: #c5bdc4;
+    }
+
+    body[data-mode="dark"] .modal-content .credit-option-text {
+      color: #d9f1e3;
+      background: #20372f;
+      border-color: #3e6c59;
+    }
+
+    body[data-mode="dark"] .profile-dialog .profile-ledger {
+      color: #eee7dc;
+      background: linear-gradient(145deg, #20232d, #191b24);
+      border-color: rgba(212, 173, 104, 0.38);
+      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.16);
+    }
+
+    body[data-mode="dark"] .profile-dialog .profile-ledger h3 {
+      color: #f0bd82;
+    }
+
+    body[data-mode="dark"] .profile-dialog .mini-ledger,
+    body[data-mode="dark"] .profile-dialog .mini-ledger p,
+    body[data-mode="dark"] .profile-dialog .transaction-table td {
+      color: #e4dce0;
+    }
+
+    body[data-mode="dark"] .profile-dialog .transaction-table-wrapper {
+      background: #171922;
+      border-color: #3d3b46;
+    }
+
+    body[data-mode="dark"] .profile-dialog .transaction-table {
+      color: #e4dce0;
+    }
+
+    body[data-mode="dark"] .profile-dialog .transaction-table th {
+      color: #f4c895;
+      background: #292632;
+    }
+
+    body[data-mode="dark"] .profile-dialog .transaction-table th,
+    body[data-mode="dark"] .profile-dialog .transaction-table td {
+      border-bottom-color: #393641;
     }
 
     .site-footer {

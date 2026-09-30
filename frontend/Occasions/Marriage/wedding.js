@@ -128,6 +128,10 @@ function setOptionalEvent(form, prefix, title, helpers) {
   });
   document.getElementById(`${prefix}Venue`).textContent =
     venue || `${title} venue to be announced`;
+  const directions = document.getElementById(`${prefix}Directions`);
+  const mapUrl = value(`${prefix}VenueLink`);
+  directions.href = /^https?:\/\//i.test(mapUrl) ? mapUrl : "";
+  directions.hidden = !directions.href;
 }
 
 export function renderWedding(form, helpers) {

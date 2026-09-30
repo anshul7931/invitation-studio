@@ -2003,7 +2003,7 @@ document.getElementById("adminButton").addEventListener("click", async () => {
   await loadRoute();
 });
 
-document.getElementById("openMonitoringButton").addEventListener("click", async () => {
+document.getElementById("openMonitoringButton")?.addEventListener("click", async () => {
   history.pushState({}, "", "/monitoring");
   await loadRoute();
 });
@@ -2099,7 +2099,7 @@ document.getElementById("contactForm")?.addEventListener("submit", async (event)
   } finally { submit.disabled = false; }
 });
 
-document.getElementById("monitoringBackButton").addEventListener("click", async () => {
+document.getElementById("monitoringBackButton")?.addEventListener("click", async () => {
   history.pushState({}, "", "/admin");
   await loadRoute();
 });

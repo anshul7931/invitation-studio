@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 300" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">Heritage sacred kalash</title><desc id="desc">An ornate brass kalash with a carved rim, engraved floral medallion, mango leaves, and coconut.</desc>
+  <defs>
+    <linearGradient id="brass" x1="45" y1="67" x2="212" y2="246" gradientUnits="userSpaceOnUse"><stop stop-color="#f5e1a1"/><stop offset=".35" stop-color="#c3974c"/><stop offset=".62" stop-color="#f3dda0"/><stop offset="1" stop-color="#956a2d"/></linearGradient>
+    <linearGradient id="leaf" x1="75" y1="29" x2="190" y2="115" gradientUnits="userSpaceOnUse"><stop stop-color="#879477"/><stop offset="1" stop-color="#405f50"/></linearGradient>
+    <linearGradient id="pot" x1="67" y1="132" x2="194" y2="252" gradientUnits="userSpaceOnUse"><stop stop-color="#f0d791"/><stop offset=".5" stop-color="#b88438"/><stop offset=".72" stop-color="#dfbd6c"/><stop offset="1" stop-color="#8b612b"/></linearGradient>
+  </defs>
+  <!-- mango leaves and coconut -->
+  <path d="M127 92Q77 82 68 35q43 6 61 57Zm5-1q-25-48-2-79 30 31 9 78Zm7 1q8-53 50-66 4 44-43 70Zm-19 5Q77 68 42 86q26 37 79 19Zm27 1q48-28 81-8-29 34-79 20Z" fill="url(#leaf)" stroke="#435d4d" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M76 43q27 25 48 49m9-69 1 66m47-52-40 54M50 87l73 8m84-8-66 11" stroke="#c9b77d" stroke-width="1.8" stroke-linecap="round" opacity=".85"/>
+  <path d="M104 88q26-18 52 0v25q-26 17-52 0Z" fill="#784250" stroke="url(#brass)" stroke-width="3"/><path d="M111 92q19-12 38 0m-38 17q19 12 38 0" stroke="#ebd18c" stroke-width="2"/><circle cx="130" cy="100" r="4" fill="#f1daa0"/>
+  <!-- fluted, beaded neck and decorated rim -->
+  <path d="M101 112q29 12 58 0l-3 29q-26 12-52 0Z" fill="url(#pot)" stroke="#8f652c" stroke-width="3"/>
+  <path d="M101 121q29 12 58 0m-56 8q27 11 54 0m-51 8q24 9 48 0" stroke="#f8e5ac" stroke-width="2"/>
+  <path d="M91 139q39 16 78 0l7 13q-46 20-92 0Z" fill="#8b3047" stroke="url(#brass)" stroke-width="3"/>
+  <path d="M97 145q33 13 66 0m-58 8 5-8m9 11 3-12m10 14v-13m10 11-3-12m13 9-5-9" stroke="#efd895" stroke-width="2" stroke-linecap="round"/>
+  <!-- rounded kalash body -->
+  <path d="M94 158Q79 173 72 195q-8 31 20 50 16 12 38 15 22-3 38-15 28-19 20-50-7-22-22-37-36 15-72 0Z" fill="url(#pot)" stroke="#8b612b" stroke-width="4"/>
+  <path d="M84 178q46 19 92 0m-99 15q53 22 106 0m-103 17q50 21 100 0m-86 20q36 15 72 0" stroke="#f6e3a8" stroke-width="2.2" opacity=".94"/>
+  <path d="M130 172q-10 15-25 19 12 3 17 14-8 12 8 23 16-11 8-23 5-11 17-14-15-4-25-19Z" fill="#8b3047" stroke="url(#brass)" stroke-width="2.5" stroke-linejoin="round"/>
+  <circle cx="130" cy="202" r="10" fill="#f3dfa2" stroke="#956b30" stroke-width="2"/><circle cx="130" cy="202" r="4" fill="#8b3047"/>
+  <path d="M96 187q10 6 20 0m28 0q10 6 20 0m-65 31q10-6 20 0m30 0q10-6 20 0" stroke="#8b3047" stroke-width="2" stroke-linecap="round"/>
+  <path d="M86 237q44 17 88 0m-61 24h34m-46 9h58" stroke="url(#brass)" stroke-width="3" stroke-linecap="round"/>
+  <path d="M58 278h144" stroke="#9b7437" stroke-width="2" stroke-linecap="round"/><circle cx="130" cy="278" r="4" fill="#8b3047" stroke="url(#brass)" stroke-width="2"/>
+</svg>

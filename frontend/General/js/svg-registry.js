@@ -11,7 +11,8 @@ const authoredMotifs = {
   ganeshaLinework: { label: "Regal seated Ganesha", markup: '<img class="motif-img" src="/frontend/General/svgs/regal-seated-ganesha.svg" alt="">' },
   bouquetHeritage: { label: "Heritage rose bouquet", markup: '<img class="motif-img" src="/frontend/General/svgs/heritage-rose-bouquet.svg" alt="">' },
   bouquetBlush: { label: "Blush peony bouquet", markup: '<img class="motif-img" src="/frontend/General/svgs/blush-peony-bouquet.svg" alt="">' },
-  bouquetIndigo: { label: "Indigo orchid bouquet", markup: '<img class="motif-img" src="/frontend/General/svgs/indigo-orchid-bouquet.svg" alt="">' }
+  bouquetIndigo: { label: "Indigo orchid bouquet", markup: '<img class="motif-img" src="/frontend/General/svgs/indigo-orchid-bouquet.svg" alt="">' },
+  kalashHeritage: { label: "Sacred Kalash · Heritage Brass", markup: '<img class="motif-img" src="/frontend/General/svgs/heritage-kalash.svg" alt="">' }
 };
 
 export const svgCatalog = {
@@ -46,6 +47,7 @@ Object.assign(svgCatalog, authoredMotifs);
 svgCatalog.cakeRef = { label: "Blush and gold cake", markup: '<img class="motif-img" src="/frontend/General/svgs/cake-svgrepo-com.svg" alt="">' };
 svgCatalog.cakeGold = { label: "Golden celebration cake", markup: svgCatalog.cake.markup };
 svgCatalog.bouquet = svgCatalog.bouquetHeritage;
+svgCatalog.kalash = svgCatalog.kalashHeritage;
 
 export const occasionSvgMap = {
   wedding: { default: "ringsHeritage", options: ["ringsHeritage", "peacockRings", "rings", "coupleRoyal", "coupleEmerald", "lotusHeritage", "roseLotus", "lotus", "bouquet", "bouquetBlush", "bouquetIndigo", "diya", "kalash", "envelope"] },

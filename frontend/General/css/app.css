@@ -3844,6 +3844,21 @@
       border-bottom-color: #393641;
     }
 
+    body[data-mode="dark"] .admin-dashboard .admin-stat {
+      color: #eee7dc;
+      background: linear-gradient(145deg, #252733, #1c1e27);
+      border-color: rgba(212, 173, 104, 0.38);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+    }
+
+    body[data-mode="dark"] .admin-dashboard .admin-stat span {
+      color: #c8c1c8;
+    }
+
+    body[data-mode="dark"] .admin-dashboard .admin-stat strong {
+      color: #f0bd82;
+    }
+
     .site-footer {
         display: block;
         width: 100%;

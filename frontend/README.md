@@ -58,7 +58,7 @@ Edit:
 
 ### Motif SVGs
 
-`frontend/General/js/svg-registry.js` is the single mapping for SVG markup, human-readable labels, occasion choices/defaults, and Wedding Ganesha/couple artwork. Add a motif there and list its key in `occasionSvgMap`; the create-card preview and generated-card art both use that registry.
+`frontend/General/js/svg-registry.js` is the single mapping for motif choices and defaults. Invitation artwork uses lowercase category-number filenames in `frontend/General/svgs/`: `cake1–2`, `couple1–3`, `ganesha1–3`, `bouquet1–3`, `rings1–3`, plus `cradle1`, `house1`, `kalash1`, `lotus1–2`, and `wreath1` (all with `.svg`). `brand-glyph.svg` and `favicon.svg` are intentionally separate and keep their names. The paths are centralized in `svgAssetMap`. To add artwork, use the next number for its category, add its path/key there, then add the key to the relevant catalog and occasion options. The card creator shows image-only choices (names are retained as accessible labels, not displayed beneath images).
 
 ### Wedding / Marriage card only
 

@@ -2268,18 +2268,14 @@
 
     .svg-preview-option {
       display: grid;
-      gap: 7px;
       place-items: center;
-      min-height: 112px;
+      min-height: 84px;
       padding: 10px;
       color: var(--ink);
       background: rgba(255, 250, 240, 0.8);
       border: 1px solid rgba(199, 154, 67, 0.45);
       border-radius: 14px;
       cursor: pointer;
-      font: 600 0.68rem var(--label-font);
-      letter-spacing: 0.05em;
-      text-align: center;
       min-width: 0;
       overflow-wrap: anywhere;
     }

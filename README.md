@@ -137,11 +137,11 @@ The current app-level email limits default to 10 sends per second and 100 sends 
 
 ## SVG asset note
 
-The provided reference SVGs remain in `frontend/General/svgs/` and are palette-restyled for the invitation UI (maroon/champagne for cake and rings, rose/gold for the couple, gold/maroon for Ganesha). Their source comments and embedded provenance are retained. These visual changes do not change their licenses; the About page records source notes and the known terms/uncertainties. The project-authored SVG motifs and couple illustrations are original artwork.
+Invitation artwork uses lowercase category-number filenames in `frontend/General/svgs/` (for example `cake1.svg`, `bouquet2.svg`, `kalash1.svg`, `rings3.svg`). `brand-glyph.svg` and `favicon.svg` are separate and unchanged. All artwork file paths are centralized in `frontend/General/js/svg-registry.js`. Changing an SVG's appearance does not change its licence. See the About page for current source notes; do not label an asset CC0 unless its individual Openclipart listing and provenance have been verified.
 
-Card creation exposes SVG customization by occasion. Wedding offers inline and reference Ganesha/couple illustrations; birthday offers a palette-restyled cake; engagement and other occasions offer ring/couple motifs. The detailed `royal-wedding-couple.svg` and `ivory-emerald-couple.svg` illustrations and `heritage-lotus.svg` / `heritage-wedding-rings.svg` motifs were authored for this project. See About for the reference SVG licensing notes.
+Card creation exposes image-only artwork selection by occasion. Add a file using the lowercase category-number pattern in `frontend/General/svgs/`, map its path in `svgAssetMap` in `frontend/General/js/svg-registry.js`, then add the corresponding choice to `occasionSvgMap` or `weddingIllustrations`. See `frontend/README.md` for the full category list and About for source/licensing notes.
 
-All motif markup, labels, per-occasion choices, and defaults are mapped in `frontend/General/js/svg-registry.js`. Original premium-style artwork includes heritage lotus/rings/cake/wreath/cradle/house and brass Kalash motifs, three bouquets (Heritage Rose, Blush Peony, Indigo Orchid), Rose Garden Lotus, Peacock Jewel Rings, and Regal Seated Ganesha. Wedding previews default to the established Royal Maroon Couple illustration. Add an original SVG there, then include its key in the relevant occasion or wedding-illustration options. Venue map links are optional and appear only when the creator enters a directions URL.
+Motif markup, per-occasion choices, and defaults are mapped in `frontend/General/js/svg-registry.js`. Wedding previews default to the established couple illustration. Venue map links are optional and appear only when the creator enters a directions URL.
 
 ## Postman authentication
 

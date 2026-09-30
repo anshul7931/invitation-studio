@@ -1,17 +1,19 @@
 import { applyPhotoImageFallbacks, parsePhotoLinks } from "../../General/js/photo-links.js";
+import { svgAssetMap } from "../../General/js/svg-registry.js";
 
 const firstName = (name) => name.trim().split(/\s+/)[0] || "";
 const initial = (name) => firstName(name).charAt(0).toUpperCase();
 
 const ganeshaSources = {
-  ganesh: "/frontend/General/svgs/ganesh.svg",
-  "ganesha-linework": "/frontend/General/svgs/regal-seated-ganesha.svg"
+  ganesh: svgAssetMap.ganesha1,
+  "ganesha-linework": svgAssetMap.ganesha2,
+  "ganesha-3": svgAssetMap.ganesha3
 };
 
 const coupleSources = {
-  "couple-ref": "/frontend/General/svgs/wedding-couple-svgrepo-com.svg",
-  "couple-royal": "/frontend/General/svgs/royal-wedding-couple.svg",
-  "couple-emerald": "/frontend/General/svgs/ivory-emerald-couple.svg",
+  "couple-ref": svgAssetMap.couple3,
+  "couple-royal": svgAssetMap.couple1,
+  "couple-emerald": svgAssetMap.couple2,
 };
 
 let weddingCountdownTimer = null;

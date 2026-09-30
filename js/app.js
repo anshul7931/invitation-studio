@@ -112,7 +112,8 @@ function initPreviewSelect(selectId, previews) {
     button.type = "button";
     button.className = "svg-preview-option";
     button.dataset.value = option.value;
-    button.innerHTML = `<span class="svg-preview-art">${previews[option.value] || svgMarkup(option.value)}</span><span>${option.textContent}</span>`;
+    button.setAttribute("aria-label", option.textContent.trim());
+    button.innerHTML = `<span class="svg-preview-art">${previews[option.value] || svgMarkup(option.value)}</span>`;
     button.addEventListener("click", () => {
       select.value = option.value;
       select.dispatchEvent(new Event("change", { bubbles: true }));

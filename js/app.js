@@ -2,6 +2,7 @@ import { getOccasion } from "./occasions/registry.js";
 import { renderWedding } from "./occasions/wedding.js";
 import { renderOccasionForm } from "./ui/form-renderer.js";
 import { applyPhotoImageFallbacks, initPhotoLinkEditor, parsePhotoLinks, setPhotoLinkEditorValue } from "../frontend/General/js/photo-links.js";
+import { applyInvitationSvgTheme } from "../frontend/General/js/svg-theme.js";
 import { occasionSvgMap, occasionSvgOptions, svgMarkup, weddingIllustrations } from "../frontend/General/js/svg-registry.js";
 
 /**
@@ -719,6 +720,7 @@ function renderGenericCard(occasion, values = formValues(elements.occasionForm))
   elements.occasionInvitation.dataset.palette = values.palette || occasion.defaultTheme;
   document.getElementById("occasionMark").innerHTML =
     svgMarkup(values.cardIcon || occasion.defaultIcon || "envelope");
+  applyInvitationSvgTheme(elements.occasionInvitation);
   document.getElementById("occasionCardKicker").textContent = occasion.kicker;
   document.getElementById("occasionCardTitle").textContent = cardData.title;
   document.getElementById("occasionCardSubtitle").textContent = cardData.subtitle;
@@ -821,6 +823,7 @@ async function refreshShareStates() {
 function renderWeddingMotif() {
   const key = elements.weddingForm.elements.cardIcon?.value || "rings";
   document.getElementById("weddingMotif").innerHTML = svgMarkup(key);
+  applyInvitationSvgTheme(elements.weddingInvitation);
 }
 
 function fillForm(form, values) {

@@ -60,6 +60,8 @@ Edit:
 
 `frontend/General/js/svg-registry.js` is the single mapping for motif choices and defaults. Invitation artwork uses lowercase category-number filenames in `frontend/General/svgs/`: `cake1–2`, `couple1–3`, `ganesha1–3`, `bouquet1–3`, `rings1–3`, plus `cradle1`, `house1`, `kalash1`, `lotus1–2`, and `wreath1` (all with `.svg`). `brand-glyph.svg` and `favicon.svg` are intentionally separate and keep their names. The paths are centralized in `svgAssetMap`. To add artwork, use the next number for its category, add its path/key there, then add the key to the relevant catalog and occasion options. The card creator shows image-only choices (names are retained as accessible labels, not displayed beneath images).
 
+`frontend/General/js/svg-theme.js` contains the `THEME_ADAPTED_ASSETS` allow-list. Only listed SVG filenames inherit invitation colours; all other artwork (including bouquets) keeps its original palette. Add/remove filenames there to control the effect. `brand-glyph.svg` and `favicon.svg` are separate and never included.
+
 ### Wedding / Marriage card only
 
 Edit:

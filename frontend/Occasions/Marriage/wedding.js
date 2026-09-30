@@ -1,5 +1,6 @@
 import { applyPhotoImageFallbacks, parsePhotoLinks } from "../../General/js/photo-links.js";
 import { svgAssetMap } from "../../General/js/svg-registry.js";
+import { applyInvitationSvgTheme } from "../../General/js/svg-theme.js";
 
 const firstName = (name) => name.trim().split(/\s+/)[0] || "";
 const initial = (name) => firstName(name).charAt(0).toUpperCase();
@@ -215,5 +216,6 @@ export function renderWedding(form, helpers) {
 
   setOptionalEvent(form, "haldi", "Haldi", helpers);
   setOptionalEvent(form, "engagement", "Engagement", helpers);
+  applyInvitationSvgTheme(document.getElementById("invitation"));
   document.title = `${firstName(bride)} & ${firstName(groom)} | Wedding Invitation`;
 }

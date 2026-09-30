@@ -38,21 +38,32 @@ async function handleAuthApi(request, response, pathname) {
       });
       return true;
     }
-    if (!isValidPhone(phone)) {
+    if (!phone || !isValidPhone(phone)) {
       sendJson(response, 400, { error: "Enter exactly 10 digits for phone number." });
       return true;
     }
-    const [existing] = await database().execute("SELECT id FROM users WHERE email = ?", [email]);
+    const [existing] = await database().execute("SELECT id, email FROM users WHERE email = ? OR phone = ? LIMIT 1", [email, phone]);
     if (existing.length) {
-      sendJson(response, 409, { error: "An account with this email already exists." });
+      sendJson(response, 409, { error: existing[0].email === email
+        ? "An account with this email already exists."
+        : "An account with this phone number already exists." });
       return true;
     }
-    const role = config.app.adminEmails.includes(email) ? "ADMIN" : "USER";
+    // Never grant admin privileges from an unverified registration request.
+    const role = "USER";
     const user = { id: crypto.randomUUID(), name, email, phone, role };
-    await database().execute(
-      "INSERT INTO users (id, name, email, phone, role, password_hash) VALUES (?, ?, ?, ?, ?, ?)",
-      [user.id, name, email, phone || null, role, await hashPassword(password)]
-    );
+    try {
+      await database().execute(
+        "INSERT INTO users (id, name, email, phone, role, password_hash) VALUES (?, ?, ?, ?, ?, ?)",
+        [user.id, name, email, phone, role, await hashPassword(password)]
+      );
+    } catch (error) {
+      if (error.code === "ER_DUP_ENTRY") {
+        sendJson(response, 409, { error: "An account with this email or phone number already exists." });
+        return true;
+      }
+      throw error;
+    }
     try {
       await sendVerificationEmail(user);
     } catch (error) {
@@ -95,7 +106,9 @@ async function handleAuthApi(request, response, pathname) {
       sendJson(response, 400, { error: "Verification link is invalid or expired." });
       return true;
     }
-    await database().execute("UPDATE users SET email_verified_at = NOW() WHERE id = ? AND email = ?", [
+    const verifiedRole = config.app.adminEmails.includes(String(record.current_email).toLowerCase()) ? "ADMIN" : record.role;
+    await database().execute("UPDATE users SET email_verified_at = NOW(), role = ? WHERE id = ? AND email = ?", [
+      verifiedRole,
       record.user_id,
       record.email
     ]);
@@ -107,7 +120,7 @@ async function handleAuthApi(request, response, pathname) {
         name: record.name,
         email: record.current_email,
         phone: record.phone,
-        role: record.role,
+        role: verifiedRole,
         email_verified_at: new Date()
       })
     });

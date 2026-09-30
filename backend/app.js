@@ -41,9 +41,16 @@ async function start() {
         response.end(swaggerPage());
         return;
       }
+      if (request.method === "GET" && pathname === "/frontend/Dashboard/AdminDashboard/admin-dashboard.html") {
+        const admin = await requireAdmin(request, response);
+        if (!admin) return;
+        serveFile(response, path.join(appRoot, pathname));
+        return;
+      }
       if (pathname.startsWith("/api/") && await handleApi(request, response, pathname)) return;
       if (request.method === "GET" && pageRoutes.has(pathname)) {
-        serveHtmlTemplate(response, path.join(appRoot, "index.html"));
+        const user = await currentUser(request);
+        serveHtmlTemplate(response, path.join(appRoot, "index.html"), { includeAdmin: user?.role === "ADMIN" });
         return;
       }
       if (request.method === "GET" && pathname.startsWith(config.routing.shareRoutePrefix)) {

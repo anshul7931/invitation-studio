@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title desc">
+  <title id="title">Heritage lotus</title>
+  <desc id="desc">Original symmetrical lotus ornament in gold and maroon.</desc>
+  <g fill="none" stroke="#a77a37" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M80 119C53 99 48 74 80 37c32 37 27 62 0 82Z" fill="#f6e7c4"/>
+    <path d="M78 117C48 111 31 93 26 67c27 2 45 18 52 47ZM82 117c30-6 47-24 52-50-27 2-45 18-52 47Z" fill="#f8f0df"/>
+    <path d="M76 120c-25 4-44-3-59-21 23-8 44-2 59 21ZM84 120c25 4 44-3 59-21-23-8-44-2-59 21Z" fill="#f8f0df"/>
+    <path d="M49 130q31 13 62 0M57 139q23 8 46 0"/>
+    <path d="M80 54v53M39 77q21 8 33 32M121 77q-21 8-33 32" stroke="#8a263d" stroke-width="2"/>
+    <circle cx="80" cy="119" r="4" fill="#8a263d" stroke="none"/>
+  </g>
+</svg>

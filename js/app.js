@@ -740,6 +740,10 @@ function renderGenericCard(occasion, values = formValues(elements.occasionForm))
     item.append(caption, content);
     details.append(item);
   });
+  const venueLink = String(values.venueLink || "").trim();
+  const directions = document.getElementById("occasionDirections");
+  directions.href = venueLink;
+  directions.hidden = !/^https?:\/\//i.test(venueLink);
   document.title = cardData.documentTitle;
 }
 
@@ -865,6 +869,7 @@ async function openOccasion(occasionId, updateUrl = true, createDraft = true) {
   document.getElementById("occasionFormKicker").textContent =
     `Create your ${occasion.name.toLowerCase()} card`;
   renderOccasionForm(occasion, elements.occasionFields);
+  initPhotoLinkEditor(elements.occasionForm);
   enhanceOptionalClearButtons(elements.occasionForm);
   initGenericMotifPreview();
   if (createDraft) await createDraftForCurrentOccasion();
@@ -1613,6 +1618,11 @@ async function submitAuth(form, endpoint) {
   try {
     const { user } = await api(endpoint, { method: "POST", body: JSON.stringify(formValues(form)) });
     signedInUser = user;
+    // Admin markup is returned only to an authenticated admin page request.
+    if (user.role === "ADMIN") {
+      location.replace("/admin");
+      return;
+    }
     await enterApplication();
   } catch (error) {
     message.textContent = error.message;
@@ -2226,15 +2236,16 @@ document.getElementById("forgotPasswordForm").addEventListener("submit", async (
 
 document.getElementById("resetPasswordForm").addEventListener("submit", async (event) => {
   event.preventDefault();
-  const message = event.currentTarget.querySelector("[data-auth-message]");
+  const form = event.currentTarget;
+  const message = form.querySelector("[data-auth-message]");
   message.textContent = "Resetting password…";
   try {
     const result = await api("/api/auth/reset-password", {
       method: "POST",
-      body: JSON.stringify(formValues(event.currentTarget))
+      body: JSON.stringify(formValues(form))
     });
     message.textContent = result.message;
-    event.currentTarget.reset();
+    form.reset();
     window.setTimeout(() => setAuthMode("login"), 900);
   } catch (error) {
     message.textContent = error.message;
@@ -2271,8 +2282,7 @@ document.getElementById("cancelSignoutBtn").addEventListener("click", closeSigno
 
 document.getElementById("confirmSignoutBtn").addEventListener("click", async () => {
   if (!isGuestUser()) await api("/api/auth/logout", { method: "POST" });
-  closeSignoutModal();
-  cleanLogoutUi();
+  location.replace("/login");
 });
 
 document.getElementById("cancelDeleteBtn").addEventListener("click", () => {

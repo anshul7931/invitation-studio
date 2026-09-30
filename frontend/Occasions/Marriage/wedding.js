@@ -4,14 +4,14 @@ const firstName = (name) => name.trim().split(/\s+/)[0] || "";
 const initial = (name) => firstName(name).charAt(0).toUpperCase();
 
 const ganeshaSources = {
-  "ganesha-icon": "/frontend/General/svgs/ganesha-icon-111519-512.svg",
-  ganesh: "/frontend/General/svgs/ganesh.svg"
+  ganesh: "/frontend/General/svgs/ganesh.svg",
+  "ganesha-linework": "/frontend/General/svgs/regal-seated-ganesha.svg"
 };
 
 const coupleSources = {
   "couple-ref": "/frontend/General/svgs/wedding-couple-svgrepo-com.svg",
   "couple-royal": "/frontend/General/svgs/royal-wedding-couple.svg",
-  "couple-emerald": "/frontend/General/svgs/ivory-emerald-couple.svg"
+  "couple-emerald": "/frontend/General/svgs/ivory-emerald-couple.svg",
 };
 
 let weddingCountdownTimer = null;
@@ -144,17 +144,21 @@ export function renderWedding(form, helpers) {
   const rsvp = [value("rsvpName").toUpperCase(), value("rsvpPhone")].filter(Boolean);
 
   document.getElementById("invitation").dataset.theme = value("theme");
-  const ganeshaChoice = value("ganeshaVariant") || "inline";
   const ganeshaWrap = document.querySelector(".ganesha-wrap");
   const inlineGanesha = document.getElementById("ganeshaInlineSvg");
   const refGanesha = document.getElementById("ganeshaReferenceSvg");
-  const useReferenceGanesha = ganeshaChoice !== "inline";
+  const ganeshaChoice = value("ganeshaVariant") || "inline";
+  const useReferenceGanesha = Boolean(ganeshaSources[ganeshaChoice]);
   ganeshaWrap.dataset.selected = useReferenceGanesha ? "ref" : "inline";
   inlineGanesha.hidden = useReferenceGanesha;
   refGanesha.hidden = !useReferenceGanesha;
-  if (ganeshaSources[ganeshaChoice]) refGanesha.src = ganeshaSources[ganeshaChoice];
+  if (useReferenceGanesha) refGanesha.src = ganeshaSources[ganeshaChoice];
 
-  const coupleChoice = value("coupleVariant") || "inline";
+  const requestedCouple = value("coupleVariant") || "inline";
+  const coupleChoice = requestedCouple === "couple-ref" || requestedCouple === "couple-royal" || requestedCouple === "couple-emerald"
+    ? requestedCouple
+    : "inline";
+  form.elements.coupleVariant.value = coupleChoice;
   const coupleFrame = document.querySelector(".couple-frame");
   const inlineCouple = document.getElementById("coupleInlineSvg");
   const refCouple = document.getElementById("coupleReferenceSvg");
@@ -193,6 +197,10 @@ export function renderWedding(form, helpers) {
   document.getElementById("weddingEventVenue").textContent = venue;
   document.getElementById("venueName").textContent = venue;
   document.getElementById("venueAddress").textContent = value("address");
+  const directions = document.getElementById("weddingDirections");
+  const venueLink = value("venueLink");
+  directions.href = venueLink;
+  directions.hidden = !/^https?:\/\//i.test(venueLink);
   document.getElementById("rsvpDetails").textContent = rsvp.join(" · ");
   document.getElementById("rsvpSection").hidden = rsvp.length === 0;
   renderPhotoGallery({ templateType: value("templateType"), photoLinks: value("photoLinks") });

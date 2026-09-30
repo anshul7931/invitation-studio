@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 280" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">Heritage rose bouquet</title><desc id="desc">A hand-tied bouquet of wine roses, ivory buds, and sage foliage with a fine gold ribbon.</desc>
+  <defs><linearGradient id="rose" x1="77" y1="38" x2="178" y2="172" gradientUnits="userSpaceOnUse"><stop stop-color="#c66b78"/><stop offset="1" stop-color="#78253d"/></linearGradient><linearGradient id="gold" x1="83" y1="165" x2="177" y2="242" gradientUnits="userSpaceOnUse"><stop stop-color="#eed891"/><stop offset="1" stop-color="#a77935"/></linearGradient></defs>
+  <path d="M67 115Q47 88 58 63q25 6 35 34m8 26Q81 93 91 66q25 12 27 42m-1 22q-12-32 7-57 20 19 12 52m4 14q-2-34 25-51 14 26-3 54m2 8q7-31 37-39 6 28-19 47" fill="#82917a" stroke="#62745f" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M64 68q24 4 29 29-23 1-29-29Zm40 38q-5-27 14-48 17 23 3 48Zm23-12q-1-29 22-44 13 26-5 48Zm20 19q7-25 34-33 3 25-19 40Zm-83 17q-18-23-9-48 22 13 22 38" fill="#a7b095" stroke="#68785e" stroke-width="2"/>
+  <path d="M77 91q-12-14-1-28 14-16 31-3 18 12 5 29-13 18-28 9-13-7-4-19 9-11 20-3m15 23q-12-14-1-28 14-16 31-3 18 12 5 29-13 18-28 9-13-7-4-19 9-11 20-3m-66 44q-12-14-1-28 14-16 31-3 18 12 5 29-13 18-28 9-13-7-4-19 9-11 20-3m43 11q-12-14-1-28 14-16 31-3 18 12 5 29-13 18-28 9-13-7-4-19 9-11 20-3" fill="url(#rose)" stroke="#8c3e4d" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M85 76q8-8 16-2m30 2q8-8 16-2M76 130q8-8 16-2m41 2q8-8 16-2" stroke="#f2d8c6" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M69 143 119 224m-22-80 26 82m2-86-1 88m20-90-18 88m42-92-43 94" stroke="#718168" stroke-width="4" stroke-linecap="round"/>
+  <path d="m96 157 31 4 30-6-4 28-24 13-26-12Z" fill="#f4e7d0" stroke="url(#gold)" stroke-width="3"/><path d="m127 162-4 34m4-34 15 29-17 14-18-13 16-30Z" fill="#8c3047" stroke="url(#gold)" stroke-width="3"/>
+  <path d="m123 209-20 41 27-17 23 16-17-40" fill="#f4e7d0" stroke="url(#gold)" stroke-width="3" stroke-linejoin="round"/>
+  <circle cx="57" cy="119" r="6" fill="#f3e3c7" stroke="#b28a49" stroke-width="2"/><circle cx="200" cy="128" r="5" fill="#f3e3c7" stroke="#b28a49" stroke-width="2"/>
+</svg>

@@ -2059,6 +2059,28 @@
       box-shadow: inset 0 0 0 1px rgba(255, 250, 240, 0.62);
     }
 
+    .premium-fields:not([hidden]) {
+      display: grid;
+      gap: clamp(20px, 3vw, 28px);
+    }
+
+    .photo-links-field > label {
+      margin-bottom: 6px;
+      line-height: 1.5;
+    }
+
+    .photo-links-field .optional-label,
+    .premium-fields .field > label .optional-label {
+      flex: 0 0 auto;
+      margin-left: 10px;
+      padding: 4px 9px;
+      border: 1px solid rgba(199, 154, 67, 0.42);
+      border-radius: 999px;
+      background: rgba(199, 154, 67, 0.12);
+      line-height: 1.3;
+      white-space: nowrap;
+    }
+
     .photo-link-editor,
     .photo-link-rows {
       display: grid;
@@ -2871,6 +2893,29 @@
       letter-spacing: 0.1em;
       text-transform: uppercase;
     }
+
+    .venue-directions {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      margin: 18px auto 0;
+      padding: 9px 18px;
+      border: 1px solid var(--occasion-accent, var(--gold));
+      border-radius: 999px;
+      color: var(--occasion-ink, var(--maroon));
+      background: color-mix(in srgb, var(--occasion-accent, var(--gold)) 12%, transparent);
+      font: 600 0.8rem var(--label-font);
+      text-decoration: none;
+      transition: background-color 160ms ease, transform 160ms ease;
+    }
+
+    .venue-directions:hover {
+      background: color-mix(in srgb, var(--occasion-accent, var(--gold)) 24%, transparent);
+      transform: translateY(-1px);
+    }
+
+    .venue-directions[hidden] { display: none; }
 
     .invitation {
       position: relative;

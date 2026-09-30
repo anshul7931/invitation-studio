@@ -11,9 +11,8 @@ const appRoot = path.join(__dirname, "..", "..");
 function sendJson(response, status, value, headers = {}) {
   response.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type",
-    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
     ...headers
   });
   response.end(status === 204 ? undefined : JSON.stringify(value, null, 2));
@@ -53,7 +52,7 @@ function serveFile(response, filePath) {
   });
 }
 
-function renderHtmlWithIncludes(filePath, seen = new Set()) {
+function renderHtmlWithIncludes(filePath, seen = new Set(), options = {}) {
   const normalized = path.normalize(filePath);
   if (!normalized.startsWith(appRoot)) {
     throw new Error("Template include path is outside the application directory.");
@@ -65,16 +64,17 @@ function renderHtmlWithIncludes(filePath, seen = new Set()) {
 
   const template = fs.readFileSync(normalized, "utf8");
   const rendered = template.replace(/<!--\s*@include\s+([^>]+?)\s*-->/g, (_match, includePath) => {
+    if (!options.includeAdmin && includePath.trim() === "frontend/Dashboard/AdminDashboard/admin-dashboard.html") return "";
     const includeFile = path.normalize(path.join(appRoot, includePath.trim()));
-    return renderHtmlWithIncludes(includeFile, seen);
+    return renderHtmlWithIncludes(includeFile, seen, options);
   });
   seen.delete(normalized);
   return rendered;
 }
 
-function serveHtmlTemplate(response, filePath) {
+function serveHtmlTemplate(response, filePath, options = {}) {
   try {
-    const html = renderHtmlWithIncludes(filePath);
+    const html = renderHtmlWithIncludes(filePath, new Set(), options);
     response.writeHead(200, {
       "Content-Type": "text/html; charset=utf-8",
       "Cache-Control": "no-store"

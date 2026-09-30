@@ -10,7 +10,7 @@
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:svg="http://www.w3.org/2000/svg"
     xmlns:ns1="http://sozi.baierouge.fr"
-    data-invitation-studio-tweak="tiny-root-metadata-shift"
+    data-invitation-studio-tweak="royal-maroon-gold-palette-restyle"
     id="svg2"
     sodipodi:docname="ganesh.svg"
     viewBox="0 0 744.09 1052.4"
@@ -20,6 +20,14 @@
   <defs
       id="defs4"
     >
+    <style type="text/css"><![CDATA[
+      [style*="#1e53dd"], [fill="#1e53dd"] { fill: #76283d !important; }
+      [style*="#50f6fd"], [fill="#50f6fd"] { fill: #d8b56d !important; }
+      [style*="#71cd6b"], [fill="#71cd6b"] { fill: #66816b !important; }
+      [style*="#91f845"], [fill="#91f845"] { fill: #a77c3e !important; }
+      [style*="#fcf62a"], [fill="#fcf62a"] { fill: #f1d99c !important; }
+      [style*="#666666"], [fill="#666666"] { fill: #572238 !important; }
+    ]]></style>
     <filter
         id="filter3879"
         height="1.2584"

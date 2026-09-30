@@ -92,6 +92,17 @@ async function initializeDatabase() {
   await ensureColumn("users", "phone", "ALTER TABLE users ADD COLUMN phone VARCHAR(40) NULL AFTER email");
   await ensureColumn("users", "role", "ALTER TABLE users ADD COLUMN role ENUM('USER', 'ADMIN') NOT NULL DEFAULT 'USER' AFTER phone");
   await ensureColumn("users", "email_verified_at", "ALTER TABLE users ADD COLUMN email_verified_at DATETIME NULL AFTER role");
+  const [duplicatePhones] = await pool.query(
+    "SELECT phone FROM users WHERE phone IS NOT NULL GROUP BY phone HAVING COUNT(*) > 1 LIMIT 1"
+  );
+  if (duplicatePhones.length) {
+    throw new Error("Duplicate account phone numbers exist. Resolve them before enabling unique phone registration.");
+  }
+  const [phoneIndex] = await pool.query(
+    "SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND INDEX_NAME = 'uq_users_phone'",
+    [config.db.name]
+  );
+  if (!phoneIndex.length) await pool.query("ALTER TABLE users ADD UNIQUE INDEX uq_users_phone (phone)");
   await ensureColumn("invitations", "public_token", "ALTER TABLE invitations ADD COLUMN public_token CHAR(36) NULL UNIQUE AFTER share_token");
   await ensureColumn("invitations", "public_expires_at", "ALTER TABLE invitations ADD COLUMN public_expires_at DATETIME NULL AFTER public_token");
   await ensureColumn("invitations", "public_generated_at", "ALTER TABLE invitations ADD COLUMN public_generated_at DATETIME NULL AFTER public_expires_at");

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 280" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">Indigo orchid bouquet</title><desc id="desc">A sculptural bouquet of indigo orchids, pale ivory blossoms, and eucalyptus leaves with a champagne silk wrap.</desc>
+  <defs><linearGradient id="orchid" x1="71" y1="36" x2="187" y2="166" gradientUnits="userSpaceOnUse"><stop stop-color="#aa9aca"/><stop offset="1" stop-color="#4e4779"/></linearGradient><linearGradient id="wrap" x1="89" y1="163" x2="171" y2="250" gradientUnits="userSpaceOnUse"><stop stop-color="#fff4dd"/><stop offset="1" stop-color="#c5a66b"/></linearGradient></defs>
+  <path d="M73 131Q42 118 45 83q29 6 42 36m7 16Q75 99 94 68q24 16 23 45m3 22Q109 100 134 76q17 24 5 53m8 13q3-34 34-47 10 28-10 53m6 8q13-29 44-30-2 28-30 41" fill="#72877f" stroke="#4d6d67" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M52 88q22 7 26 32-23-1-26-32Zm47 27q-1-27 21-46 14 24-1 48Zm29-14q4-29 29-39 9 28-11 47Zm22 19q11-23 38-26-1 25-25 36Zm-75 31q-15-24-2-47 20 14 17 39" fill="#a7b5a4" stroke="#60776c" stroke-width="2"/>
+  <path d="M79 82q-5-17 9-27 15-10 28 3 10 13-1 25-11 13-23 5-9-7 0-15 8-7 16-1m21 30q-5-17 9-27 15-10 28 3 10 13-1 25-11 13-23 5-9-7 0-15 8-7 16-1m-74 34q-5-17 9-27 15-10 28 3 10 13-1 25-11 13-23 5-9-7 0-15 8-7 16-1m39 12q-5-17 9-27 15-10 28 3 10 13-1 25-11 13-23 5-9-7 0-15 8-7 16-1" fill="url(#orchid)" stroke="#544c7a" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M91 70q7-7 14-1m30 29q7-7 14-1m-56 49q7-7 14-1m35 25q7-7 14-1" stroke="#eee6f4" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M72 151 119 225m-18-75 24 78m1-83v86m20-89-17 88m42-92-42 96" stroke="#71836e" stroke-width="4" stroke-linecap="round"/>
+  <path d="m96 160 31 4 30-6-4 28-24 13-26-12Z" fill="#f7efdf" stroke="url(#wrap)" stroke-width="3"/><path d="m127 165-4 34m4-34 15 29-17 14-18-13 16-30Z" fill="#55507d" stroke="url(#wrap)" stroke-width="3"/>
+  <path d="m123 211-20 39 27-17 23 16-17-40" fill="#f7efdf" stroke="url(#wrap)" stroke-width="3" stroke-linejoin="round"/>
+  <circle cx="55" cy="124" r="5" fill="#f6efdc" stroke="#c1a66f" stroke-width="2"/><circle cx="204" cy="139" r="5" fill="#f6efdc" stroke="#c1a66f" stroke-width="2"/>
+</svg>

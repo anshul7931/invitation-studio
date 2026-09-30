@@ -20,27 +20,34 @@ async function handleProfileApi(request, response, pathname) {
       sendJson(response, 400, { error: "Name and email are required." });
       return true;
     }
-    if (!isValidPhone(phone)) {
+    if (!phone || !isValidPhone(phone)) {
       sendJson(response, 400, { error: "Enter exactly 10 digits for phone number." });
       return true;
     }
     const [existing] = await database().execute(
-      "SELECT id FROM users WHERE email = ? AND id <> ?",
-      [email, user.id]
+      "SELECT id, email FROM users WHERE (email = ? OR phone = ?) AND id <> ? LIMIT 1",
+      [email, phone, user.id]
     );
     if (existing.length) {
-      sendJson(response, 409, { error: "Another account already uses this email." });
+      sendJson(response, 409, { error: existing[0].email === email
+        ? "Another account already uses this email."
+        : "Another account already uses this phone number." });
       return true;
     }
     const emailChanged = email !== user.email;
-    await database().execute("UPDATE users SET name = ?, email = ?, phone = ?, email_verified_at = ? WHERE id = ?", [
-      name,
-      email,
-      phone || null,
-      emailChanged ? null : user.email_verified_at,
-      user.id
-    ]);
-    const updatedUser = { ...user, name, email, phone, email_verified_at: emailChanged ? null : user.email_verified_at };
+    try {
+      await database().execute("UPDATE users SET name = ?, email = ?, phone = ?, email_verified_at = ?, role = ? WHERE id = ?", [
+        name, email, phone, emailChanged ? null : user.email_verified_at,
+        emailChanged ? "USER" : user.role, user.id
+      ]);
+    } catch (error) {
+      if (error.code === "ER_DUP_ENTRY") {
+        sendJson(response, 409, { error: "Another account already uses this email or phone number." });
+        return true;
+      }
+      throw error;
+    }
+    const updatedUser = { ...user, name, email, phone, role: emailChanged ? "USER" : user.role, email_verified_at: emailChanged ? null : user.email_verified_at };
     if (emailChanged) {
       try {
         await sendVerificationEmail(updatedUser);

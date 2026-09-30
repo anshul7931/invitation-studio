@@ -84,7 +84,7 @@ Local `.env` and `.env.local` files are loaded automatically on startup, so you 
 | `PORT` | `3000` | HTTP server port. |
 | `PUBLIC_APP_URL` | `http://127.0.0.1:3000` | Public base URL used in emailed verification/reset links. |
 | `PUBLIC_SHARE_MINUTES` | `10` | Number of minutes a generated public card link remains valid. |
-| `ADMIN_EMAILS` | `admin@invitation.local` | Comma-separated emails that receive the `ADMIN` role on registration. |
+| `ADMIN_EMAILS` | `admin@invitation.local` | Comma-separated emails promoted to `ADMIN` only after verifying ownership of the address. |
 | `DB_HOST` | `127.0.0.1` | MySQL host. |
 | `DB_PORT` | `3306` | MySQL port. |
 | `DB_USER` | `root` | MySQL user. |
@@ -137,11 +137,11 @@ The current app-level email limits default to 10 sends per second and 100 sends 
 
 ## SVG asset note
 
-SVGs in `frontend/General/svgs/` that were imported from free-use sources now include the non-visual attribute `data-invitation-studio-tweak="tiny-root-metadata-shift"` on the root SVG element. This records the tiny customization pass without changing visible artwork. New app-owned SVGs such as the favicon and card motifs are original inline/vector assets.
+The provided reference SVGs remain in `frontend/General/svgs/` and are palette-restyled for the invitation UI (maroon/champagne for cake and rings, rose/gold for the couple, gold/maroon for Ganesha). Their source comments and embedded provenance are retained. These visual changes do not change their licenses; the About page records source notes and the known terms/uncertainties. The project-authored SVG motifs and couple illustrations are original artwork.
 
-Card creation also exposes SVG customization controls using the reference assets in `frontend/General/svgs/`: wedding cards can switch between the inline Ganesha and the uploaded Ganesha SVGs, choose from couple illustrations, and change the monogram motif; birthday cards can use the uploaded cake SVG; engagement cards can use the couple/rings SVGs or app-owned motifs. Two original, detailed couple illustrations are included: `royal-wedding-couple.svg` (maroon and gold) and `ivory-emerald-couple.svg` (emerald and ivory). They are newly authored vector artwork, not edits or copies of the reference couple asset.
+Card creation exposes SVG customization by occasion. Wedding offers inline and reference Ganesha/couple illustrations; birthday offers a palette-restyled cake; engagement and other occasions offer ring/couple motifs. The detailed `royal-wedding-couple.svg` and `ivory-emerald-couple.svg` illustrations and `heritage-lotus.svg` / `heritage-wedding-rings.svg` motifs were authored for this project. See About for the reference SVG licensing notes.
 
-All motif markup, labels, per-occasion choices, and defaults are mapped in `frontend/General/js/svg-registry.js`. Add an SVG there, then include its key in the relevant occasion's `occasionSvgMap` options. New original inline motifs added: birthday candle, ribboned gift, celebration bouquet, flute glasses, sacred kalash, welcoming cradle, event calendar, and housewarming home.
+All motif markup, labels, per-occasion choices, and defaults are mapped in `frontend/General/js/svg-registry.js`. Original premium-style artwork includes heritage lotus/rings/cake/wreath/cradle/house motifs, three bouquets (Heritage Rose, Blush Peony, Indigo Orchid), Rose Garden Lotus, Peacock Jewel Rings, and Regal Seated Ganesha. Wedding previews default to the established Royal Maroon Couple illustration. Add an original SVG there, then include its key in the relevant occasion or wedding-illustration options. Venue map links are optional and appear only when the creator enters a directions URL.
 
 ## Postman authentication
 

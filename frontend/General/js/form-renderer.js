@@ -75,6 +75,10 @@ export function renderOccasionForm(occasion, container) {
       </div>` : ""}
     </section>
     ${sections}
+    <section class="form-chapter venue-link-chapter">
+      <div class="chapter-heading"><span class="chapter-number">↗</span><div><h2>Venue directions</h2><p>Optional — add a map link for your guests.</p></div></div>
+      <div class="field full"><label for="occasion-venueLink">Map / directions URL <span class="optional-label">Optional</span></label><input id="occasion-venueLink" name="venueLink" type="url" placeholder="https://maps.google.com/…"></div>
+    </section>
     <section class="form-chapter premium-options">
       <label class="premium-switch">
         <input type="checkbox" data-premium-toggle>

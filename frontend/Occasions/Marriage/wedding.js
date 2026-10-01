@@ -1,6 +1,7 @@
 import { applyPhotoImageFallbacks, parsePhotoLinks } from "../../General/js/photo-links.js";
 import { svgAssetMap } from "../../General/js/svg-registry.js";
 import { applyInvitationSvgTheme } from "../../General/js/svg-theme.js";
+import { renderVenueMap } from "../../General/js/map-preview.js";
 
 const firstName = (name) => name.trim().split(/\s+/)[0] || "";
 const initial = (name) => firstName(name).charAt(0).toUpperCase();
@@ -116,8 +117,9 @@ function setOptionalEvent(form, prefix, title, helpers) {
   const date = value(`${prefix}Date`);
   const time = value(`${prefix}Time`);
   const venue = value(`${prefix}Venue`);
+  const mapUrl = value(`${prefix}VenueLink`);
   const card = document.getElementById(`${prefix}Event`);
-  card.hidden = !(date || time || venue);
+  card.hidden = !(date || time || venue || mapUrl);
   if (card.hidden) return;
 
   const when = document.getElementById(`${prefix}When`);
@@ -128,10 +130,7 @@ function setOptionalEvent(form, prefix, title, helpers) {
   });
   document.getElementById(`${prefix}Venue`).textContent =
     venue || `${title} venue to be announced`;
-  const directions = document.getElementById(`${prefix}Directions`);
-  const mapUrl = value(`${prefix}VenueLink`);
-  directions.href = /^https?:\/\//i.test(mapUrl) ? mapUrl : "";
-  directions.hidden = !directions.href;
+  renderVenueMap(document.getElementById(`${prefix}Map`), document.getElementById(`${prefix}MapFrame`), mapUrl, venue || title);
 }
 
 export function renderWedding(form, helpers) {
@@ -201,13 +200,9 @@ export function renderWedding(form, helpers) {
     document.createElement("br"),
     document.createTextNode(helpers.formatTime(time))
   );
-  document.getElementById("weddingEventVenue").textContent = venue;
   document.getElementById("venueName").textContent = venue;
   document.getElementById("venueAddress").textContent = value("address");
-  const directions = document.getElementById("weddingDirections");
-  const venueLink = value("venueLink");
-  directions.href = venueLink;
-  directions.hidden = !/^https?:\/\//i.test(venueLink);
+  renderVenueMap(document.getElementById("weddingMap"), document.getElementById("weddingMapFrame"), value("venueLink"), venue);
   document.getElementById("rsvpDetails").textContent = rsvp.join(" · ");
   document.getElementById("rsvpSection").hidden = rsvp.length === 0;
   renderPhotoGallery({ templateType: value("templateType"), photoLinks: value("photoLinks") });

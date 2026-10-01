@@ -131,24 +131,24 @@ async function handlePublicApi(request, response, pathname) {
     const lookup = customPathMatch ? `${customPathMatch[1]}/${customPathMatch[2]}` : publicMatch[1];
     const [rows] = await database().execute(
       `SELECT i.*, l.template_type, l.public_token, l.public_path, l.public_expires_at, l.public_generated_at,
-              l.status AS link_status, u.name AS owner_name
+              l.status AS link_status, (l.public_expires_at <= NOW()) AS is_expired, u.name AS owner_name
        FROM invitation_public_links l
        JOIN invitations i ON i.id = l.invitation_id
        JOIN users u ON u.id = i.user_id
-       WHERE ${condition} AND l.public_expires_at > NOW()`,
+       WHERE ${condition} LIMIT 1`,
       [lookup]
     );
     if (!rows[0]) {
       sendJson(response, 404, { error: "Shared invitation not found" });
       return true;
     }
+    if (rows[0].is_expired) {
+      sendJson(response, 410, { error: "This public invitation link has expired." });
+      return true;
+    }
     rows[0].status = rows[0].link_status;
     const invitation = invitationDto(rows[0]);
     invitation.fields.templateType = rows[0].template_type;
-    if (invitation.publicExpiresAt && new Date(invitation.publicExpiresAt).getTime() <= Date.now()) {
-      sendJson(response, 404, { error: "Shared invitation not found" });
-      return true;
-    }
     sendJson(response, 200, { ...invitation, owner: rows[0].owner_name, readOnly: true });
     return true;
   }

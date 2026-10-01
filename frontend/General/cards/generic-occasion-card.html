@@ -1,14 +1,28 @@
 <main class="occasion-invitation" id="occasionInvitation" data-occasion="birthday" hidden>
     <div class="occasion-card-inner">
-      <div class="occasion-mark" id="occasionMark" aria-hidden="true"></div>
-      <p class="occasion-card-kicker" id="occasionCardKicker"></p>
-      <h1 class="occasion-card-title" id="occasionCardTitle"></h1>
-      <p class="occasion-card-subtitle" id="occasionCardSubtitle"></p>
-      <p class="occasion-card-message" id="occasionCardMessage"></p>
-      <section class="event-countdown" id="occasionCountdown" hidden aria-label="Event countdown"></section>
-      <div class="photo-gallery" id="occasionPhotoGallery" hidden></div>
-      <div class="occasion-details" id="occasionDetails"></div>
-      <a class="venue-directions" id="occasionDirections" target="_blank" rel="noopener noreferrer" hidden>View map &amp; directions</a>
-      <p class="occasion-card-rsvp" id="occasionCardRsvp"></p>
+      <section class="card-panel card-cover">
+        <div class="occasion-mark" id="occasionMark" aria-hidden="true"></div>
+        <p class="occasion-card-kicker" id="occasionCardKicker"></p>
+        <h1 class="occasion-card-title" id="occasionCardTitle"></h1>
+        <p class="occasion-card-subtitle" id="occasionCardSubtitle"></p>
+        <p class="occasion-card-message" id="occasionCardMessage"></p>
+        <section class="event-countdown" id="occasionCountdown" hidden aria-label="Event countdown"></section>
+        <div class="card-flourish" aria-hidden="true">✦</div>
+      </section>
+      <section class="card-panel card-details-panel">
+        <h2 class="card-panel-title">Event Details</h2>
+        <div class="occasion-details" id="occasionDetails"></div>
+        <div class="venue-map" id="occasionMap" hidden>
+          <div class="venue-map-frame" id="occasionMapFrame"></div>
+          <a class="venue-directions" id="occasionDirections" target="_blank" rel="noopener noreferrer">Open map &amp; directions <span aria-hidden="true">→</span></a>
+        </div>
+        <p class="occasion-card-rsvp" id="occasionCardRsvp"></p>
+      </section>
+      <section class="card-panel card-moments-panel">
+        <h2 class="card-panel-title" id="occasionMomentsTitle">A Few Moments</h2>
+        <div class="photo-gallery" id="occasionPhotoGallery" hidden></div>
+        <div class="card-closing-mark" aria-hidden="true">✧</div>
+        <p class="card-closing-note">We look forward to celebrating with you.</p>
+      </section>
     </div>
   </main>

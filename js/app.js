@@ -3,6 +3,7 @@ import { renderWedding } from "./occasions/wedding.js";
 import { renderOccasionForm } from "./ui/form-renderer.js";
 import { applyPhotoImageFallbacks, initPhotoLinkEditor, parsePhotoLinks, setPhotoLinkEditorValue } from "../frontend/General/js/photo-links.js";
 import { applyInvitationSvgTheme } from "../frontend/General/js/svg-theme.js";
+import { renderVenueMap } from "../frontend/General/js/map-preview.js";
 import { occasionSvgMap, occasionSvgOptions, svgMarkup, weddingIllustrations } from "../frontend/General/js/svg-registry.js";
 
 /**
@@ -18,6 +19,7 @@ const elements = {
   monitoringPage: document.getElementById("monitoringPage"),
   plansPage: document.getElementById("plansPage"),
   paymentPage: document.getElementById("paymentPage"),
+  expiredPublicView: document.getElementById("expiredPublicView"),
   weddingBuilder: document.getElementById("builder"),
   occasionBuilder: document.getElementById("occasionBuilder"),
   weddingInvitation: document.getElementById("invitation"),
@@ -45,6 +47,7 @@ const elements = {
   statusBadge: document.getElementById("invitationStatusBadge"),
   saveStatus: document.getElementById("saveStatus"),
   publicBanner: document.getElementById("publicBanner"),
+  publicCardTools: document.querySelector("[data-public-card-tools]"),
   profileVerifyNotice: document.getElementById("profileVerifyNotice"),
   shareInfo: document.getElementById("shareInfo"),
   shareInfoText: document.getElementById("shareInfoText"),
@@ -330,6 +333,7 @@ function showOnly(section) {
   hideableSections.forEach((element) => element.hidden = element !== section);
   elements.cardActions.hidden = ![elements.weddingInvitation, elements.occasionInvitation].includes(section);
   elements.publicBanner.hidden = true;
+  if (![elements.weddingInvitation, elements.occasionInvitation].includes(section)) elements.publicCardTools.hidden = true;
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -558,6 +562,11 @@ function resetPaymentPage() {
     "Select a plan first. Razorpay integration will be added here later.";
   document.getElementById("paymentAmountInput").value = "";
   document.getElementById("paymentMessage").textContent = "";
+  elements.expiredPublicView.hidden = true;
+  document.getElementById("dummyPaymentForm").hidden = false;
+  document.querySelector("#paymentPage > .builder-kicker").hidden = false;
+  document.querySelector("#paymentPage > h1").hidden = false;
+  document.querySelector("#paymentPage > .builder-intro").hidden = false;
 }
 
 function formatCurrency(value) {
@@ -726,7 +735,9 @@ function renderGenericCard(occasion, values = formValues(elements.occasionForm))
   document.getElementById("occasionCardSubtitle").textContent = cardData.subtitle;
   document.getElementById("occasionCardMessage").textContent = cardData.message;
   renderEventCountdown(document.getElementById("occasionCountdown"), values, `Counting down to ${cardData.title}`);
-  renderPhotoGallery(document.getElementById("occasionPhotoGallery"), photoUrls(values));
+  const occasionPhotos = photoUrls(values);
+  renderPhotoGallery(document.getElementById("occasionPhotoGallery"), occasionPhotos);
+  document.getElementById("occasionMomentsTitle").hidden = occasionPhotos.length === 0;
   document.getElementById("occasionCardRsvp").textContent =
     cardData.rsvp ? `RSVP · ${cardData.rsvp}` : "";
 
@@ -743,10 +754,7 @@ function renderGenericCard(occasion, values = formValues(elements.occasionForm))
     item.append(caption, content);
     details.append(item);
   });
-  const venueLink = String(values.venueLink || "").trim();
-  const directions = document.getElementById("occasionDirections");
-  directions.href = venueLink;
-  directions.hidden = !/^https?:\/\//i.test(venueLink);
+  renderVenueMap(document.getElementById("occasionMap"), document.getElementById("occasionMapFrame"), values.venueLink, values.venue || cardData.title);
   document.title = cardData.documentTitle;
 }
 
@@ -893,6 +901,11 @@ async function renderInvitationFromData(invitation, readOnly = false) {
     ...(!storedVariants.length && !["DRAFT", ""].includes(invitation.status) ? [currentTemplateType] : [])
   ]);
   pendingTemplateFields = invitation.fields || null;
+  document.querySelectorAll("[data-public-card-tools]").forEach((tools) => {
+    tools.hidden = !readOnly;
+    const status = tools.querySelector("[data-public-tool-status]");
+    if (status) status.textContent = "";
+  });
   updateSaveButtonLabel();
   elements.previewBasicButton?.classList.toggle("is-active", currentTemplateType === "basic");
   elements.previewPremiumButton?.classList.toggle("is-active", currentTemplateType === "premium");
@@ -922,6 +935,239 @@ async function renderInvitationFromData(invitation, readOnly = false) {
     await refreshShareStates();
   }
 }
+
+const exportStyleProperties = [
+  "display", "box-sizing", "width", "height", "min-height", "max-width", "margin", "padding", "position",
+  "flex", "flex-direction", "flex-wrap", "align-items", "align-content", "justify-content", "gap", "grid-template-columns",
+  "color", "background", "background-color", "border", "border-radius", "box-shadow", "font-family", "font-size",
+  "font-weight", "font-style", "line-height", "letter-spacing", "text-align", "text-transform", "text-shadow", "white-space",
+  "overflow", "object-fit", "aspect-ratio", "opacity", "transform"
+];
+
+function inlineExportStyles(source, clone) {
+  const computed = getComputedStyle(source);
+  exportStyleProperties.forEach((property) => {
+    const value = computed.getPropertyValue(property);
+    if (value) clone.style.setProperty(property, value);
+  });
+  [...source.children].forEach((child, index) => {
+    if (clone.children[index]) inlineExportStyles(child, clone.children[index]);
+  });
+}
+
+async function imageAsDataUrl(image) {
+  try {
+    const response = await fetch(image.currentSrc || image.src, { mode: "cors" });
+    if (!response.ok) return;
+    const blob = await response.blob();
+    return await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => resolve(undefined);
+      reader.readAsDataURL(blob);
+    });
+  } catch { return undefined; }
+}
+
+function inlineSvgImage(image) {
+  const source = image.getAttribute("src") || "";
+  if (!/^data:image\/svg\+xml[;,]/i.test(source)) return false;
+  try {
+    const comma = source.indexOf(",");
+    const metadata = source.slice(0, comma);
+    const payload = source.slice(comma + 1);
+    const markup = /;base64/i.test(metadata)
+      ? new TextDecoder().decode(Uint8Array.from(atob(payload), (character) => character.charCodeAt(0)))
+      : decodeURIComponent(payload);
+    const parsed = new DOMParser().parseFromString(markup, "image/svg+xml");
+    const svg = parsed.documentElement;
+    if (svg.localName !== "svg" || parsed.querySelector("parsererror")) return false;
+    const inline = document.importNode(svg, true);
+    inline.setAttribute("class", image.getAttribute("class") || "");
+    inline.setAttribute("style", image.getAttribute("style") || "");
+    ["role", "aria-label", "aria-labelledby"].forEach((name) => {
+      if (image.hasAttribute(name)) inline.setAttribute(name, image.getAttribute(name));
+    });
+    image.replaceWith(inline);
+    return true;
+  } catch { return false; }
+}
+
+function serializeAsXhtml(node) {
+  const copy = node.namespaceURI === "http://www.w3.org/2000/svg"
+    ? document.createElementNS(node.namespaceURI, node.nodeName)
+    : document.createElementNS("http://www.w3.org/1999/xhtml", node.localName || node.nodeName);
+  [...node.attributes].forEach((attribute) => copy.setAttributeNS(attribute.namespaceURI, attribute.name, attribute.value));
+  [...node.childNodes].forEach((child) => {
+    if (child.nodeType === Node.ELEMENT_NODE) copy.appendChild(serializeAsXhtml(child));
+    else if (child.nodeType === Node.TEXT_NODE) copy.appendChild(document.createTextNode(child.nodeValue));
+  });
+  return copy;
+}
+
+function invitationFilename(fields) {
+  const label = fields.eventName || fields.celebrant || fields.bride && `${fields.bride}-${fields.groom}` || fields.partnerOne && `${fields.partnerOne}-${fields.partnerTwo}` || fields.title || "invitation";
+  return String(label).normalize("NFKD").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase() || "invitation";
+}
+
+async function saveInvitationImage(root) {
+  if (!root) throw new Error("The invitation is not available to export.");
+  await document.fonts.ready;
+  const bounds = root.getBoundingClientRect();
+  const width = Math.ceil(bounds.width);
+  const height = Math.ceil(Math.max(bounds.height, root.scrollHeight, root.offsetHeight));
+  if (!width || !height) throw new Error("The invitation has no visible content to export.");
+  const warnings = [];
+  const clone = root.cloneNode(true);
+  clone.removeAttribute("hidden");
+  clone.querySelectorAll("svg").forEach((svgNode) => svgNode.setAttribute("xmlns", "http://www.w3.org/2000/svg"));
+  inlineExportStyles(root, clone);
+  // Apply export geometry after computed styles; otherwise the source's auto-centering
+  // margins shift the card beyond the canvas and make its contents appear clipped.
+  Object.assign(clone.style, { width: `${width}px`, maxWidth: "none", height: `${height}px`, margin: "0", boxSizing: "border-box" });
+  clone.querySelectorAll("iframe").forEach((frame) => {
+    const note = document.createElement("div");
+    note.className = "map-export-note";
+    note.textContent = "Venue map · Open the invitation link for interactive directions";
+    frame.replaceWith(note);
+  });
+  const sourceImages = [...root.querySelectorAll("img")];
+  const cloneImages = [...clone.querySelectorAll("img")];
+  await Promise.all(sourceImages.map(async (image, index) => {
+    if (!cloneImages[index] || !image.currentSrc) return;
+    const dataUrl = await imageAsDataUrl(image);
+    if (dataUrl) cloneImages[index].src = dataUrl;
+    else {
+      // Leaving a remote image in the clone taints canvas.toBlob() in many browsers.
+      cloneImages[index].removeAttribute("src");
+      cloneImages[index].style.visibility = "hidden";
+      warnings.push("Some external photos could not be embedded and were omitted from the image.");
+    }
+  }));
+  // Remote CSS backgrounds can taint canvas even after <img> sources are embedded.
+  const sourceElements = [root, ...root.querySelectorAll("*")];
+  const cloneElements = [clone, ...clone.querySelectorAll("*")];
+  cloneElements.forEach((element, index) => {
+    const source = sourceElements[index];
+    if (!source) return;
+    const backgroundImage = getComputedStyle(source).backgroundImage;
+    if (backgroundImage.includes("url(") && !backgroundImage.includes("data:")) {
+      element.style.backgroundImage = "none";
+    }
+  });
+  clone.querySelectorAll("img").forEach(inlineSvgImage);
+  // Strip any remaining cross-origin resource references, including those nested
+  // inside SVG artwork or supplied through an inline style attribute.
+  clone.querySelectorAll("*").forEach((element) => {
+    element.removeAttribute("srcset");
+    ["src", "href", "xlink:href"].forEach((attribute) => {
+      const value = element.getAttribute(attribute);
+      if (!value || value.startsWith("data:") || value.startsWith("#")) return;
+      try {
+        if (/^https?:/i.test(value) && new URL(value, location.href).origin !== location.origin) {
+          element.removeAttribute(attribute);
+          if (element.localName === "img" || element.localName === "image") element.style.visibility = "hidden";
+          warnings.push("Some external artwork or photos were omitted from the image.");
+        }
+      } catch { element.removeAttribute(attribute); }
+    });
+    const style = element.getAttribute("style") || "";
+    if (/url\(\s*['\"]?https?:/i.test(style)) {
+      element.style.backgroundImage = "none";
+      element.style.maskImage = "none";
+      warnings.push("Some external decorative images were omitted from the image.");
+    }
+  });
+  clone.querySelectorAll(".map-export-note").forEach((note) => Object.assign(note.style, {
+    display: "grid", placeItems: "center", minHeight: "150px", padding: "16px", color: "#51283d",
+    background: "#f1e6dc", borderRadius: "16px", font: "600 1rem Georgia,serif", textAlign: "center"
+  }));
+  const xhtmlRoot = serializeAsXhtml(clone);
+  // XMLSerializer may emit HTML void tags as bare <img ...> in some browsers;
+  // that makes the downloaded SVG invalid XML and prevents PNG decoding.
+  const xhtml = new XMLSerializer().serializeToString(xhtmlRoot).replace(
+    /<(img|br|hr|input|meta|link)(\s[^<>]*?)?>/gi,
+    (tag, name, attributes = "") => tag.endsWith("/>") ? tag : `<${name}${attributes}/>`
+  );
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;overflow:hidden">${xhtml}</div></foreignObject></svg>`;
+  const svgBlob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+  const objectUrl = URL.createObjectURL(svgBlob);
+  try {
+    const image = new Image();
+    image.src = objectUrl;
+    await image.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = width * 2;
+    canvas.height = height * 2;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("This browser could not create an image canvas.");
+    context.scale(2, 2);
+    context.drawImage(image, 0, 0, width, height);
+    const png = await new Promise((resolve, reject) => canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("PNG export failed")), "image/png"));
+    return { blob: png, warnings };
+  } catch (error) {
+    throw new Error(`PNG creation failed: ${error?.message || "Image renderer failed"}`);
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+function calendarText(value) {
+  return String(value || "").replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
+}
+
+function createCalendarFile(fields) {
+  const date = fields.weddingDate || fields.date;
+  if (!date) throw new Error("This invitation has no event date to add.");
+  const time = fields.weddingTime || fields.time || "09:00";
+  const [year, month, day] = date.split("-").map(Number);
+  const [hours, minutes] = time.split(":").map(Number);
+  const start = new Date(year, month - 1, day, hours || 0, minutes || 0);
+  const end = new Date(start.getTime() + 60 * 60 * 1000);
+  const stamp = (value) => `${value.getFullYear()}${String(value.getMonth() + 1).padStart(2, "0")}${String(value.getDate()).padStart(2, "0")}T${String(value.getHours()).padStart(2, "0")}${String(value.getMinutes()).padStart(2, "0")}00`;
+  const summary = fields.eventName || fields.celebrant && `${fields.celebrant}'s celebration` || fields.bride && `${fields.bride} & ${fields.groom}` || fields.partnerOne && `${fields.partnerOne} & ${fields.partnerTwo}` || "Celebration";
+  const lines = [
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Invitation Studio//Invitation//EN", "BEGIN:VEVENT",
+    `UID:${crypto.randomUUID()}@invitation-studio`, `DTSTAMP:${stamp(new Date())}`, `DTSTART:${stamp(start)}`, `DTEND:${stamp(end)}`,
+    `SUMMARY:${calendarText(summary)}`,
+    `LOCATION:${calendarText([fields.venue, fields.address].filter(Boolean).join(", "))}`,
+    `DESCRIPTION:${calendarText(fields.message || "You are invited!")}`,
+    `URL:${location.href}`, "END:VEVENT", "END:VCALENDAR"
+  ];
+  const anchor = document.createElement("a");
+  anchor.href = URL.createObjectURL(new Blob([lines.join("\r\n")], { type: "text/calendar;charset=utf-8" }));
+  anchor.download = `${invitationFilename(fields)}.ics`;
+  anchor.click();
+  setTimeout(() => URL.revokeObjectURL(anchor.href), 1000);
+}
+
+document.addEventListener("click", async (event) => {
+  const imageButton = event.target.closest("[data-save-card-image]");
+  const calendarButton = event.target.closest("[data-add-calendar]");
+  if (!imageButton && !calendarButton) return;
+  const root = document.querySelector(".invitation:not([hidden]), .occasion-invitation:not([hidden])");
+  const tools = event.target.closest("[data-public-card-tools]");
+  const status = tools?.querySelector("[data-public-tool-status]");
+  const fields = pendingTemplateFields || {};
+  try {
+    if (imageButton) {
+      imageButton.disabled = true;
+      const { blob, warnings } = await saveInvitationImage(root);
+      const anchor = document.createElement("a");
+      anchor.href = URL.createObjectURL(blob);
+      anchor.download = `${invitationFilename(fields)}.png`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(anchor.href), 30000);
+      if (status) status.textContent = warnings.join(" ");
+    } else createCalendarFile(fields);
+  } catch (error) {
+    if (status) status.textContent = error.message || "Unable to create this download.";
+  } finally {
+    if (imageButton) imageButton.disabled = false;
+  }
+});
 
 function currentFields() {
   const form = activeOccasion === "wedding"
@@ -1361,12 +1607,22 @@ async function loadRoute() {
       if (elements.appFooter) elements.appFooter.hidden = true;
     } catch (error) {
       elements.appHeader.hidden = true;
+      resetPaymentPage();
       showOnly(elements.paymentPage);
-      elements.publicBanner.hidden = false;
-      elements.publicBanner.textContent = "This public invitation link is expired or no longer available.";
-      document.querySelector("#paymentPage h1").textContent = "Link Expired";
-      document.querySelector("#paymentPage .builder-intro").textContent =
-        "Please ask the card owner for a fresh invitation link.";
+      const unavailable = elements.expiredPublicView;
+      unavailable.hidden = false;
+      const title = unavailable.querySelector("h2");
+      const note = unavailable.querySelector("p");
+      const expired = error.status === 410;
+      title.textContent = expired ? "This invitation link has expired" : "Invitation unavailable";
+      note.textContent = expired
+        ? "Ask the host to create a new public link to view the invitation."
+        : "This link may be incorrect or no longer available. Ask the host to share the invitation again.";
+      unavailable.querySelector(".expired-link-return").href = signedInUser ? "/" : "/login";
+      document.querySelector("#paymentPage > .builder-kicker").hidden = true;
+      document.querySelector("#paymentPage > h1").hidden = true;
+      document.querySelector("#paymentPage > .builder-intro").hidden = true;
+      document.getElementById("dummyPaymentForm").hidden = true;
     }
     return;
   }

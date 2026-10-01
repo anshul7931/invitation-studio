@@ -11,7 +11,7 @@ Stable IDs used by `wedding.js`:
 
 - Form: `invitationForm`
 - Names: `firstCoupleName`, `firstParentLine`, `secondCoupleName`, `secondParentLine`, `monogram`
-- Main ceremony: `weddingDay`, `weddingDateBanner`, `weddingWhen`, `weddingEventVenue`
+- Main ceremony: `weddingDay`, `weddingDateBanner`, `weddingWhen`
 - Venue: `venueName`, `venueAddress`
 - Optional events: `haldiEvent`, `haldiWhen`, `haldiVenue`, `engagementEvent`, `engagementWhen`, `engagementVenue`
 - RSVP: `rsvpSection`, `rsvpDetails`

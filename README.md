@@ -11,7 +11,8 @@ invitation-studio/
 ├── frontend/
 │   ├── Occasions/              # Occasion-specific frontend source files
 │   ├── Dashboard/              # User/Admin dashboard HTML ownership
-│   ├── General/                # Shared dialogs, SVGs, CSS tokens, reusable JS
+│   ├── General/                # Shared dialogs, card templates, styles, SVGs and utilities
+│   │   ├── js/map-preview.js   # Optional venue map previews and directions links
 │   └── StaticPages/            # About, Contact, Terms, 404 and policy pages
 ├── js/
 │   ├── app.js                  # Browser controller: auth, routing, saves, sharing, UI state
@@ -83,7 +84,7 @@ Local `.env` and `.env.local` files are loaded automatically on startup, so you 
 | `HOST` | `127.0.0.1` | App host value in config. |
 | `PORT` | `3000` | HTTP server port. |
 | `PUBLIC_APP_URL` | `http://127.0.0.1:3000` | Public base URL used in emailed verification/reset links. |
-| `PUBLIC_SHARE_MINUTES` | `10` | Number of minutes a generated public card link remains valid. |
+| `PUBLIC_SHARE_MINUTES` | `10` | Basic free-link duration in minutes; Premium free links use 5 minutes. Paid links use the selected credit/plan validity. |
 | `ADMIN_EMAILS` | `admin@invitation.local` | Comma-separated emails promoted to `ADMIN` only after verifying ownership of the address. |
 | `DB_HOST` | `127.0.0.1` | MySQL host. |
 | `DB_PORT` | `3306` | MySQL port. |
@@ -141,7 +142,16 @@ Invitation artwork uses lowercase category-number filenames in `frontend/General
 
 Card creation exposes image-only artwork selection by occasion. Add a file using the lowercase category-number pattern in `frontend/General/svgs/`, map its path in `svgAssetMap` in `frontend/General/js/svg-registry.js`, then add the corresponding choice to `occasionSvgMap` or `weddingIllustrations`. See `frontend/README.md` for the full category list and About for source/licensing notes.
 
-Motif markup, per-occasion choices, and defaults are mapped in `frontend/General/js/svg-registry.js`. Wedding previews default to the established couple illustration. Venue map links are optional and appear only when the creator enters a directions URL.
+Motif markup, per-occasion choices, and defaults are mapped in `frontend/General/js/svg-registry.js`. Wedding previews default to the established couple illustration.
+
+## Invitation cards and public links
+
+- Card templates are a single continuous vertical sheet, styled for desktop and mobile rather than separate horizontal pages. Occasion-specific markup lives in `frontend/General/cards/` and `frontend/Occasions/`.
+- Optional venue directions are supported on general invitations (`venueLink`) and Wedding ceremony, Haldi, and Engagement events (`venueLink`, `haldiVenueLink`, `engagementVenueLink`). No map or directions control appears on the card when its URL is blank. `frontend/General/js/map-preview.js` renders supported map URLs as previews and retains an external directions link when embedding is unavailable.
+- Public links have a separate expired state; an expired link returns HTTP 410 and shows an expiry message instead of the plans/payment screen.
+- Public invitation actions are placed above the card: **Save as image** and **Add to calendar**. Image export downloads a PNG where browser rendering supports it, with an SVG fallback otherwise. Calendar export downloads an `.ics` event file. Map embeds are not included in the image export.
+
+The main card renderer and public-link actions are in `js/app.js`; occasion-specific card rendering is in `frontend/Occasions/Marriage/wedding.js` and the shared occasion card template. Update those alongside the relevant HTML/CSS when changing the card experience.
 
 ## Postman authentication
 
